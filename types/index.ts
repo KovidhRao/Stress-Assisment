@@ -18,9 +18,19 @@ export interface UserProfile {
   full_name: string
   phone?: string
   role: 'victim' | 'officer' | 'counsellor' | 'admin'
+  preferred_language?: string
+  address_line1?: string
+  address_line2?: string
+  village_town_city?: string
+  district?: string
+  state?: string
+  pincode?: string
+  is_profile_complete?: boolean
+  avatar_url?: string
   anonymous?: boolean
   avatar_initials?: string
   created_at: string
+  updated_at?: string
 }
 
 export interface OfficerProfile {
@@ -117,3 +127,53 @@ export interface CaseRecord {
     reference_id?: string
   }>
 }
+
+export interface UserStory {
+  id: string
+  title?: string
+  narrative_text: string
+  audio_url?: string | null
+  audio_duration_seconds?: number
+  transcript?: string
+  language?: string
+  created_at: string
+  formatted_time: string
+  status: 'Shared' | 'Under Review' | 'Support Plan Available' | 'Urgent Review'
+  risk_level: RiskLevel
+  svi_score: number
+  key_triggers?: string[]
+}
+
+export interface AppointmentRecord {
+  id: string
+  case_id?: string
+  doctor_name: string
+  doctor_title: string
+  doctor_specialization: string
+  slot_time: string
+  date: string
+  status: 'Confirmed' | 'Completed' | 'Pending'
+  meeting_mode: 'Secure Video Call' | 'Telephonic Audio' | 'In-Person Safe Clinic'
+  notes?: string
+}
+
+export interface TrustedContact {
+  id: string
+  name: string
+  relationship: string
+  phone: string
+  category: 'professional' | 'trusted' | 'emergency'
+  avatar_color?: string
+  is_verified?: boolean
+  description?: string
+  availability?: string
+}
+
+export interface UserActivity {
+  id: string
+  title: string
+  description: string
+  timestamp: string
+  type: 'story' | 'mood' | 'exercise' | 'appointment' | 'support'
+}
+

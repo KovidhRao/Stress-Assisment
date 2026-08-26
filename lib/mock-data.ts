@@ -1,4 +1,4 @@
-import { CaseRecord, OfficerProfile } from '@/types'
+import { CaseRecord, OfficerProfile, UserStory, TrustedContact, UserActivity, AppointmentRecord } from '@/types'
 
 export const DEFAULT_OFFICERS: OfficerProfile[] = [
   {
@@ -302,3 +302,156 @@ export const INITIAL_CASES: CaseRecord[] = [
     ]
   }
 ]
+
+export const INITIAL_STORIES: UserStory[] = [
+  {
+    id: 'STORY-01',
+    title: 'Hostel isolation & discriminatory remarks',
+    narrative_text: 'Facing continuous casteist remarks and systematic isolation in hostel by senior batchmates. I feel constantly anxious, unable to concentrate on studies, and having severe sleep disturbances and panic attacks.',
+    audio_url: null,
+    audio_duration_seconds: 35,
+    transcript: 'I feel very isolated in the college hostel. Every day they pass humiliating comments and I cannot sleep at night.',
+    language: 'English',
+    created_at: new Date(Date.now() - 3600000).toISOString(),
+    formatted_time: 'Today, 1 hour ago',
+    status: 'Support Plan Available',
+    risk_level: 'High',
+    svi_score: 64,
+    key_triggers: ['casteist remarks', 'isolation', 'panic attacks', 'cannot sleep']
+  },
+  {
+    id: 'STORY-02',
+    title: 'First incident during seminar lab',
+    narrative_text: 'Two weeks ago during lab allocation, they deliberately refused to share equipment and passed derogatory slurs about reserved category admissions. I reported to the warden but no action was taken.',
+    audio_url: null,
+    audio_duration_seconds: 22,
+    transcript: 'Warden refused to accept my written letter and told me to adjust with other girls.',
+    language: 'Hindi',
+    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+    formatted_time: '2 days ago',
+    status: 'Under Review',
+    risk_level: 'Moderate',
+    svi_score: 52,
+    key_triggers: ['derogatory slurs', 'warden ignored', 'lab equipment']
+  }
+]
+
+export const INITIAL_CONTACTS: TrustedContact[] = [
+  {
+    id: 'TC-01',
+    name: 'Dr. Ramesh Chandra',
+    relationship: 'Assigned Senior Psychiatrist',
+    phone: '+91 98101 23456',
+    category: 'professional',
+    avatar_color: '#1d8272',
+    is_verified: true,
+    description: 'Lead Clinical Triage · NIMHANS Trained · NHAA Tele-Care',
+    availability: 'Available Today (10 AM - 7 PM)'
+  },
+  {
+    id: 'TC-02',
+    name: 'Adv. Radhika Nair',
+    relationship: 'NALSA Legal Aid Counsel',
+    phone: '+91 97112 34567',
+    category: 'professional',
+    avatar_color: '#3b82f6',
+    is_verified: true,
+    description: 'PoA Act Specialist · State Legal Services Authority',
+    availability: 'On Duty'
+  },
+  {
+    id: 'TC-03',
+    name: 'Insp. Vikram Pratap Singh',
+    relationship: 'Police Law Enforcement Liaison',
+    phone: '+91 94220 98765',
+    category: 'emergency',
+    avatar_color: '#dc2626',
+    is_verified: true,
+    description: 'Special Atrocities Protection Unit · Rapid Response',
+    availability: '24x7 Emergency Patrol'
+  },
+  {
+    id: 'TC-04',
+    name: 'Pooja Sharma',
+    relationship: 'Sister / Trusted Family',
+    phone: '+91 98765 11223',
+    category: 'trusted',
+    avatar_color: '#8b5cf6',
+    is_verified: false,
+    description: 'Primary Emergency Contact · Bhopal',
+    availability: 'Always Reachable'
+  },
+  {
+    id: 'TC-05',
+    name: 'Aditi Verma',
+    relationship: 'College Friend',
+    phone: '+91 98234 56789',
+    category: 'trusted',
+    avatar_color: '#ec4899',
+    is_verified: false,
+    description: 'Campus Peer Ally · Block B Hostel',
+    availability: 'On Campus'
+  },
+  {
+    id: 'TC-06',
+    name: 'National Helpline 14566',
+    relationship: 'Ministry of Social Justice 24x7 Hotline',
+    phone: '14566',
+    category: 'emergency',
+    avatar_color: '#1e8574',
+    is_verified: true,
+    description: 'Toll-Free National Atrocities Helpline · Multilingual',
+    availability: '24x7 Live Desk'
+  },
+  {
+    id: 'TC-07',
+    name: 'National Emergency 112',
+    relationship: 'All-India Police & Disaster Dispatch',
+    phone: '112',
+    category: 'emergency',
+    avatar_color: '#b91c1c',
+    is_verified: true,
+    description: 'Immediate Police & PCR Van Dispatch',
+    availability: '24x7 Immediate'
+  }
+]
+
+export const INITIAL_ACTIVITIES: UserActivity[] = [
+  {
+    id: 'ACT-01',
+    title: 'Story safely submitted & analyzed',
+    description: 'AI Stress Vulnerability assessment completed with high accuracy.',
+    timestamp: '1 hour ago',
+    type: 'story'
+  },
+  {
+    id: 'ACT-02',
+    title: 'Daily mood recorded: Stressed',
+    description: 'Grounding recommendations customized for emotional relief.',
+    timestamp: '3 hours ago',
+    type: 'mood'
+  },
+  {
+    id: 'ACT-03',
+    title: 'Box Breathing session completed',
+    description: 'Completed 4 full cycles of 4-4-4 rhythm to stabilize heart rate.',
+    timestamp: 'Yesterday',
+    type: 'exercise'
+  },
+  {
+    id: 'ACT-04',
+    title: 'Psychiatrist assigned to your profile',
+    description: 'Dr. Ramesh Chandra received your support dossier.',
+    timestamp: '2 days ago',
+    type: 'support'
+  }
+]
+
+export const AVAILABLE_APPOINTMENT_SLOTS = [
+  { id: 'slot-1', date: 'Today', time: '4:00 PM', period: 'Evening' },
+  { id: 'slot-2', date: 'Today', time: '6:30 PM', period: 'Evening' },
+  { id: 'slot-3', date: 'Tomorrow', time: '10:00 AM', period: 'Morning' },
+  { id: 'slot-4', date: 'Tomorrow', time: '3:00 PM', period: 'Afternoon' },
+  { id: 'slot-5', date: 'Day After Tomorrow', time: '11:30 AM', period: 'Morning' }
+]
+

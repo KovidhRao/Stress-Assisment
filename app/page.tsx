@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import {
   Activity,
   ArrowRight,
@@ -37,13 +37,55 @@ import {
   Lock,
   Globe,
   ExternalLink,
-  ShieldAlert
+  ShieldAlert,
+  Calendar,
+  Smile,
+  Meh,
+  Frown,
+  Zap,
+  Waves,
+  Database
 } from 'lucide-react'
 
-import { INITIAL_CASES, DEFAULT_OFFICERS } from '@/lib/mock-data'
+import {
+  INITIAL_CASES,
+  DEFAULT_OFFICERS,
+  INITIAL_STORIES,
+  INITIAL_CONTACTS,
+  INITIAL_ACTIVITIES
+} from '@/lib/mock-data'
 import { computeSVI } from '@/lib/svi-engine'
-import { CaseRecord, OfficerProfile, RiskLevel, UserProfile, VoiceAnalysisMetrics } from '@/types'
+import {
+  CaseRecord,
+  OfficerProfile,
+  RiskLevel,
+  UserProfile,
+  VoiceAnalysisMetrics,
+  UserStory,
+  AppointmentRecord,
+  TrustedContact,
+  UserActivity
+} from '@/types'
+
+import { supabase } from '@/lib/supabase'
+import {
+  fetchUserProfile,
+  fetchCasesFromDb,
+  createCaseInDb,
+  updateCaseInDb,
+  saveAssessmentInDb,
+  subscribeToRealtimeCases
+} from '@/lib/supabase-service'
+
 import { LoginView } from '@/components/auth/login-view'
+import { UserDetailsModal } from '@/components/auth/user-details-modal'
+import { SupabaseStatusModal } from '@/components/ui/supabase-status-modal'
+import { StoryInputCard } from '@/components/victim/story-input-card'
+import { MyStoriesView } from '@/components/victim/my-stories-view'
+import { WellbeingJourneyView } from '@/components/victim/wellbeing-journey-view'
+import { SupportCircleView } from '@/components/victim/support-circle-view'
+import { PsychiatristDashboard } from '@/components/officer/psychiatrist-dashboard'
+import { PoliceDashboard } from '@/components/officer/police-dashboard'
 import { VoiceRecorderModal } from '@/components/victim/voice-recorder-modal'
 import { WellbeingToolsModal } from '@/components/victim/wellbeing-tools-modal'
 import { SOSModal } from '@/components/victim/sos-modal'
@@ -60,8 +102,8 @@ const levelStyles: Record<RiskLevel, string> = {
 }
 
 export default function Home() {
-  // Global App States
-  const [isLoggedIn, setIsLoggedIn] = useState(true)
+  // Global Auth & User States — starts on Login Page by default
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [currentUser, setCurrentUser] = useState<UserProfile>({
     id: 'usr-default',
     email: 'ananya.s@example.com',
@@ -70,34 +112,31 @@ export default function Home() {
     avatar_initials: 'AS',
     created_at: new Date().toISOString()
   })
-  const [currentOfficer, setCurrentOfficer] = useState<OfficerProfile | null>(null)
+  const [currentOfficer, setCurrentOfficer] = useState<OfficerProfile | null>(DEFAULT_OFFICERS[0])
   const [isOfficerMode, setIsOfficerMode] = useState(false)
-  const [activeTab, setActiveTab] = useState('My space')
+  const [officerRoleView, setOfficerRoleView] = useState<'psychiatrist' | 'police'>('psychiatrist')
+  const [activeTab, setActiveTab] = useState<'My space' | 'My story & Audio' | 'Wellbeing journey' | 'Support circle'>('My space')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState('English')
 
-  // Cases state
+  // Prototype Simulated Condition State (Normal / Moderate / High)
+  const [simulatedCondition, setSimulatedCondition] = useState<RiskLevel>('Moderate')
+  const [selectedMood, setSelectedMood] = useState<'Calm' | 'Okay' | 'Stressed' | 'Anxious' | 'Overwhelmed' | null>('Stressed')
+
+  // Interactive Stories State
+  const [storiesList, setStoriesList] = useState<UserStory[]>(INITIAL_STORIES)
+  const [contactsList, setContactsList] = useState<TrustedContact[]>(INITIAL_CONTACTS)
+  const [scheduledAppointments, setScheduledAppointments] = useState<AppointmentRecord[]>([])
+  const [activitiesList, setActivitiesList] = useState<UserActivity[]>(INITIAL_ACTIVITIES)
+
+  // Cases State for Officer Console
   const [casesList, setCasesList] = useState<CaseRecord[]>(INITIAL_CASES)
   const [selectedCase, setSelectedCase] = useState<CaseRecord>(INITIAL_CASES[0])
   const [selectedCaseModalOpen, setSelectedCaseModalOpen] = useState(false)
-  const [officerFilter, setOfficerFilter] = useState('All cases')
-  const [officerSearch, setOfficerSearch] = useState('')
 
-  // Victim Interactive Assessment States
-  const [victimNarrative, setVictimNarrative] = useState(
-    'I feel constantly anxious and fearful since the village pradhan threatened our family over the land survey. I cannot sleep and fear they will attack us again.'
-  )
-  const [victimVoiceMetrics, setVictimVoiceMetrics] = useState<VoiceAnalysisMetrics | null>(null)
-  const [victimClinicalScore, setVictimClinicalScore] = useState(6)
-  const [victimAssessment, setVictimAssessment] = useState(() => computeSVI(
-    'I feel constantly anxious and fearful since the village pradhan threatened our family over the land survey. I cannot sleep and fear they will attack us again.',
-    null,
-    6
-  ))
-  const [isSharedPrivately, setIsSharedPrivately] = useState(false)
-  const [victimJourneyProgress, setVictimJourneyProgress] = useState(2)
-
-  // Modals state
+  // Modals State
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false)
+  const [supabaseModalOpen, setSupabaseModalOpen] = useState(false)
   const [voiceModalOpen, setVoiceModalOpen] = useState(false)
   const [wellbeingModalOpen, setWellbeingModalOpen] = useState(false)
   const [wellbeingModalTab, setWellbeingModalTab] = useState<'breathing' | 'soundscape' | 'grounding'>('breathing')
@@ -107,131 +146,384 @@ export default function Home() {
   const [intakeModalOpen, setIntakeModalOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
 
-  // Handle Login
-  const handleLoginSuccess = (user: UserProfile, officer?: OfficerProfile | null) => {
-    setCurrentUser(user)
-    setCurrentOfficer(officer || null)
-    const isOff = user.role === 'officer' || user.role === 'counsellor' || user.role === 'admin'
-    setIsOfficerMode(isOff)
-    setActiveTab(isOff ? 'Overview' : 'My space')
-    setIsLoggedIn(true)
-  }
+  // 1. Supabase Session Check on OAuth Redirect & Real-time Listeners
+  useEffect(() => {
+    let isMounted = true
 
-  const handleLogout = () => {
-    setIsLoggedIn(false)
-  }
+    const initAuth = async () => {
+      try {
+        // Only auto-login if returning from an active OAuth redirect callback (Google)
+        const isOAuthRedirect =
+          typeof window !== 'undefined' &&
+          (window.location.hash.includes('access_token') || window.location.search.includes('code='))
+
+        if (isOAuthRedirect) {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session?.user && isMounted) {
+            const profile = await fetchUserProfile(session.user.id, session.user.email)
+            if (profile) {
+              setCurrentUser(profile)
+              const isOff = profile.role === 'officer' || profile.role === 'counsellor' || profile.role === 'admin'
+              setIsOfficerMode(isOff)
+              setActiveTab('My space')
+              if (!profile.is_profile_complete) {
+                setDetailsModalOpen(true)
+              }
+            } else {
+              const meta = session.user.user_metadata ?? {}
+              const guessedName =
+                meta.full_name || meta.name || session.user.email?.split('@')[0] || 'Citizen User'
+              const tempUser: UserProfile = {
+                id: session.user.id,
+                email: session.user.email,
+                full_name: guessedName,
+                phone: meta.phone || '',
+                role: 'victim',
+                is_profile_complete: false,
+                avatar_initials: guessedName.slice(0, 2).toUpperCase(),
+                created_at: session.user.created_at
+              }
+              setCurrentUser(tempUser)
+              setDetailsModalOpen(true)
+            }
+            setIsLoggedIn(true)
+          }
+        }
+      } catch (err) {
+        console.error('Session check error:', err)
+      }
+    }
+
+    initAuth()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return
+
+      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')) {
+        const profile = await fetchUserProfile(session.user.id, session.user.email)
+        if (profile) {
+          setCurrentUser(profile)
+          const isOff = profile.role === 'officer' || profile.role === 'counsellor' || profile.role === 'admin'
+          setIsOfficerMode(isOff)
+          setActiveTab('My space')
+          setIsLoggedIn(true)
+          if (!profile.is_profile_complete && !profile.anonymous) {
+            setDetailsModalOpen(true)
+          }
+        }
+      } else if (event === 'SIGNED_OUT' && isMounted) {
+        setIsLoggedIn(false)
+        setIsOfficerMode(false)
+      }
+    })
+
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  // 2. Fetch Cases & Subscribe to Real-time Updates when Logged In
+  useEffect(() => {
+    if (isLoggedIn) {
+      const loadCases = async () => {
+        const dbCases = await fetchCasesFromDb()
+        if (dbCases && dbCases.length > 0) {
+          setCasesList(dbCases)
+          setSelectedCase(dbCases[0])
+        }
+      }
+      loadCases()
+
+      const unsubscribe = subscribeToRealtimeCases(
+        (newCase) => {
+          setCasesList(prev => [newCase, ...prev.filter(c => c.id !== newCase.id)])
+        },
+        (updatedCase) => {
+          setCasesList(prev => prev.map(c => c.id === updatedCase.id ? updatedCase : c))
+          setSelectedCase(prev => prev.id === updatedCase.id ? updatedCase : prev)
+        }
+      )
+
+      return () => {
+        unsubscribe()
+      }
+    }
+  }, [isLoggedIn])
 
   // Quick Panic Exit (Redirects immediately for safety)
   const handleQuickExit = () => {
     window.location.href = 'https://www.google.com/search?q=weather+forecast+india'
   }
 
-  // Recalculate victim SVI live on text change or voice submit
-  const handleNarrativeChange = (text: string) => {
-    setVictimNarrative(text)
-    setIsSharedPrivately(false)
-    const updatedAssessment = computeSVI(text, victimVoiceMetrics, victimClinicalScore)
-    setVictimAssessment(updatedAssessment)
-  }
+  // Handle Login
+  const handleLoginSuccess = (user: UserProfile, officer?: OfficerProfile | null) => {
+    setCurrentUser(user)
+    setCurrentOfficer(officer || DEFAULT_OFFICERS[0])
+    const isOff = user.role === 'officer' || user.role === 'counsellor' || user.role === 'admin'
+    setIsOfficerMode(isOff)
+    setActiveTab('My space')
+    setIsLoggedIn(true)
 
-  const handleVoiceComplete = (metrics: VoiceAnalysisMetrics) => {
-    setVictimVoiceMetrics(metrics)
-    if (metrics.transcript && !victimNarrative) {
-      setVictimNarrative(metrics.transcript)
+    if (!user.is_profile_complete && !user.anonymous && user.role === 'victim') {
+      setDetailsModalOpen(true)
     }
-    const updatedAssessment = computeSVI(victimNarrative || metrics.transcript, metrics, victimClinicalScore)
-    setVictimAssessment(updatedAssessment)
-    setVictimJourneyProgress(prev => Math.min(5, prev + 1))
   }
 
-  const handleClinicalComplete = (score: number) => {
-    setVictimClinicalScore(score)
-    const updatedAssessment = computeSVI(victimNarrative, victimVoiceMetrics, score)
-    setVictimAssessment(updatedAssessment)
-    setVictimJourneyProgress(prev => Math.min(5, prev + 1))
+  const handleProfileSaved = (updatedUser: UserProfile) => {
+    setCurrentUser(updatedUser)
+    setDetailsModalOpen(false)
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    setIsLoggedIn(false)
+    setCurrentOfficer(null)
+  }
+
+  // Dynamic SVI snapshot scores based on selected prototype condition
+  const currentSnapshot = useMemo(() => {
+    switch (simulatedCondition) {
+      case 'Low':
+        return {
+          svi_score: 24,
+          risk_level: 'Low' as RiskLevel,
+          title: 'You appear to be in a relatively stable emotional state.',
+          message: 'Your baseline stress indicators are within calm parameters. Continue gentle wellness practices to maintain resilience.',
+          badge: 'Calm & Stable',
+          actionText: 'Continue to Wellbeing Journey'
+        }
+      case 'Moderate':
+        return {
+          svi_score: 58,
+          risk_level: 'Moderate' as RiskLevel,
+          title: 'You may be experiencing moderate levels of stress or distress.',
+          message: 'Elevated anxiety patterns detected. A dedicated clinical psychologist has been assigned to assist your emotional wellbeing.',
+          badge: 'Moderate Risk',
+          actionText: 'View Support Plan'
+        }
+      case 'High':
+      case 'Critical':
+      default:
+        return {
+          svi_score: 84,
+          risk_level: 'High' as RiskLevel,
+          title: 'You may be experiencing significant emotional distress.',
+          message: 'We detected acute distress signals. Both clinical psychological care and rapid emergency protection support have been activated.',
+          badge: 'High Risk Alert',
+          actionText: 'View Immediate Support Plan'
+        }
+    }
+  }, [simulatedCondition])
+
+  // Handle Story Submission (Syncs with Supabase in real-time)
+  const handleStorySubmitted = async (newStory: UserStory, metrics?: VoiceAnalysisMetrics) => {
+    setStoriesList(prev => [newStory, ...prev])
+    setSimulatedCondition(newStory.risk_level)
+
+    // Add activity
+    const newAct: UserActivity = {
+      id: `ACT-${Date.now()}`,
+      title: 'Story added & analyzed',
+      description: `"${newStory.title}" safely stored with SVI ${newStory.svi_score}.`,
+      timestamp: 'Just now',
+      type: 'story'
+    }
+    setActivitiesList(prev => [newAct, ...prev])
+
+    // Generate real case record linked with user's id
+    const userSuffix = currentUser.id.slice(-4).toUpperCase()
+    const caseId = `NHAA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}-${userSuffix}`
+
+    const newOfficerCase: CaseRecord = {
+      id: caseId,
+      victim_name: currentUser.full_name,
+      initials: currentUser.avatar_initials || 'AS',
+      is_anonymous: !!currentUser.anonymous,
+      contact_number: currentUser.phone || '+91 97551 12345',
+      incident_category: 'Caste-based Discrimination',
+      incident_location: {
+        village_town_city: currentUser.village_town_city || currentUser.district || 'District Nodal Center',
+        district: currentUser.district || 'Lucknow',
+        state: currentUser.state || 'Uttar Pradesh',
+        pincode: currentUser.pincode || '226001'
+      },
+      channel: metrics ? 'mobile_app' : 'integrated_portal',
+      language: currentUser.preferred_language || 'English',
+      reported_at: 'Just now',
+      narrative_text: newStory.narrative_text,
+      voice_analysis: metrics,
+      stress_assessment: {
+        id: `SA-${Date.now()}`,
+        case_id: caseId,
+        svi_score: newStory.svi_score,
+        risk_level: newStory.risk_level,
+        trauma_score: newStory.risk_level === 'High' ? 82 : 55,
+        fear_score: newStory.risk_level === 'High' ? 78 : 50,
+        anxiety_score: newStory.risk_level === 'High' ? 85 : 62,
+        depression_indicator: true,
+        suicidal_ideation_flag: false,
+        intimidation_flag: true,
+        social_isolation_flag: true,
+        speech_stress_detected: !!metrics,
+        key_trauma_triggers: newStory.key_triggers || ['intimidation', 'isolation'],
+        recommended_actions: [
+          'Immediate Clinical Tele-Consultation',
+          'District Anti-Discrimination Protection Notice'
+        ],
+        assessed_at: new Date().toISOString()
+      },
+      status: newStory.risk_level === 'High' ? 'New Intake' : 'Under Triage',
+      assigned_officer: 'Insp. Vikram Pratap Singh',
+      assigned_counsellor: 'Dr. Ramesh Chandra',
+      priority_tier: newStory.risk_level === 'High' ? 1 : 2,
+      notes: [
+        {
+          id: `N-${Date.now()}`,
+          author: 'AI Triage Engine',
+          role: 'Automated Assessment',
+          timestamp: 'Just now',
+          text: `Newly submitted story classified as ${newStory.risk_level} SVI (${newStory.svi_score}).`
+        }
+      ],
+      dispatched_actions: []
+    }
+
+    setCasesList(prev => [newOfficerCase, ...prev])
+
+    // Save to Supabase
+    await createCaseInDb(newOfficerCase, currentUser.id)
+    await saveAssessmentInDb({
+      userId: currentUser.id,
+      caseId: caseId,
+      narrativeText: newStory.narrative_text,
+      sviScore: newStory.svi_score,
+      riskLevel: newStory.risk_level,
+      fearScore: newStory.risk_level === 'High' ? 78 : 50,
+      traumaScore: newStory.risk_level === 'High' ? 82 : 55,
+      anxietyScore: newStory.risk_level === 'High' ? 85 : 62,
+      voiceMetrics: metrics,
+      indicators: newStory.key_triggers,
+      recommendations: [
+        'Immediate Clinical Tele-Consultation',
+        'District Anti-Discrimination Protection Notice'
+      ]
+    })
+  }
+
+  // Handle Mood Selection
+  const handleMoodSelect = (mood: 'Calm' | 'Okay' | 'Stressed' | 'Anxious' | 'Overwhelmed') => {
+    setSelectedMood(mood)
+    const newAct: UserActivity = {
+      id: `ACT-${Date.now()}`,
+      title: `Daily mood recorded: ${mood}`,
+      description: mood === 'Calm' || mood === 'Okay' ? 'Relaxed state noted in your daily log.' : 'Grounding suggestions prioritized.',
+      timestamp: 'Just now',
+      type: 'mood'
+    }
+    setActivitiesList(prev => [newAct, ...prev])
+  }
+
+  // Handle Appointment Scheduling
+  const handleScheduleAppointment = (newApt: AppointmentRecord) => {
+    setScheduledAppointments(prev => [newApt, ...prev])
+    const newAct: UserActivity = {
+      id: `ACT-${Date.now()}`,
+      title: `Consultation confirmed with ${newApt.doctor_name}`,
+      description: `${newApt.date} at ${newApt.slot_time} (${newApt.meeting_mode}).`,
+      timestamp: 'Just now',
+      type: 'appointment'
+    }
+    setActivitiesList(prev => [newAct, ...prev])
+  }
+
+  // Handle Adding Trusted Contact
+  const handleAddContact = (newContact: TrustedContact) => {
+    setContactsList(prev => [...prev, newContact])
+    const newAct: UserActivity = {
+      id: `ACT-${Date.now()}`,
+      title: `Added ${newContact.name} to Support Circle`,
+      description: `Relationship: ${newContact.relationship} (${newContact.category}).`,
+      timestamp: 'Just now',
+      type: 'support'
+    }
+    setActivitiesList(prev => [newAct, ...prev])
   }
 
   // Handle Case Update from Officer Dossier
   const handleUpdateCase = (updated: CaseRecord) => {
     setCasesList(prev => prev.map(c => c.id === updated.id ? updated : c))
     setSelectedCase(updated)
+    updateCaseInDb(updated.id, updated)
   }
 
   // Handle Adding New Intake
   const handleAddIntake = (newCase: CaseRecord) => {
     setCasesList(prev => [newCase, ...prev])
     setSelectedCase(newCase)
+    createCaseInDb(newCase)
   }
-
-  // Filtered cases for Officer
-  const filteredCases = useMemo(() => {
-    return casesList.filter(c => {
-      const matchFilter = officerFilter === 'All cases' || c.stress_assessment.risk_level === officerFilter
-      const query = officerSearch.toLowerCase().trim()
-      const matchSearch = !query || 
-        c.victim_name.toLowerCase().includes(query) ||
-        c.id.toLowerCase().includes(query) ||
-        c.incident_category.toLowerCase().includes(query) ||
-        c.incident_location.district.toLowerCase().includes(query) ||
-        c.incident_location.state.toLowerCase().includes(query)
-      return matchFilter && matchSearch
-    })
-  }, [casesList, officerFilter, officerSearch])
 
   // If user is not logged in, render Login View
   if (!isLoggedIn) {
     return <LoginView onLoginSuccess={handleLoginSuccess} />
   }
 
-  // Navigation Items
-  const navItems = isOfficerMode
-    ? [
-        ['Overview', LayoutDashboard],
-        ['Cases & Triage', ClipboardList],
-        ['Wellbeing Insights', Activity],
-        ['Redressal Team', Users]
-      ] as const
-    : [
-        ['My space', LayoutDashboard],
-        ['My story & Audio', FileText],
-        ['Wellbeing journey', HeartHandshake],
-        ['Support circle', Users]
-      ] as const
+  // Victim Navigation items
+  const victimNavItems = [
+    { label: 'My space' as const, icon: LayoutDashboard, desc: 'Dashboard & Stories' },
+    { label: 'My story & Audio' as const, icon: FileText, desc: 'Your Private Submissions' },
+    { label: 'Wellbeing journey' as const, icon: HeartHandshake, desc: 'Calming & Care Pathways' },
+    { label: 'Support circle' as const, icon: Users, desc: 'Professional & Trusted Allies' }
+  ]
 
   return (
     <div className="min-h-screen bg-[#f7faf8] text-[#24433d] font-sans antialiased">
-      {/* Panic Quick Exit & National Helpline Banner */}
+      {/* 1. TOP NATIONAL HELPLINE & PANIC EXIT BANNER */}
       <header className="bg-[#173f39] text-white px-4 py-2 text-xs flex items-center justify-between border-b border-[#23564e]">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 font-bold tracking-tight">
-            <span className="bg-[#1e8574] text-white px-2 py-0.5 rounded text-[11px]">14566</span>
-            <span className="hidden sm:inline">National Helpline Against Atrocities</span>
+            <span className="flex size-2 rounded-full bg-[#34d399] animate-ping" />
+            <span className="text-[#a7e8db]">NATIONAL HELPLINE 14566</span>
           </div>
-          <span className="hidden md:inline text-white/50">|</span>
-          <span className="hidden md:inline text-[#a0dfd2]">Ministry of Social Justice and Empowerment, Govt of India</span>
+          <span className="hidden text-white/50 md:inline">|</span>
+          <span className="hidden text-white/80 text-[11px] md:inline">
+            Toll-Free Grievance &amp; Psychological Trauma Redressal for SC/ST Communities
+          </span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Supabase Status Pill */}
+          <button
+            onClick={() => setSupabaseModalOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 text-[11px] font-mono transition"
+            title="View Supabase Realtime Database Status"
+          >
+            <Database size={11} />
+            <span className="hidden sm:inline">Supabase Live</span>
+          </button>
+
           {/* Language Selector */}
-          <div className="flex items-center gap-1 bg-black/20 px-2 py-1 rounded-lg">
-            <Globe size={13} className="text-[#a0dfd2]" />
+          <div className="flex items-center gap-1.5 bg-[#12332e] px-2.5 py-1 rounded-lg border border-[#23564e] text-[11px]">
+            <Globe size={12} className="text-[#a7e8db]" />
             <select
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
-              className="bg-transparent text-white text-[11px] outline-none cursor-pointer"
+              className="bg-transparent text-white outline-none cursor-pointer"
             >
-              <option value="English" className="text-black">English</option>
-              <option value="Hindi" className="text-black">हिन्दी</option>
-              <option value="Marathi" className="text-black">मराठी</option>
-              <option value="Tamil" className="text-black">தமிழ்</option>
-              <option value="Telugu" className="text-black">తెలుగు</option>
+              <option value="English" className="bg-[#173f39] text-white">English</option>
+              <option value="Hindi" className="bg-[#173f39] text-white">हिंदी (Hindi)</option>
+              <option value="Tamil" className="bg-[#173f39] text-white">தமிழ் (Tamil)</option>
+              <option value="Telugu" className="bg-[#173f39] text-white">తెలుగు (Telugu)</option>
+              <option value="Marathi" className="bg-[#173f39] text-white">मराठी (Marathi)</option>
+              <option value="Bengali" className="bg-[#173f39] text-white">বাংলা (Bengali)</option>
             </select>
           </div>
 
-          {/* Quick Exit Button */}
+          {/* Quick Panic Exit Button */}
           <button
             onClick={handleQuickExit}
-            className="flex items-center gap-1.5 bg-[#ca4f46] hover:bg-[#b03e36] text-white px-3 py-1 rounded-lg text-[11px] font-bold shadow-xs transition"
+            className="flex items-center gap-1.5 bg-[#ca4f46] hover:bg-[#b03e36] text-white px-3 py-1 rounded-lg text-[11px] font-bold shadow-xs transition cursor-pointer"
             title="Quickly close this page and redirect to Google search"
           >
             <ShieldAlert size={13} />
@@ -241,131 +533,139 @@ export default function Home() {
       </header>
 
       <div className="flex min-h-[calc(100vh-37px)]">
-        {/* SIDEBAR NAVIGATION */}
+        {/* ========================================================================= */}
+        {/* 2. SIDEBAR NAVIGATION */}
+        {/* ========================================================================= */}
         <aside
           className={`fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r border-[#e3ebe7] bg-[#fbfdfc] px-5 py-6 transition-transform lg:static lg:translate-x-0 ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
-          {/* Brand */}
+          {/* Brand Logo */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-[#1d8b79] text-white shadow-sm font-bold">
-                <HeartHandshake size={19} strokeWidth={2.4} />
+              <div className="flex size-9 items-center justify-center rounded-xl bg-[#1d8272] text-white shadow-md">
+                <Brain size={20} />
               </div>
               <div>
                 <span className="font-bold text-base tracking-tight text-[#163a35]">sahaaya</span>
                 <span className="block text-[9px] text-[#718b85] uppercase tracking-wider font-semibold">
-                  NHAA 14566 Portal
+                  NHAA 14566 Safe Space
                 </span>
               </div>
             </div>
             <button
-              className="text-[#7d8a86] lg:hidden p-1 hover:bg-[#eaf3f0] rounded-lg"
               onClick={() => setSidebarOpen(false)}
-              aria-label="Close menu"
+              className="lg:hidden text-[#607973] hover:text-[#1e4842]"
             >
-              <X size={19} />
+              <X size={20} />
             </button>
           </div>
 
-          {/* Role Switcher */}
-          <div className="mt-8 rounded-2xl bg-[#eef6f3] p-1.5 border border-[#dcebe5]">
+          {/* Mode Badge in Sidebar */}
+          <div className="mt-7 rounded-2xl bg-[#eef6f3] p-2 border border-[#dcebe5]">
             <button
               onClick={() => {
                 const nextMode = !isOfficerMode
                 setIsOfficerMode(nextMode)
-                setActiveTab(nextMode ? 'Overview' : 'My space')
+                setActiveTab('My space')
               }}
-              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-semibold text-[#285750] hover:bg-white transition shadow-xs"
+              className="flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-left text-xs font-semibold text-[#285750] hover:bg-white transition shadow-xs cursor-pointer"
             >
               <span className="flex items-center gap-2">
-                <span className="flex size-7 items-center justify-center rounded-lg bg-white text-[#258b79] shadow-xs">
-                  {isOfficerMode ? <ShieldCheck size={16} /> : <UserRound size={16} />}
+                <span className="flex size-6 items-center justify-center rounded-lg bg-white text-[#258b79] shadow-xs">
+                  {isOfficerMode ? <ShieldCheck size={14} /> : <UserRound size={14} />}
                 </span>
-                <span>{isOfficerMode ? 'Officer Console' : 'Victim Space'}</span>
+                <span>{isOfficerMode ? 'Officer Console' : 'Victim Support Space'}</span>
               </span>
-              <ChevronDown size={14} className="text-[#64847d]" />
+              <ChevronDown size={13} className="text-[#64847d]" />
             </button>
           </div>
 
-          {/* Nav Items */}
+          {/* Navigation Items */}
           <nav className="mt-6 flex flex-col gap-1.5 flex-1">
-            {navItems.map(([label, Icon]) => (
-              <button
-                key={label}
-                onClick={() => {
-                  setActiveTab(label)
-                  setSidebarOpen(false)
-                }}
-                className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition ${
-                  activeTab === label
-                    ? 'bg-[#e4f1ed] text-[#177967] shadow-xs'
-                    : 'text-[#647c76] hover:bg-[#f0f5f2] hover:text-[#1e4842]'
-                }`}
-              >
-                <Icon size={17} strokeWidth={activeTab === label ? 2.4 : 1.8} />
-                <span>{label}</span>
-              </button>
-            ))}
-
-            {/* Victim Quick SOS Action in Sidebar */}
-            {!isOfficerMode && (
-              <button
-                type="button"
-                onClick={() => setSosModalOpen(true)}
-                className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-[#fee2e2] hover:bg-[#fecaca] text-[#991b1b] border border-[#fca5a5] py-2.5 px-3 text-xs font-bold transition shadow-xs"
-              >
-                <AlertTriangle size={15} />
-                <span>Trigger Emergency SOS</span>
-              </button>
-            )}
-
-            {/* Officer Quick Intake in Sidebar */}
-            {isOfficerMode && (
-              <button
-                type="button"
-                onClick={() => setIntakeModalOpen(true)}
-                className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-[#1d8272] hover:bg-[#186f60] text-white py-2.5 px-3 text-xs font-bold transition shadow-md"
-              >
-                <Plus size={15} />
-                <span>New 14566 Intake</span>
-              </button>
+            {!isOfficerMode ? (
+              victimNavItems.map(({ label, icon: Icon }) => {
+                const isActive = activeTab === label
+                return (
+                  <button
+                    key={label}
+                    onClick={() => {
+                      setActiveTab(label)
+                      setSidebarOpen(false)
+                    }}
+                    className={`flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-xs font-bold transition cursor-pointer ${
+                      isActive
+                        ? 'bg-[#e4f1ed] text-[#177967] shadow-xs border border-[#cfe2db]'
+                        : 'text-[#647c76] hover:bg-[#f0f5f2] hover:text-[#1e4842]'
+                    }`}
+                  >
+                    <Icon size={17} strokeWidth={isActive ? 2.4 : 1.8} className={isActive ? 'text-[#177967]' : 'text-[#7a958e]'} />
+                    <span>{label}</span>
+                  </button>
+                )
+              })
+            ) : (
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-[#718f88] uppercase px-2">Operational Views</p>
+                <button
+                  onClick={() => setOfficerRoleView('psychiatrist')}
+                  className={`w-full flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-xs font-bold transition cursor-pointer ${
+                    officerRoleView === 'psychiatrist'
+                      ? 'bg-[#e4f1ed] text-[#177967] shadow-xs border border-[#cfe2db]'
+                      : 'text-[#647c76] hover:bg-[#f0f5f2]'
+                  }`}
+                >
+                  <Brain size={16} />
+                  <span>Psychiatrist Queue</span>
+                </button>
+                <button
+                  onClick={() => setOfficerRoleView('police')}
+                  className={`w-full flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-xs font-bold transition cursor-pointer ${
+                    officerRoleView === 'police'
+                      ? 'bg-[#fee2e2] text-[#991b1b] shadow-xs border border-[#fca5a5]'
+                      : 'text-[#647c76] hover:bg-[#f0f5f2]'
+                  }`}
+                >
+                  <ShieldAlert size={16} />
+                  <span>Police Escort Dispatch</span>
+                </button>
+              </div>
             )}
           </nav>
 
-          {/* Informed Consent / Ethical AI Info Card */}
+          {/* Ethical AI Info Card */}
           <div className="mt-auto rounded-2xl border border-[#dfeae5] bg-white p-4 shadow-xs">
             <div className="mb-2.5 flex size-8 items-center justify-center rounded-lg bg-[#eaf5f2] text-[#238c7b]">
               <Lock size={15} />
             </div>
-            <p className="text-xs font-bold text-[#244b44]">Ethical AI &amp; PoA Shield</p>
+            <p className="text-xs font-bold text-[#244b44]">SC/ST PoA Ethical Shield</p>
             <p className="mt-1 text-[11px] leading-relaxed text-[#738e88]">
-              Zero-knowledge biometrics and trauma assessment protocols.
+              Zero-knowledge encrypted biometrics and trauma screening protocols.
             </p>
             <button
               onClick={() => setConsentModalOpen(true)}
-              className="mt-2.5 flex items-center gap-1 text-[11px] font-semibold text-[#1c8877] hover:underline"
+              className="mt-2.5 flex items-center gap-1 text-[11px] font-semibold text-[#1c8877] hover:underline cursor-pointer"
             >
               Review Consent Badges <ArrowRight size={12} />
             </button>
           </div>
 
-          {/* User Profile Bar / Logout */}
+          {/* Current User Pill */}
           <div className="mt-4 pt-3 border-t border-[#e6eee9] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="size-8 rounded-full bg-[#1d8272] text-white font-bold text-xs flex items-center justify-center">
-                {currentUser.avatar_initials || 'US'}
+                {currentUser.avatar_initials || 'AS'}
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold text-[#1f423d] truncate">{currentUser.full_name}</p>
-                <p className="text-[10px] text-[#718b85] capitalize">{currentUser.role}</p>
+                <p className="text-[10px] text-[#718b85] capitalize">{isOfficerMode ? 'Nodal Officer' : 'Protected Citizen'}</p>
               </div>
             </div>
 
             <button
               onClick={handleLogout}
-              className="p-1.5 rounded-lg text-[#718b85] hover:text-[#991b1b] hover:bg-[#fee2e2] transition"
+              className="p-1.5 rounded-lg text-[#718b85] hover:text-[#991b1b] hover:bg-[#fee2e2] transition cursor-pointer"
               title="Sign Out"
             >
               <LogOut size={16} />
@@ -373,560 +673,496 @@ export default function Home() {
           </div>
         </aside>
 
-        {/* MAIN APPLICATION CONTAINER */}
+        {/* ========================================================================= */}
+        {/* 3. MAIN APPLICATION VIEWPORT */}
+        {/* ========================================================================= */}
         <div className="min-w-0 flex-1 flex flex-col">
-          {/* Top Bar */}
-          <header className="flex h-16 items-center justify-between border-b border-[#e4ede9] bg-white/90 backdrop-blur-md px-5 sm:px-8">
+          <header className="flex h-16 items-center justify-between border-b border-[#e4ede9] bg-white/95 backdrop-blur-md px-4 sm:px-8">
             <div className="flex items-center gap-3">
               <button
                 className="text-[#607973] lg:hidden p-1.5 hover:bg-[#edf4f1] rounded-xl"
                 onClick={() => setSidebarOpen(true)}
-                aria-label="Open menu"
               >
-                <Menu size={21} />
+                <Menu size={20} />
               </button>
 
               <div className="hidden items-center gap-2 text-xs font-semibold text-[#8ca39d] sm:flex">
-                <span>Workspace</span>
+                <span>Safe Space</span>
                 <span>/</span>
-                <span className="text-[#204a43]">{isOfficerMode ? 'Officer Triage Console' : 'Victim Support Space'}</span>
+                <span className="text-[#204a43]">{isOfficerMode ? `Officer Console (${officerRoleView})` : activeTab}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              {/* Direct 14566 Call Pill */}
+            {/* Top Right Action Items */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* 1. Helpline 14566 Button */}
               <a
                 href="tel:14566"
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#eaf6f2] text-[#1d8272] text-xs font-bold hover:bg-[#d8efe8] transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#eaf6f2] text-[#1d8272] text-xs font-bold hover:bg-[#d8efe8] transition"
               >
                 <PhoneCall size={13} />
                 <span>Helpline 14566</span>
               </a>
 
-              {/* Notification Pill */}
+              {/* 2. Notification Button */}
               <button
                 onClick={() => setNotificationsOpen(!notificationsOpen)}
-                className="relative flex size-9 items-center justify-center rounded-xl border border-[#dbe6e2] text-[#5e7771] hover:bg-[#f2f7f5] transition"
+                className="relative flex size-9 items-center justify-center rounded-xl border border-[#dbe6e2] text-[#5e7771] hover:bg-[#f2f7f5] transition cursor-pointer"
+                title="Triage Notifications"
               >
-                <Bell size={17} />
+                <Bell size={16} />
                 <span className="absolute right-2 top-2 size-2 rounded-full bg-[#e67863] animate-pulse" />
               </button>
 
-              {/* Switch Role Quick Button */}
+              {/* 3. SOS Emergency Button */}
               <button
+                type="button"
+                onClick={() => setSosModalOpen(true)}
+                className="flex items-center gap-1.5 rounded-xl bg-[#fee2e2] hover:bg-[#fecaca] text-[#991b1b] border border-[#fca5a5] px-3 py-1.5 text-xs font-bold transition shadow-xs animate-pulse cursor-pointer"
+                title="Emergency SOS Dispatch"
+              >
+                <AlertTriangle size={14} className="text-[#dc2626]" />
+                <span className="hidden xs:inline sm:inline">SOS Emergency</span>
+              </button>
+
+              {/* 4. Calming Audio Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setWellbeingModalTab('soundscape')
+                  setWellbeingModalOpen(true)
+                }}
+                className="flex items-center gap-1.5 rounded-xl border border-[#cfe3dc] bg-[#eef8f4] hover:bg-[#dff1ea] text-[#185a4f] px-3 py-1.5 text-xs font-semibold shadow-xs transition cursor-pointer"
+                title="Calming Audio Therapy"
+              >
+                <Headphones size={14} className="text-[#1d8272]" />
+                <span className="hidden md:inline">Calming Audio</span>
+              </button>
+
+              {/* 5. Switch to Officer Console Button */}
+              <button
+                type="button"
                 onClick={() => {
                   const nextMode = !isOfficerMode
                   setIsOfficerMode(nextMode)
-                  setActiveTab(nextMode ? 'Overview' : 'My space')
+                  setActiveTab('My space')
                 }}
-                className="text-xs font-semibold px-3 py-1.5 rounded-xl border border-[#d6e3df] text-[#2c5851] bg-[#fbfdfc] hover:bg-[#eef5f2] transition hidden sm:flex items-center gap-1.5"
+                className="text-xs font-bold px-3 py-1.5 rounded-xl border border-[#d6e3df] text-[#1e584f] bg-[#fbfdfc] hover:bg-[#eef5f2] transition flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
                 {isOfficerMode ? <UserRound size={14} /> : <ShieldCheck size={14} />}
-                <span>Switch to {isOfficerMode ? 'Victim Space' : 'Officer Console'}</span>
+                <span>{isOfficerMode ? 'Victim Space' : 'Officer Console'}</span>
               </button>
             </div>
           </header>
 
-          {/* MAIN VIEWPORT BODY */}
-          <main className="flex-1 p-5 sm:p-8 overflow-y-auto">
-            {/* NOTIFICATIONS DRAWER OVERLAY */}
+          {/* MAIN SCROLLABLE CONTENT BODY */}
+          <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
+            {/* Notification Dropdown Panel */}
             {notificationsOpen && (
-              <div className="mb-6 p-4 rounded-2xl bg-white border border-[#dcebe5] shadow-lg animate-in fade-in duration-200">
-                <div className="flex items-center justify-between pb-2 border-b border-[#edf4f1]">
-                  <p className="text-xs font-bold text-[#1f423d] flex items-center gap-1.5">
-                    <Bell size={14} className="text-[#1d8272]" />
-                    <span>Real-Time NHAA Alerts &amp; Triage Notifications</span>
-                  </p>
-                  <button onClick={() => setNotificationsOpen(false)} className="text-[#718b85] hover:text-[#20433e]">
+              <div className="mb-6 mx-auto max-w-[1160px] rounded-2xl border border-[#d6e3df] bg-white p-4 shadow-lg animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center justify-between border-b border-[#e9f0ec] pb-2.5">
+                  <span className="text-xs font-bold text-[#1f4740] flex items-center gap-2">
+                    <Bell size={14} className="text-[#1d8272]" /> Live Triage Updates
+                  </span>
+                  <button onClick={() => setNotificationsOpen(false)} className="text-[#718b85] hover:text-[#1f4740]">
                     <X size={15} />
                   </button>
                 </div>
                 <div className="space-y-2 mt-3 text-xs">
-                  <div className="p-2.5 rounded-xl bg-[#fff2f0] border border-[#fecaca] text-[#991b1b]">
-                    <strong>Critical Triage:</strong> Case NHAA-2026-9041 (Suresh Kumar Valmiki) triggered 92 SVI - Urgent Police Escort Requested.
-                  </div>
                   <div className="p-2.5 rounded-xl bg-[#ecfdf5] border border-[#a7f3d0] text-[#065f46]">
-                    <strong>Legal Counsel Assigned:</strong> NALSA Advocate Radhika Nair acknowledged case NHAA-2026-8860.
+                    <strong>Psychological Triage:</strong> Dr. Ramesh Chandra is on duty for tele-consultation support.
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[#fff2f0] border border-[#fecaca] text-[#991b1b]">
+                    <strong>District Patrol:</strong> Special Atrocities Cell nodal desk active in your region.
                   </div>
                 </div>
               </div>
             )}
 
-            {/* ========================================================================= */}
-            {/* 1. VICTIM / CITIZEN VIEW */}
-            {/* ========================================================================= */}
+            {/* ===================================================================== */}
+            {/* A. VICTIM VIEWS (MY SPACE, MY STORY, WELLBEING JOURNEY, SUPPORT CIRCLE) */}
+            {/* ===================================================================== */}
             {!isOfficerMode && (
-              <div className="mx-auto max-w-[1160px] space-y-8">
-                {/* Header Greeting & Emergency Button */}
-                <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-                  <div>
-                    <p className="text-xs font-bold text-[#1d8272] uppercase tracking-wider">
-                      NHAA Safe Space · Tuesday, 25 August 2026
-                    </p>
-                    <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#173a34] sm:text-4xl">
-                      Welcome, {currentUser.full_name}
-                    </h1>
-                    <p className="mt-1.5 text-xs text-[#718d86]">
-                      You are in a safe, confidential environment. We are here to listen and help protect you.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2.5">
-                    <button
-                      onClick={() => setSosModalOpen(true)}
-                      className="flex items-center gap-2 rounded-2xl bg-[#dc2626] hover:bg-[#b91c1c] text-white px-4 py-2.5 text-xs font-bold shadow-md transition animate-pulse"
-                    >
-                      <AlertTriangle size={15} />
-                      <span>SOS Emergency</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setWellbeingModalTab('soundscape')
-                        setWellbeingModalOpen(true)
-                      }}
-                      className="flex items-center gap-2 rounded-2xl border border-[#d6e3df] bg-white hover:bg-[#f3f8f6] px-4 py-2.5 text-xs font-semibold text-[#27534c] shadow-xs transition"
-                    >
-                      <Headphones size={15} />
-                      <span>Calming Audio</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* SVI Assessment Card & Journey Progress */}
-                <div className="grid gap-6 lg:grid-cols-[1.3fr_.85fr]">
-                  {/* Dynamic SVI Snapshot Card */}
-                  <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#174840] via-[#1d6b5e] to-[#1e8574] p-6 sm:p-7 text-white shadow-xl">
-                    <div className="relative z-10 flex items-start justify-between">
+              <>
+                {/* 1. MY SPACE TAB (MAIN DASHBOARD) */}
+                {activeTab === 'My space' && (
+                  <div className="mx-auto max-w-[1160px] space-y-8 animate-in fade-in duration-200">
+                    {/* Greeting & Subtitle */}
+                    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                       <div>
-                        <p className="text-xs font-bold tracking-wider text-[#a7e8db] uppercase">
-                          AI Stress Vulnerability Snapshot
+                        <p className="text-xs font-bold text-[#1d8272] uppercase tracking-wider">
+                          NHAA Safe Space · Tuesday, 25 August 2026
                         </p>
-                        <h2 className="mt-2.5 max-w-sm text-2xl font-bold leading-snug">
-                          {victimAssessment.risk_level === 'Critical' && 'We detected acute distress signals.'}
-                          {victimAssessment.risk_level === 'High' && 'You are carrying significant stress.'}
-                          {victimAssessment.risk_level === 'Moderate' && 'You are taking a brave step forward.'}
-                          {victimAssessment.risk_level === 'Low' && 'Gentle support for your wellbeing.'}
-                        </h2>
-                        <p className="mt-2 max-w-sm text-xs leading-relaxed text-[#cdece5]">
-                          Based on your voice tone and written statements, our clinical AI has prepared personalized protection recommendations.
+                        <h1 className="mt-1 text-3xl font-bold tracking-tight text-[#173a34] sm:text-4xl">
+                          Welcome, {currentUser.full_name}
+                        </h1>
+                        <p className="mt-1.5 text-xs text-[#718d86]">
+                          You are in a safe, confidential environment. We are here to listen and help protect you.
                         </p>
                       </div>
 
-                      <div className="flex size-13 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md">
-                        <Brain size={26} className="text-[#a7e8db]" />
+                      {/* PROTOTYPE CONDITION SWITCHER (Normal / Moderate / High) */}
+                      <div className="rounded-2xl border border-[#cfe2db] bg-[#edf6f2] p-1.5 shadow-xs flex items-center gap-1">
+                        <span className="text-[10px] font-bold text-[#456c64] px-2 uppercase">Demo State:</span>
+                        {(['Low', 'Moderate', 'High'] as const).map((lvl) => {
+                          const isSelected = simulatedCondition === lvl
+                          return (
+                            <button
+                              key={lvl}
+                              type="button"
+                              onClick={() => setSimulatedCondition(lvl)}
+                              className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                                isSelected
+                                  ? lvl === 'Low'
+                                    ? 'bg-[#1d8272] text-white shadow-xs'
+                                    : lvl === 'Moderate'
+                                    ? 'bg-[#f59e0b] text-white shadow-xs'
+                                    : 'bg-[#dc2626] text-white shadow-xs'
+                                  : 'text-[#50766d] hover:bg-white'
+                              }`}
+                            >
+                              {lvl === 'Low' ? '🟢 Normal' : lvl === 'Moderate' ? '🟡 Moderate' : '🔴 High'}
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
 
-                    <div className="relative z-10 mt-8 flex items-end justify-between border-t border-white/20 pt-5">
-                      <div>
-                        <p className="text-[11px] text-[#a7e8db] uppercase font-semibold">Stress Vulnerability Index</p>
-                        <div className="flex items-baseline gap-2 mt-0.5">
-                          <span className="text-3xl font-extrabold">{victimAssessment.svi_score}</span>
-                          <span className="text-xs text-[#a7e8db]">/ 100</span>
-                          <span className="ml-2 text-xs font-bold px-2 py-0.5 rounded-full bg-white text-[#174840]">
-                            {victimAssessment.risk_level} Risk
+                    {/* SVI Snapshot Card & Wellbeing Journey Quick Card */}
+                    <div className="grid gap-6 lg:grid-cols-[1.3fr_.85fr]">
+                      {/* Left: Dynamic SVI Snapshot Card */}
+                      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#174840] via-[#1d6b5e] to-[#1e8574] p-6 sm:p-7 text-white shadow-lg flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold tracking-wider text-[#a7e8db] uppercase flex items-center gap-1.5">
+                              <Sparkles size={14} /> AI Stress Vulnerability Snapshot
+                            </span>
+                            <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/20">
+                              {currentSnapshot.badge}
+                            </span>
+                          </div>
+
+                          <h2 className="mt-4 text-2xl sm:text-3xl font-bold leading-tight">
+                            {currentSnapshot.title}
+                          </h2>
+                          <p className="mt-2 text-xs leading-relaxed text-[#d0ede7] max-w-lg">
+                            {currentSnapshot.message}
+                          </p>
+                        </div>
+
+                        <div className="mt-8 pt-5 border-t border-white/20 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                          <div>
+                            <p className="text-[11px] font-semibold text-[#a7e8db] uppercase tracking-wider">
+                              Stress Vulnerability Index (SVI)
+                            </p>
+                            <div className="flex items-baseline gap-2 mt-1">
+                              <span className="text-4xl font-extrabold">{currentSnapshot.svi_score}</span>
+                              <span className="text-sm text-[#a7e8db]">/ 100</span>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('Wellbeing journey')}
+                            className="flex items-center justify-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-[#185a4f] hover:bg-[#eef8f4] transition shadow-xs cursor-pointer"
+                          >
+                            <span>{currentSnapshot.actionText}</span>
+                            <ArrowRight size={14} />
+                          </button>
+                        </div>
+
+                        <div className="absolute -right-8 -top-10 size-48 rounded-full border-[24px] border-white/10 pointer-events-none" />
+                      </div>
+
+                      {/* Right: Wellbeing Tracker & Quick Wellness Tools */}
+                      <div className="rounded-3xl border border-[#dcebe5] bg-white p-6 shadow-xs flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold tracking-wider text-[#698881] uppercase">YOUR HEALING JOURNEY</p>
+                            <span className="text-xs font-bold text-[#1d8272]">Step 2 of 4 active</span>
+                          </div>
+
+                          <p className="mt-3 text-xs leading-relaxed text-[#6d8a83]">
+                            This is your space. Share only what you're comfortable sharing. Your healing and protection journey can be taken one gentle step at a time.
+                          </p>
+
+                          <div className="mt-5 space-y-2">
+                            <p className="text-[11px] font-bold text-[#325851] uppercase">Quick Wellness Tools</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setWellbeingModalTab('breathing')
+                                  setWellbeingModalOpen(true)
+                                }}
+                                className="flex items-center gap-2 p-2.5 rounded-xl bg-[#eef8f4] hover:bg-[#e0f1eb] text-left text-xs font-semibold text-[#1a5e52] transition cursor-pointer border border-[#d2e8df]"
+                              >
+                                <Wind size={16} className="text-[#1d8272] shrink-0" />
+                                <div>
+                                  <span className="block font-bold">2-Min Breathing</span>
+                                  <span className="text-[10px] text-[#60857c]">Box rhythm reset</span>
+                                </div>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setWellbeingModalTab('grounding')
+                                  setWellbeingModalOpen(true)
+                                }}
+                                className="flex items-center gap-2 p-2.5 rounded-xl bg-[#f0f4f8] hover:bg-[#e2ebf3] text-left text-xs font-semibold text-[#294c6e] transition cursor-pointer border border-[#d3e0ec]"
+                              >
+                                <Compass size={16} className="text-[#3b82f6] shrink-0" />
+                                <div>
+                                  <span className="block font-bold">5-4-3-2-1 Sense</span>
+                                  <span className="text-[10px] text-[#6b8299]">Grounding guide</span>
+                                </div>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-5 pt-4 border-t border-[#edf3f0]">
+                          <button
+                            type="button"
+                            onClick={() => setScreeningModalOpen(true)}
+                            className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1d8272] hover:bg-[#186f60] text-white py-2.5 text-xs font-bold transition shadow-xs cursor-pointer"
+                          >
+                            <Sparkles size={14} />
+                            <span>Take Full 2-Minute Stress Assessment</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section: Share Your Story (StoryInputCard) */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h2 className="text-xl font-bold tracking-tight text-[#173a34]">Share Your Story</h2>
+                          <p className="text-xs text-[#6e8a83]">
+                            Write or speak openly. Our speech analytics and trauma evaluation engine operates in zero-knowledge mode.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('My story & Audio')}
+                          className="text-xs font-bold text-[#1d8272] hover:underline flex items-center gap-1"
+                        >
+                          <span>View all stories ({storiesList.length})</span>
+                          <ArrowRight size={13} />
+                        </button>
+                      </div>
+
+                      <StoryInputCard onStorySubmitted={handleStorySubmitted} />
+                    </div>
+
+                    {/* Section: Mood Tracker & Recent Activity Grid */}
+                    <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+                      {/* Left: How are you feeling right now */}
+                      <div className="rounded-3xl border border-[#dcebe5] bg-white p-6 shadow-xs flex flex-col justify-between">
+                        <div>
+                          <h3 className="text-base font-bold text-[#1a3f39]">How are you feeling right now?</h3>
+                          <p className="mt-1 text-xs text-[#6f8c85]">
+                            Select a mood to tune your personalized calming suggestions.
+                          </p>
+
+                          <div className="mt-5 grid grid-cols-5 gap-2">
+                            {(
+                              [
+                                { label: 'Calm', icon: Smile, color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
+                                { label: 'Okay', icon: Smile, color: 'text-teal-600 bg-teal-50 border-teal-200' },
+                                { label: 'Stressed', icon: Meh, color: 'text-amber-600 bg-amber-50 border-amber-200' },
+                                { label: 'Anxious', icon: Frown, color: 'text-orange-600 bg-orange-50 border-orange-200' },
+                                { label: 'Overwhelmed', icon: Zap, color: 'text-rose-600 bg-rose-50 border-rose-200' }
+                              ] as const
+                            ).map(({ label, icon: MoodIcon, color }) => {
+                              const isSelected = selectedMood === label
+                              return (
+                                <button
+                                  key={label}
+                                  type="button"
+                                  onClick={() => handleMoodSelect(label)}
+                                  className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border text-xs font-bold transition cursor-pointer ${
+                                    isSelected
+                                      ? `${color} ring-2 ring-[#1d8272] shadow-sm`
+                                      : 'border-[#e0ebe6] bg-[#fafcfb] hover:bg-[#edf5f1] text-[#55776f]'
+                                  }`}
+                                >
+                                  <MoodIcon size={22} />
+                                  <span className="text-[11px]">{label}</span>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="mt-6 p-3 rounded-2xl bg-[#eef8f4] border border-[#cfe3dc] text-xs text-[#1c5f54] flex items-center gap-2">
+                          <CheckCircle2 size={16} className="text-[#1d8272] shrink-0" />
+                          <span>
+                            {selectedMood === 'Calm' || selectedMood === 'Okay'
+                              ? 'Your nervous system is in a regulated state. Keep breathing gently.'
+                              : 'We recommend trying the 2-minute box breathing or listening to 432 Hz soundscapes.'}
                           </span>
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => setScreeningModalOpen(true)}
-                        className="rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-[#185a4f] hover:bg-[#eafaf6] transition shadow-sm flex items-center gap-1"
-                      >
-                        <span>Take Full 2-Min Screen</span>
-                        <ArrowRight size={13} />
-                      </button>
-                    </div>
+                      {/* Right: Recent Timeline / Activity */}
+                      <div className="rounded-3xl border border-[#dcebe5] bg-white p-6 shadow-xs">
+                        <h3 className="text-base font-bold text-[#1a3f39]">Recent Activity</h3>
+                        <p className="mt-1 text-xs text-[#6f8c85]">Your private journey logs and milestones.</p>
 
-                    <div className="absolute -right-8 -top-10 size-48 rounded-full border-[24px] border-white/10" />
-                    <div className="absolute -bottom-16 right-20 size-40 rounded-full border-[20px] border-[#39a896]/30" />
-                  </div>
-
-                  {/* Wellbeing Journey Tracker */}
-                  <div className="rounded-3xl border border-[#dcebe5] bg-white p-6 flex flex-col justify-between shadow-xs">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-bold tracking-wider text-[#698881] uppercase">YOUR HEALING JOURNEY</p>
-                        <span className="text-xs font-bold text-[#1d8272]">{victimJourneyProgress} of 5 complete</span>
-                      </div>
-
-                      <div className="mt-4 flex items-center gap-1.5">
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <div
-                            key={n}
-                            className={`h-2 flex-1 rounded-full transition-all duration-300 ${
-                              n <= victimJourneyProgress ? 'bg-[#1d8272]' : 'bg-[#e4efe9]'
-                            }`}
-                          />
-                        ))}
-                      </div>
-
-                      <h3 className="mt-5 text-base font-bold text-[#1f423d]">Immediate Nervous System Reset</h3>
-                      <p className="mt-1 text-xs leading-relaxed text-[#6d8a83]">
-                        Engage in short sensory grounding or audio therapy to lower physical trembling and fear.
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        setWellbeingModalTab('breathing')
-                        setWellbeingModalOpen(true)
-                      }}
-                      className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#eaf6f2] hover:bg-[#d8efe8] py-3 text-xs font-bold text-[#18685b] transition shadow-xs"
-                    >
-                      <Wind size={15} />
-                      <span>Start 2-Minute Box Breathing</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Narrative & Voice Assessment Input Grid */}
-                <div className="grid gap-6 lg:grid-cols-2">
-                  {/* Share Story Card */}
-                  <div className="rounded-3xl border border-[#dcebe5] bg-white p-6 shadow-xs flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-bold tracking-wider text-[#698881] uppercase">SHARE YOUR STORY</p>
-                          <h3 className="mt-1 text-lg font-bold text-[#1e423d]">Voice &amp; Text Assessment</h3>
-                        </div>
-                        <div className="flex size-10 items-center justify-center rounded-2xl bg-[#fff4e9] text-[#d9944b]">
-                          <FileText size={20} />
-                        </div>
-                      </div>
-
-                      <p className="mt-2 text-xs leading-relaxed text-[#6d8a83]">
-                        Write or speak openly. Our speech analytics &amp; NLP engine evaluates pitch tremor, speed, and keywords in real time.
-                      </p>
-
-                      <textarea
-                        value={victimNarrative}
-                        onChange={(e) => handleNarrativeChange(e.target.value)}
-                        className="mt-4 min-h-28 w-full resize-none rounded-2xl border border-[#dcebe5] bg-[#fbfdfc] p-3.5 text-xs text-[#204540] outline-none placeholder:text-[#9db7b0] focus:border-[#1e8574]"
-                        placeholder="Describe what occurred, any threats, denial of rights, or how you are feeling..."
-                      />
-
-                      {/* Detected Triggers Chips */}
-                      {victimAssessment.key_trauma_triggers.length > 0 && (
-                        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                          <span className="text-[10px] font-semibold text-[#6e8a83]">Live Triggers Detected:</span>
-                          {victimAssessment.key_trauma_triggers.map((trig, i) => (
-                            <span key={i} className="text-[10px] bg-[#fff2f0] text-[#991b1b] px-2 py-0.5 rounded-md font-mono border border-[#fecaca]">
-                              {trig}
-                            </span>
+                        <div className="mt-4 space-y-3">
+                          {activitiesList.slice(0, 3).map((act) => (
+                            <div
+                              key={act.id}
+                              className="flex items-start gap-3 p-3 rounded-2xl bg-[#f8fbfa] border border-[#e4eee9]"
+                            >
+                              <div className="flex size-7 items-center justify-center rounded-xl bg-[#e3f2ed] text-[#1d8272] text-xs font-bold shrink-0 mt-0.5">
+                                ✓
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-xs font-bold text-[#1f4740]">{act.title}</p>
+                                  <span className="text-[10px] text-[#7d9992]">{act.timestamp}</span>
+                                </div>
+                                <p className="text-[11px] text-[#69857e] mt-0.5">{act.description}</p>
+                              </div>
+                            </div>
                           ))}
                         </div>
-                      )}
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#edf4f1]">
-                      <button
-                        onClick={() => setVoiceModalOpen(true)}
-                        className="flex items-center gap-2 rounded-xl border border-[#d4e4df] bg-[#fbfdfc] hover:bg-[#eef7f4] px-4 py-2 text-xs font-semibold text-[#27534c] transition"
-                      >
-                        <Mic size={15} className="text-[#1d8272]" />
-                        <span>{victimVoiceMetrics ? 'Re-record Voice' : 'Add Voice Recording'}</span>
-                      </button>
-
-                      <button
-                        onClick={() => setIsSharedPrivately(true)}
-                        className="rounded-xl bg-[#1d8272] hover:bg-[#186f60] px-4 py-2 text-xs font-bold text-white shadow-xs transition"
-                      >
-                        {isSharedPrivately ? '✓ Saved Privately' : 'Analyze & Save'}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Immediate Coping & Resources Card */}
-                  <div className="rounded-3xl bg-[#f0f6f3] border border-[#dbe8e3] p-6 flex flex-col justify-between">
-                    <div>
-                      <p className="text-xs font-bold tracking-wider text-[#698881] uppercase">CLINICAL &amp; REDRESSAL TOOLS</p>
-                      <h3 className="mt-1 text-lg font-bold text-[#1e423d]">Immediate Support Matrix</h3>
-
-                      <div className="mt-4 space-y-3">
-                        <button
-                          onClick={() => {
-                            setWellbeingModalTab('breathing')
-                            setWellbeingModalOpen(true)
-                          }}
-                          className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-white border border-[#dcebe5] hover:border-[#1d8272] transition text-left group"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="size-9 rounded-xl bg-[#e4f3ee] text-[#1d8272] flex items-center justify-center">
-                              <Target size={17} />
-                            </div>
-                            <div>
-                              <p className="text-xs font-bold text-[#234842]">2-Minute Box Breathing</p>
-                              <p className="text-[11px] text-[#718d86]">Stabilize acute panic &amp; physical tremors</p>
-                            </div>
-                          </div>
-                          <ArrowRight size={15} className="text-[#8ea8a2] group-hover:text-[#1d8272]" />
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setWellbeingModalTab('soundscape')
-                            setWellbeingModalOpen(true)
-                          }}
-                          className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-white border border-[#dcebe5] hover:border-[#1d8272] transition text-left group"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="size-9 rounded-xl bg-[#fff1e4] text-[#d68e48] flex items-center justify-center">
-                              <Headphones size={17} />
-                            </div>
-                            <div>
-                              <p className="text-xs font-bold text-[#234842]">Calming 432 Hz Soundscape</p>
-                              <p className="text-[11px] text-[#718d86]">Synthesized audio masking for intrusive stress</p>
-                            </div>
-                          </div>
-                          <ArrowRight size={15} className="text-[#8ea8a2] group-hover:text-[#1d8272]" />
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setWellbeingModalTab('grounding')
-                            setWellbeingModalOpen(true)
-                          }}
-                          className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-white border border-[#dcebe5] hover:border-[#1d8272] transition text-left group"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="size-9 rounded-xl bg-[#eef5ff] text-[#4f76bb] flex items-center justify-center">
-                              <Compass size={17} />
-                            </div>
-                            <div>
-                              <p className="text-xs font-bold text-[#234842]">5-4-3-2-1 Sensory Grounding</p>
-                              <p className="text-[11px] text-[#718d86]">Clinically guided orientation to safety</p>
-                            </div>
-                          </div>
-                          <ArrowRight size={15} className="text-[#8ea8a2] group-hover:text-[#1d8272]" />
-                        </button>
                       </div>
                     </div>
-
-                    <div className="mt-4 pt-3 border-t border-[#d8e6e0] flex items-center justify-between text-xs">
-                      <span className="text-[#64827b]">Need legal counsel?</span>
-                      <button
-                        onClick={() => alert('NALSA Legal Aid Cell helpline (15100) or NHAA Legal Counsel will be assigned based on your complaint.')}
-                        className="font-bold text-[#1d8272] hover:underline"
-                      >
-                        Request Free NALSA Legal Aid
-                      </button>
-                    </div>
                   </div>
-                </div>
-              </div>
+                )}
+
+                {/* 2. MY STORY & AUDIO TAB */}
+                {activeTab === 'My story & Audio' && (
+                  <div className="mx-auto max-w-[1160px] animate-in fade-in duration-200">
+                    <MyStoriesView
+                      stories={storiesList}
+                      onShareAnotherStory={() => setActiveTab('My space')}
+                      onDeleteStory={(id) => setStoriesList(prev => prev.filter(s => s.id !== id))}
+                      onViewSupportPlan={() => setActiveTab('Wellbeing journey')}
+                    />
+                  </div>
+                )}
+
+                {/* 3. WELLBEING JOURNEY TAB */}
+                {activeTab === 'Wellbeing journey' && (
+                  <div className="mx-auto max-w-[1160px] animate-in fade-in duration-200">
+                    <WellbeingJourneyView
+                      currentRiskLevel={simulatedCondition}
+                      scheduledAppointments={scheduledAppointments}
+                      onScheduleAppointment={handleScheduleAppointment}
+                      onTriggerSOS={() => setSosModalOpen(true)}
+                      onOpenAudioTools={() => {
+                        setWellbeingModalTab('soundscape')
+                        setWellbeingModalOpen(true)
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* 4. SUPPORT CIRCLE TAB */}
+                {activeTab === 'Support circle' && (
+                  <div className="mx-auto max-w-[1160px] animate-in fade-in duration-200">
+                    <SupportCircleView
+                      contacts={contactsList}
+                      onAddContact={handleAddContact}
+                      onTriggerSOS={() => setSosModalOpen(true)}
+                    />
+                  </div>
+                )}
+              </>
             )}
 
-            {/* ========================================================================= */}
-            {/* 2. NHAA OFFICER & COUNSELLOR CONSOLE VIEW */}
-            {/* ========================================================================= */}
+            {/* ===================================================================== */}
+            {/* B. OFFICER VIEWS (PSYCHIATRIST QUEUE & POLICE ESCORT DISPATCH) */}
+            {/* ===================================================================== */}
             {isOfficerMode && (
-              <div className="mx-auto max-w-[1200px] space-y-8">
-                {/* Officer Console Header */}
-                <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+              <div className="mx-auto max-w-[1280px] space-y-6 animate-in fade-in duration-200">
+                {/* Officer View Switcher Bar */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-[#dcebe5] shadow-xs">
                   <div>
-                    <p className="text-xs font-bold text-[#1d8272] uppercase tracking-wider">
-                      NHAA 14566 Triage Console · Active Cadre Session
+                    <div className="flex items-center gap-2">
+                      <span className="flex size-2 rounded-full bg-[#10b981]" />
+                      <h1 className="text-xl font-bold text-[#163c35]">
+                        NHAA Triage Console · {officerRoleView === 'psychiatrist' ? 'Psychiatrist Queue' : 'Police Escort Dispatch'}
+                      </h1>
+                    </div>
+                    <p className="text-xs text-[#708d86] mt-0.5">
+                      {officerRoleView === 'psychiatrist'
+                        ? 'Department: Psychological Triage & Crisis Response · Badge: NHAA-DL-8092'
+                        : 'Department: Law Enforcement & Atrocities Protection Liaison · Badge: NHAA-MH-4421'}
                     </p>
-                    <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#173a34] sm:text-4xl">
-                      {currentOfficer ? currentOfficer.full_name : 'Dr. Ramesh Chandra'}
-                    </h1>
-                    <p className="mt-1.5 text-xs text-[#718d86]">
-                      Department: {currentOfficer ? currentOfficer.department : 'Psychological Triage & Crisis Response'} · Badge: {currentOfficer ? currentOfficer.officer_badge_id : 'NHAA-DL-8092'}
-                    </p>
                   </div>
 
-                  <button
-                    onClick={() => setIntakeModalOpen(true)}
-                    className="flex items-center gap-2 rounded-2xl bg-[#1d8272] hover:bg-[#186f60] text-white px-5 py-3 text-xs font-bold shadow-md transition"
-                  >
-                    <ClipboardList size={16} />
-                    <span>New 14566 Call Intake</span>
-                  </button>
-                </div>
-
-                {/* Triage KPI Cards */}
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                  <div className="rounded-2xl border border-[#dcebe5] bg-white p-4.5 shadow-xs">
-                    <p className="text-xs text-[#698881] font-semibold">Active Grievance Queue</p>
-                    <p className="mt-2 text-2xl font-bold text-[#173a34]">{casesList.length}</p>
-                    <p className="mt-1 text-xs font-semibold text-[#1d8272]">+2 new intakes today</p>
-                  </div>
-
-                  <div className="rounded-2xl border border-[#fca5a5] bg-[#fffbfb] p-4.5 shadow-xs">
-                    <p className="text-xs text-[#991b1b] font-semibold">Critical Risk (SVI &gt; 75)</p>
-                    <p className="mt-2 text-2xl font-bold text-[#991b1b]">
-                      {casesList.filter(c => c.stress_assessment.risk_level === 'Critical').length}
-                    </p>
-                    <p className="mt-1 text-xs text-[#dc2626] font-semibold">Immediate police &amp; crisis dispatch</p>
-                  </div>
-
-                  <div className="rounded-2xl border border-[#dcebe5] bg-white p-4.5 shadow-xs">
-                    <p className="text-xs text-[#698881] font-semibold">Avg. Crisis Response</p>
-                    <p className="mt-2 text-2xl font-bold text-[#173a34]">14 min</p>
-                    <p className="mt-1 text-xs text-[#1d8272] font-semibold">22% faster than target</p>
-                  </div>
-
-                  <div className="rounded-2xl border border-[#dcebe5] bg-white p-4.5 shadow-xs">
-                    <p className="text-xs text-[#698881] font-semibold">Dispatched Protections</p>
-                    <p className="mt-2 text-2xl font-bold text-[#173a34]">18</p>
-                    <p className="mt-1 text-xs text-[#698881]">Across 4 State Nodal Desks</p>
-                  </div>
-                </div>
-
-                {/* Main Interactive Case Triage Table & Quick Selected Drawer */}
-                <div className="grid gap-6 xl:grid-cols-[1.45fr_.75fr]">
-                  {/* Case List Section */}
-                  <section className="rounded-3xl border border-[#dcebe5] bg-white p-5 sm:p-6 shadow-xs">
-                    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                      <div>
-                        <h2 className="text-base font-bold text-[#1a3f39]">Real-Time Triage &amp; Risk Queue</h2>
-                        <p className="mt-0.5 text-xs text-[#6d8a83]">
-                          Multi-channel distress assessments from 14566, IVRS, and Web Portal.
-                        </p>
-                      </div>
-
-                      {/* Search Bar */}
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-2 rounded-xl border border-[#d6e3df] bg-[#fbfdfc] px-3 py-1.5 text-xs text-[#204540]">
-                          <Search size={14} className="text-[#718d86]" />
-                          <input
-                            type="text"
-                            value={officerSearch}
-                            onChange={(e) => setOfficerSearch(e.target.value)}
-                            placeholder="Search case, district..."
-                            className="bg-transparent outline-none text-xs w-36 sm:w-44"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Filter Pills */}
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      {['All cases', 'Critical', 'High', 'Moderate', 'Low'].map((item) => (
-                        <button
-                          key={item}
-                          onClick={() => setOfficerFilter(item)}
-                          className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
-                            officerFilter === item
-                              ? 'bg-[#1d8272] text-white shadow-xs'
-                              : 'bg-[#f0f6f3] text-[#607d76] hover:bg-[#e4eee9]'
-                          }`}
-                        >
-                          {item}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Cases List Rows */}
-                    <div className="mt-4 flex flex-col divide-y divide-[#edf4f1]">
-                      {filteredCases.length > 0 ? (
-                        filteredCases.map((item) => (
-                          <div
-                            key={item.id}
-                            onClick={() => {
-                              setSelectedCase(item)
-                            }}
-                            className={`flex items-center gap-3.5 py-4 px-3 rounded-2xl cursor-pointer transition ${
-                              selectedCase.id === item.id ? 'bg-[#eef7f4]' : 'hover:bg-[#f8faf9]'
-                            }`}
-                          >
-                            <div className="flex size-10 items-center justify-center rounded-2xl bg-[#e4f3ee] text-xs font-bold text-[#1d8272] shrink-0">
-                              {item.initials}
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                <p className="truncate text-xs font-bold text-[#1a3f39]">{item.victim_name}</p>
-                                <span className="text-[10px] font-mono text-[#718d86]">{item.id}</span>
-                              </div>
-                              <p className="mt-0.5 text-[11px] text-[#6d8a83] truncate">
-                                {item.incident_category} · {item.incident_location.district} ({item.incident_location.state}) · {item.reported_at}
-                              </p>
-                            </div>
-
-                            {/* SVI Meter */}
-                            <div className="text-right shrink-0">
-                              <span className={`rounded-lg px-2.5 py-1 text-[10px] font-bold ${levelStyles[item.stress_assessment.risk_level]}`}>
-                                SVI {item.stress_assessment.svi_score} · {item.stress_assessment.risk_level}
-                              </span>
-                            </div>
-
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setSelectedCase(item)
-                                setSelectedCaseModalOpen(true)
-                              }}
-                              className="p-1.5 text-[#7a958e] hover:text-[#1d8272] hover:bg-white rounded-lg transition"
-                              title="Open Full Dossier"
-                            >
-                              <ArrowRight size={16} />
-                            </button>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="py-8 text-center text-xs text-[#718d86]">
-                          No cases matching &quot;{officerSearch}&quot; in {officerFilter}.
-                        </div>
-                      )}
-                    </div>
-                  </section>
-
-                  {/* Selected Case Quick Overview Sidebar */}
-                  <aside className="rounded-3xl bg-[#f0f6f3] border border-[#dcebe5] p-6 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-bold tracking-wider text-[#698881] uppercase">SELECTED DOSSIER</p>
-                        <span className={`rounded-lg px-2.5 py-1 text-[10px] font-bold ${levelStyles[selectedCase.stress_assessment.risk_level]}`}>
-                          {selectedCase.stress_assessment.risk_level} Risk
-                        </span>
-                      </div>
-
-                      <div className="mt-5 flex items-center gap-3">
-                        <div className="flex size-12 items-center justify-center rounded-2xl bg-[#d5ebe4] font-bold text-base text-[#1d8272]">
-                          {selectedCase.initials}
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-sm text-[#1b403a]">{selectedCase.victim_name}</h3>
-                          <p className="text-[11px] text-[#718d86] font-mono">Case ID: {selectedCase.id}</p>
-                        </div>
-                      </div>
-
-                      {/* Circular SVI Gauge */}
-                      <div className="mt-6 rounded-2xl bg-white border border-[#dcebe5] p-4 shadow-xs">
-                        <p className="text-xs text-[#698881] font-semibold">AI Stress Vulnerability Signal</p>
-                        <div className="mt-3 flex items-center gap-4">
-                          <div className="relative size-14 rounded-full border-[6px] border-[#fee2e2] border-t-[#dc2626] border-r-[#dc2626] flex items-center justify-center">
-                            <span className="text-xs font-bold text-[#991b1b]">{selectedCase.stress_assessment.svi_score}%</span>
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-[#1b403a]">{selectedCase.stress_assessment.risk_level} Priority</p>
-                            <p className="text-[11px] text-[#6d8a83] mt-0.5">
-                              {selectedCase.stress_assessment.intimidation_flag ? 'Intimidation threat verified' : 'Psychological support required'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Recommended Step */}
-                      <div className="mt-5">
-                        <p className="text-xs font-bold text-[#698881] uppercase">Key Recommended Action</p>
-                        <div className="mt-2 flex items-start gap-2 text-xs leading-relaxed text-[#2c534d] bg-white p-3 rounded-xl border border-[#dcebe5]">
-                          <Check size={16} className="mt-0.5 shrink-0 text-[#1d8272]" />
-                          <span>{selectedCase.stress_assessment.recommended_actions[0] || 'Schedule Safe Tele-Counselling'}</span>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setOfficerRoleView('psychiatrist')}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold transition cursor-pointer ${
+                        officerRoleView === 'psychiatrist'
+                          ? 'bg-[#1d8272] text-white shadow-xs'
+                          : 'bg-[#f0f6f3] text-[#456b63] hover:bg-[#e4efe9]'
+                      }`}
+                    >
+                      <Brain size={15} />
+                      <span>Psychiatrist View</span>
+                    </button>
 
                     <button
-                      onClick={() => setSelectedCaseModalOpen(true)}
-                      className="mt-6 w-full rounded-2xl bg-[#1d8272] hover:bg-[#186f60] py-3 text-xs font-bold text-white shadow-md transition"
+                      type="button"
+                      onClick={() => setOfficerRoleView('police')}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold transition cursor-pointer ${
+                        officerRoleView === 'police'
+                          ? 'bg-[#dc2626] text-white shadow-xs'
+                          : 'bg-[#f0f6f3] text-[#456b63] hover:bg-[#e4efe9]'
+                      }`}
                     >
-                      Open Full Case Dossier &amp; Dispatch
+                      <ShieldAlert size={15} />
+                      <span>Police Escort View</span>
                     </button>
-                  </aside>
+
+                    <button
+                      type="button"
+                      onClick={() => setIntakeModalOpen(true)}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-[#0f766e] text-white text-xs font-bold shadow-xs hover:bg-[#115e59] transition cursor-pointer ml-2"
+                    >
+                      <Plus size={15} />
+                      <span>New Intake</span>
+                    </button>
+                  </div>
                 </div>
+
+                {/* Render Selected Officer View */}
+                {officerRoleView === 'psychiatrist' ? (
+                  <PsychiatristDashboard
+                    cases={casesList}
+                    scheduledAppointments={scheduledAppointments}
+                    onSelectCase={(c) => {
+                      setSelectedCase(c)
+                      setSelectedCaseModalOpen(true)
+                    }}
+                    onOpenCaseModal={(c) => {
+                      setSelectedCase(c)
+                      setSelectedCaseModalOpen(true)
+                    }}
+                  />
+                ) : (
+                  <PoliceDashboard
+                    cases={casesList}
+                    onSelectCase={(c) => {
+                      setSelectedCase(c)
+                      setSelectedCaseModalOpen(true)
+                    }}
+                    onOpenCaseModal={(c) => {
+                      setSelectedCase(c)
+                      setSelectedCaseModalOpen(true)
+                    }}
+                  />
+                )}
               </div>
             )}
           </main>
@@ -934,39 +1170,82 @@ export default function Home() {
       </div>
 
       {/* ========================================================================= */}
-      {/* MODALS */}
+      {/* 4. MODALS & POPUPS */}
       {/* ========================================================================= */}
+
+      {/* User Details Onboarding Modal */}
+      <UserDetailsModal
+        user={currentUser}
+        isOpen={detailsModalOpen}
+        onClose={() => setDetailsModalOpen(false)}
+        onSaved={handleProfileSaved}
+        isMandatory={false}
+      />
+
+      {/* Supabase Realtime Status Modal */}
+      <SupabaseStatusModal
+        isOpen={supabaseModalOpen}
+        onClose={() => setSupabaseModalOpen(false)}
+      />
+
+      {/* Voice Recorder Modal */}
       <VoiceRecorderModal
         isOpen={voiceModalOpen}
         onClose={() => setVoiceModalOpen(false)}
-        onComplete={handleVoiceComplete}
-        language={selectedLanguage}
+        onComplete={(metrics: VoiceAnalysisMetrics) => {
+          setVoiceModalOpen(false)
+          // Add as story
+          const story: UserStory = {
+            id: `STORY-${Date.now()}`,
+            title: 'Audio Testimony Recording',
+            narrative_text: metrics.transcript || 'Voice statement recorded via mobile speech analysis.',
+            transcript: metrics.transcript,
+            audio_url: 'blob:https://sahaaya.nhaa.gov.in/audio/sample',
+            audio_duration_seconds: metrics.duration_seconds,
+            svi_score: metrics.acoustic_distress_score || 72,
+            risk_level: metrics.acoustic_distress_score > 75 ? 'High' : 'Moderate',
+            key_triggers: ['Speech Tremor', 'Acoustic Distress'],
+            created_at: new Date().toISOString(),
+            formatted_time: 'Just now',
+            status: metrics.acoustic_distress_score > 75 ? 'Urgent Review' : 'Under Review'
+          }
+          handleStorySubmitted(story, metrics)
+        }}
       />
 
+      {/* Wellbeing Tools Modal */}
       <WellbeingToolsModal
         isOpen={wellbeingModalOpen}
         onClose={() => setWellbeingModalOpen(false)}
         initialTab={wellbeingModalTab}
       />
 
+      {/* Emergency SOS Modal */}
       <SOSModal
         isOpen={sosModalOpen}
         onClose={() => setSosModalOpen(false)}
         complainantName={currentUser.full_name}
       />
 
+      {/* 2-Min Clinical Screening Modal */}
       <ScreeningModal
         isOpen={screeningModalOpen}
         onClose={() => setScreeningModalOpen(false)}
-        onComplete={handleClinicalComplete}
+        onComplete={(score) => {
+          setScreeningModalOpen(false)
+          const lvl: RiskLevel = score > 75 ? 'High' : score > 45 ? 'Moderate' : 'Low'
+          setSimulatedCondition(lvl)
+        }}
       />
 
+      {/* Informed Consent / Ethical AI Modal */}
       <ConsentModal
         isOpen={consentModalOpen}
         onClose={() => setConsentModalOpen(false)}
-        onConsentGiven={() => alert('Informed Consent preferences saved securely.')}
+        onConsentGiven={() => setConsentModalOpen(false)}
       />
 
+      {/* Officer Case Detail Modal */}
       <CaseDetailModal
         caseRecord={selectedCase}
         isOpen={selectedCaseModalOpen}
@@ -974,6 +1253,7 @@ export default function Home() {
         onUpdateCase={handleUpdateCase}
       />
 
+      {/* Officer New 14566 Intake Modal */}
       <IntakeModal
         isOpen={intakeModalOpen}
         onClose={() => setIntakeModalOpen(false)}

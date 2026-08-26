@@ -14,14 +14,15 @@ import {
   PhoneCall, 
   Eye, 
   EyeOff, 
-  HelpCircle,
   Building2,
   FileSearch,
-  UserCheck
+  Send,
+  Database
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { DEFAULT_OFFICERS } from '@/lib/mock-data'
 import { OfficerProfile, UserProfile } from '@/types'
+import { fetchUserProfile, saveUserProfile } from '@/lib/supabase-service'
 
 interface LoginViewProps {
   onLoginSuccess: (user: UserProfile, officer?: OfficerProfile | null) => void
@@ -32,11 +33,13 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
   const [activeTab, setActiveTab] = useState<'victim' | 'officer'>('victim')
   
   // Victim form state
-  const [victimMode, setVictimMode] = useState<'signin' | 'signup' | 'anonymous' | 'case_track'>('signin')
+  const [victimMode, setVictimMode] = useState<'signin' | 'signup' | 'otp' | 'anonymous' | 'case_track'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
+  const [otpToken, setOtpToken] = useState('')
+  const [otpSent, setOtpSent] = useState(false)
   const [trackCaseId, setTrackCaseId] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -48,7 +51,43 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
   const [officerPassword, setOfficerPassword] = useState('')
   const [selectedDemoOfficer, setSelectedDemoOfficer] = useState<OfficerProfile | null>(null)
 
-  // Handle Victim Email / Password Login
+  // Helper to load or create profile and dispatch onLoginSuccess
+  const finalizeUserLogin = async (authUser: { id: string; email?: string; user_metadata?: Record<string, string> }) => {
+    // Try fetching existing profile (includes joined address)
+    let profile = await fetchUserProfile(authUser.id, authUser.email)
+
+    if (!profile) {
+      // First login: create skeleton profile
+      const meta = authUser.user_metadata ?? {}
+      // Google provides full_name, name, avatar_url
+      const guessedName =
+        fullName.trim() ||
+        meta.full_name ||
+        meta.name ||
+        (authUser.email ? authUser.email.split('@')[0] : 'Citizen User')
+
+      const initData: Partial<UserProfile> & { id: string } = {
+        id: authUser.id,
+        email: authUser.email ?? email,
+        full_name: guessedName,
+        phone: phone.trim() || meta.phone || '',
+        preferred_language: 'en', // short code
+        role: 'victim',
+        is_profile_complete: false
+      }
+
+      const saveRes = await saveUserProfile(initData)
+      profile = saveRes.data ?? {
+        ...initData,
+        avatar_initials: guessedName.slice(0, 2).toUpperCase(),
+        created_at: new Date().toISOString()
+      } as UserProfile
+    }
+
+    onLoginSuccess(profile, null)
+  }
+
+  // Handle Victim Email / Password Login & Sign Up
   const handleVictimAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg(null)
@@ -60,70 +99,59 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
         if (!email || !password) {
           throw new Error('Please provide email and password.')
         }
+
         const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: email.trim(),
+          password: password,
           options: {
             data: {
-              full_name: fullName || 'Citizen User',
-              phone: phone || ''
+              full_name: fullName.trim() || email.split('@')[0],
+              phone: phone.trim() || ''
             }
           }
         })
+
         if (error) {
-          // Fallback to local session if Supabase email confirmation / keys are restricted
-          const fallbackUser: UserProfile = {
-            id: `usr-${Date.now().toString().slice(-6)}`,
-            email,
-            full_name: fullName || email.split('@')[0],
-            phone,
-            role: 'victim',
-            avatar_initials: (fullName || email).slice(0, 2).toUpperCase(),
-            created_at: new Date().toISOString()
+          // If signup fails due to rate limit or email confirmation requirement, show clear message
+          if (error.message.includes('confirm') || error.message.includes('rate limit')) {
+            setErrorMsg(`${error.message} (You can also sign in directly if previously registered).`)
+          } else {
+            setErrorMsg(error.message)
           }
-          onLoginSuccess(fallbackUser, null)
           return
         }
+
         if (data.user) {
-          const newUser: UserProfile = {
-            id: data.user.id,
-            email: data.user.email || email,
-            full_name: fullName || email.split('@')[0],
-            phone,
-            role: 'victim',
-            avatar_initials: (fullName || email).slice(0, 2).toUpperCase(),
-            created_at: data.user.created_at
+          if (data.session) {
+            setSuccessMsg('Account created successfully!')
+            await finalizeUserLogin(data.user)
+          } else {
+            // Confirmation email sent
+            setSuccessMsg('Verification link sent to your email! Please check your inbox or proceed.')
+            // Allow instant test onboarding
+            await finalizeUserLogin(data.user)
           }
-          onLoginSuccess(newUser, null)
         }
       } else if (victimMode === 'signin') {
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password
+          email: email.trim(),
+          password: password
         })
+
         if (error) {
-          // Provide smooth fallback login for evaluation
-          const fallbackUser: UserProfile = {
-            id: `usr-${Date.now().toString().slice(-6)}`,
-            email: email || 'citizen@nhaa-portal.gov.in',
-            full_name: email ? email.split('@')[0] : 'Ananya S.',
-            role: 'victim',
-            avatar_initials: (email || 'AS').slice(0, 2).toUpperCase(),
-            created_at: new Date().toISOString()
+          if (error.message.toLowerCase().includes('invalid login credentials')) {
+            setErrorMsg('Invalid email or password. Note: If you previously signed in with "Continue with Google", please use the Google button to log in.')
+          } else if (error.message.toLowerCase().includes('email not confirmed')) {
+            setErrorMsg('Please confirm your email address via the link sent to your inbox, or disable "Confirm email" in Supabase Dashboard settings.')
+          } else {
+            setErrorMsg(error.message || 'Invalid email or password.')
           }
-          onLoginSuccess(fallbackUser, null)
           return
         }
+
         if (data.user) {
-          const loggedInUser: UserProfile = {
-            id: data.user.id,
-            email: data.user.email,
-            full_name: data.user.user_metadata?.full_name || email.split('@')[0],
-            role: 'victim',
-            avatar_initials: (data.user.email || 'AS').slice(0, 2).toUpperCase(),
-            created_at: data.user.created_at
-          }
-          onLoginSuccess(loggedInUser, null)
+          setSuccessMsg('Signed in successfully!')
+          await finalizeUserLogin(data.user)
         }
       }
     } catch (err: unknown) {
@@ -134,39 +162,72 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
     }
   }
 
+  // Handle Magic Link / OTP Sign In
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email) {
+      setErrorMsg('Please enter your email address to receive a login link.')
+      return
+    }
+    setLoading(true)
+    setErrorMsg(null)
+    setSuccessMsg(null)
+
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: {
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined
+        }
+      })
+      if (error) {
+        throw error
+      }
+      setOtpSent(true)
+      setSuccessMsg('One-Time Login Link sent to your email! Check your inbox to sign in.')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to send login code'
+      setErrorMsg(message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Handle Google / Gmail OAuth
+  // Requires: Supabase Dashboard → Auth → Providers → Google → Enabled with Client ID + Secret
+  // The OAuth flow redirects to Google, then back to this app's origin (/auth/callback is handled by Supabase SDK)
   const handleGoogleLogin = async () => {
     setLoading(true)
     setErrorMsg(null)
     try {
+      const redirectTo = typeof window !== 'undefined'
+        ? `${window.location.origin}`
+        : undefined
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined
+          redirectTo,
+          // Request profile scopes so we get name + picture
+          scopes: 'openid email profile',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          }
         }
       })
+
       if (error) {
-        // Mock Google login for local sandbox testing
-        const googleMockUser: UserProfile = {
-          id: `goog-${Date.now().toString().slice(-6)}`,
-          email: 'user.google@gmail.com',
-          full_name: 'Verified Citizen (Google)',
-          role: 'victim',
-          avatar_initials: 'VC',
-          created_at: new Date().toISOString()
-        }
-        onLoginSuccess(googleMockUser, null)
+        // Real error — Google provider probably not enabled in Supabase
+        setErrorMsg(
+          `Google login failed: ${error.message}. ` +
+          'Please enable Google in Supabase Dashboard → Authentication → Providers.'
+        )
       }
+      // If no error: Supabase redirects to Google. On return the onAuthStateChange listener in page.tsx handles the session.
     } catch (err: unknown) {
-      const googleMockUser: UserProfile = {
-        id: `goog-${Date.now().toString().slice(-6)}`,
-        email: 'user.google@gmail.com',
-        full_name: 'Verified Citizen (Google)',
-        role: 'victim',
-        avatar_initials: 'VC',
-        created_at: new Date().toISOString()
-      }
-      onLoginSuccess(googleMockUser, null)
+      const message = err instanceof Error ? err.message : 'Google OAuth failed'
+      setErrorMsg(message)
     } finally {
       setLoading(false)
     }
@@ -179,6 +240,7 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
       full_name: 'Anonymous Complainant',
       role: 'victim',
       anonymous: true,
+      is_profile_complete: true,
       avatar_initials: 'AC',
       created_at: new Date().toISOString()
     }
@@ -196,6 +258,7 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
       id: `track-${Date.now().toString().slice(-6)}`,
       full_name: `Case Inquirer (${trackCaseId.toUpperCase()})`,
       role: 'victim',
+      is_profile_complete: true,
       avatar_initials: 'CI',
       created_at: new Date().toISOString()
     }
@@ -220,6 +283,7 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
         email: targetOfficer.email,
         full_name: targetOfficer.full_name,
         role: targetOfficer.role,
+        is_profile_complete: true,
         avatar_initials: targetOfficer.full_name.split(' ').map(n => n[0]).join('').slice(0, 2),
         created_at: new Date().toISOString()
       }
@@ -250,7 +314,7 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
               </span>
             </div>
             <p className="text-xs text-[#6b827c]">
-              National Helpline Against Atrocities (14566) · AI Stress &amp; Trauma Assessment Module
+              National Helpline Against Atrocities (14566) · Real-time Supabase Auth &amp; Triage
             </p>
           </div>
         </div>
@@ -268,7 +332,7 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
           <div className="grid grid-cols-2 p-2 bg-[#f0f6f3] border-b border-[#e1ece8]">
             <button
               type="button"
-              onClick={() => { setActiveTab('victim'); setErrorMsg(null); }}
+              onClick={() => { setActiveTab('victim'); setErrorMsg(null); setSuccessMsg(null); }}
               className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all ${
                 activeTab === 'victim'
                   ? 'bg-white text-[#1b7f6f] shadow-sm'
@@ -280,7 +344,7 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
             </button>
             <button
               type="button"
-              onClick={() => { setActiveTab('officer'); setErrorMsg(null); }}
+              onClick={() => { setActiveTab('officer'); setErrorMsg(null); setSuccessMsg(null); }}
               className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all ${
                 activeTab === 'officer'
                   ? 'bg-white text-[#1b7f6f] shadow-sm'
@@ -312,14 +376,16 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
               <div>
                 <div className="mb-6">
                   <h2 className="text-xl font-bold text-[#1b3d38] tracking-tight">
-                    {victimMode === 'signup' && 'Create Citizen Account'}
+                    {victimMode === 'signup' && 'Create Citizen Account (Supabase)'}
                     {victimMode === 'signin' && 'Sign In to Safe Space'}
+                    {victimMode === 'otp' && 'Instant Passwordless Magic Link'}
                     {victimMode === 'anonymous' && 'Anonymous Rapid Access'}
                     {victimMode === 'case_track' && 'Track Existing Case'}
                   </h2>
                   <p className="text-xs text-[#718782] mt-1">
-                    {victimMode === 'signup' && 'Register securely to access AI distress screening, counseling & legal aid.'}
-                    {victimMode === 'signin' && 'Access your psychological support journey, grievance records & emergency resources.'}
+                    {victimMode === 'signup' && 'Register securely via Supabase Auth to store your trauma screening & legal grievance data.'}
+                    {victimMode === 'signin' && 'Enter your email & password to access your real-time records.'}
+                    {victimMode === 'otp' && 'Receive a secure one-time passwordless login link via Supabase Auth.'}
                     {victimMode === 'anonymous' && 'Report atrocities and receive trauma screening with 100% identity privacy.'}
                     {victimMode === 'case_track' && 'Check real-time SVI status and dispatched actions for your filed grievance.'}
                   </p>
@@ -329,34 +395,42 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
                 <div className="flex gap-2 mb-6 border-b border-[#edf3f0] pb-3 text-xs overflow-x-auto">
                   <button
                     type="button"
-                    onClick={() => setVictimMode('signin')}
-                    className={`pb-1 font-medium transition ${victimMode === 'signin' ? 'text-[#1e8373] border-b-2 border-[#1e8373]' : 'text-[#7d938e] hover:text-[#38534e]'}`}
+                    onClick={() => { setVictimMode('signin'); setErrorMsg(null); setSuccessMsg(null); }}
+                    className={`pb-1 font-medium transition shrink-0 ${victimMode === 'signin' ? 'text-[#1e8373] border-b-2 border-[#1e8373]' : 'text-[#7d938e] hover:text-[#38534e]'}`}
                   >
                     Email Sign In
                   </button>
                   <button
                     type="button"
-                    onClick={() => setVictimMode('signup')}
-                    className={`pb-1 font-medium transition ${victimMode === 'signup' ? 'text-[#1e8373] border-b-2 border-[#1e8373]' : 'text-[#7d938e] hover:text-[#38534e]'}`}
+                    onClick={() => { setVictimMode('signup'); setErrorMsg(null); setSuccessMsg(null); }}
+                    className={`pb-1 font-medium transition shrink-0 ${victimMode === 'signup' ? 'text-[#1e8373] border-b-2 border-[#1e8373]' : 'text-[#7d938e] hover:text-[#38534e]'}`}
                   >
                     Sign Up
                   </button>
                   <button
                     type="button"
-                    onClick={() => setVictimMode('anonymous')}
-                    className={`pb-1 font-medium transition ${victimMode === 'anonymous' ? 'text-[#1e8373] border-b-2 border-[#1e8373]' : 'text-[#7d938e] hover:text-[#38534e]'}`}
+                    onClick={() => { setVictimMode('otp'); setErrorMsg(null); setSuccessMsg(null); }}
+                    className={`pb-1 font-medium transition shrink-0 ${victimMode === 'otp' ? 'text-[#1e8373] border-b-2 border-[#1e8373]' : 'text-[#7d938e] hover:text-[#38534e]'}`}
+                  >
+                    Magic Link
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setVictimMode('anonymous'); setErrorMsg(null); setSuccessMsg(null); }}
+                    className={`pb-1 font-medium transition shrink-0 ${victimMode === 'anonymous' ? 'text-[#1e8373] border-b-2 border-[#1e8373]' : 'text-[#7d938e] hover:text-[#38534e]'}`}
                   >
                     Anonymous Access
                   </button>
                   <button
                     type="button"
-                    onClick={() => setVictimMode('case_track')}
-                    className={`pb-1 font-medium transition ${victimMode === 'case_track' ? 'text-[#1e8373] border-b-2 border-[#1e8373]' : 'text-[#7d938e] hover:text-[#38534e]'}`}
+                    onClick={() => { setVictimMode('case_track'); setErrorMsg(null); setSuccessMsg(null); }}
+                    className={`pb-1 font-medium transition shrink-0 ${victimMode === 'case_track' ? 'text-[#1e8373] border-b-2 border-[#1e8373]' : 'text-[#7d938e] hover:text-[#38534e]'}`}
                   >
                     Track Case ID
                   </button>
                 </div>
 
+                {/* Email Sign In / Sign Up Form */}
                 {(victimMode === 'signin' || victimMode === 'signup') && (
                   <form onSubmit={handleVictimAuth} className="space-y-4">
                     {/* Google / Gmail Button */}
@@ -378,19 +452,22 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
                     <div className="relative flex items-center justify-center my-4">
                       <div className="border-t border-[#e6eee9] w-full" />
                       <span className="bg-white px-3 text-[11px] text-[#869b95] uppercase tracking-wider font-semibold absolute">
-                        or with email
+                        or continue with email
                       </span>
                     </div>
 
                     {victimMode === 'signup' && (
                       <>
                         <div>
-                          <label className="block text-xs font-semibold text-[#32524d] mb-1.5">Full Name / Alias</label>
+                          <label className="block text-xs font-semibold text-[#32524d] mb-1.5">
+                            Full Name / Alias <span className="text-rose-500">*</span>
+                          </label>
                           <input
                             type="text"
+                            required
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
-                            placeholder="Ananya S. / Complainant"
+                            placeholder="e.g. Ramesh Kumar"
                             className="w-full px-4 py-2.5 rounded-xl border border-[#d6e3de] bg-[#fbfdfc] text-sm text-[#274742] focus:border-[#1e8373] focus:ring-1 focus:ring-[#1e8373] outline-none"
                           />
                         </div>
@@ -415,7 +492,7 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
                           required
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          placeholder="victim.support@example.com"
+                          placeholder="user@example.com"
                           className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#d6e3de] bg-[#fbfdfc] text-sm text-[#274742] focus:border-[#1e8373] focus:ring-1 focus:ring-[#1e8373] outline-none"
                         />
                         <Mail size={16} className="absolute left-3.5 top-3 text-[#8ba19b]" />
@@ -425,6 +502,15 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="text-xs font-semibold text-[#32524d]">Password</label>
+                        {victimMode === 'signin' && (
+                          <button
+                            type="button"
+                            onClick={() => setVictimMode('otp')}
+                            className="text-[11px] text-[#1e8373] hover:underline"
+                          >
+                            Forgot password? Use Magic Link
+                          </button>
+                        )}
                       </div>
                       <div className="relative">
                         <input
@@ -449,10 +535,51 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#1d8272] text-white text-sm font-semibold shadow-md hover:bg-[#186f61] transition"
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#1d8272] text-white text-sm font-semibold shadow-md hover:bg-[#186f61] transition disabled:opacity-50"
                     >
-                      {loading ? 'Processing...' : victimMode === 'signup' ? 'Create Account & Start Assessment' : 'Sign In to Safe Space'}
-                      <ArrowRight size={16} />
+                      {loading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span>Connecting to Supabase...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>{victimMode === 'signup' ? 'Create Account & Enter Details' : 'Sign In with Supabase'}</span>
+                          <ArrowRight size={16} />
+                        </>
+                      )}
+                    </button>
+                  </form>
+                )}
+
+                {/* Magic Link / OTP Mode */}
+                {victimMode === 'otp' && (
+                  <form onSubmit={handleSendOtp} className="space-y-4">
+                    <div className="p-3.5 bg-teal-50 border border-teal-200 rounded-2xl text-xs text-teal-900 leading-relaxed">
+                      We will send a passwordless magic link to your email address for instant 1-click login.
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#32524d] mb-1.5">Email Address</label>
+                      <div className="relative">
+                        <input
+                          type="email"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="your.email@example.com"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#d6e3de] bg-[#fbfdfc] text-sm text-[#274742] focus:border-[#1e8373] focus:ring-1 focus:ring-[#1e8373] outline-none"
+                        />
+                        <Mail size={16} className="absolute left-3.5 top-3 text-[#8ba19b]" />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#1d8272] text-white text-sm font-semibold shadow-md hover:bg-[#186f61] transition disabled:opacity-50"
+                    >
+                      {loading ? 'Sending Magic Link...' : 'Send Magic Login Link'}
+                      <Send size={15} />
                     </button>
                   </form>
                 )}
@@ -527,7 +654,7 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
                 <div className="mb-5 p-3.5 bg-[#f6faf8] border border-[#dcebe5] rounded-2xl">
                   <p className="text-[11px] font-semibold text-[#2f5e56] mb-2 flex items-center gap-1.5">
                     <Sparkles size={13} className="text-[#1e8373]" />
-                    <span>Quick-Select Demo Officer (1-Click for Hackathon Evaluation):</span>
+                    <span>Quick-Select Demo Officer (1-Click for Evaluation):</span>
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {DEFAULT_OFFICERS.map((off) => (
