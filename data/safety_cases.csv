@@ -1,0 +1,251 @@
+id,text,immediate_danger,threat,violence,self_harm,current_intent,plan_mentioned,safety_level
+1,I am worried about my exams,0,0,0,0,0,0,LOW
+2,I feel stressed about my studies,0,0,0,0,0,0,LOW
+3,I don't feel safe going home,1,0,0,0,0,0,HIGH
+4,Someone is threatening me,1,1,0,0,0,0,HIGH
+5,They said they will hurt my family,1,1,1,0,0,0,CRITICAL
+6,They threatened to attack me if I complained,1,1,1,0,0,0,CRITICAL
+7,They keep following me wherever I go,1,0,0,0,0,0,HIGH
+8,Someone is stalking me,1,0,0,0,0,0,HIGH
+9,They keep harassing me,0,1,0,0,0,0,HIGH
+10,They are forcing me to withdraw my complaint,1,1,0,0,0,0,HIGH
+11,They are pressuring me not to report what happened,1,1,0,0,0,0,HIGH
+12,I am afraid they will retaliate against me,1,1,0,0,0,0,CRITICAL
+13,They have physically attacked me,1,0,1,0,0,0,CRITICAL
+14,Someone in my home is hurting me,1,0,1,0,0,0,CRITICAL
+15,I am being forced to stay somewhere against my will,1,1,1,0,0,0,CRITICAL
+16,They won't let me leave the house,1,0,1,0,0,0,CRITICAL
+17,I cannot keep myself safe,1,0,0,1,1,0,CRITICAL
+18,I am thinking about hurting myself,1,0,0,1,1,0,CRITICAL
+19,I don't want to be alive anymore,1,0,0,1,1,0,CRITICAL
+20,I feel like there is no way out,1,0,0,1,0,0,CRITICAL
+21,Life feels completely pointless,1,0,0,1,0,0,CRITICAL
+22,I have been thinking about suicide,1,0,0,1,1,0,CRITICAL
+23,I have hurt myself before,1,0,0,1,0,0,HIGH
+24,I am afraid I might hurt myself right now,1,0,0,1,1,0,CRITICAL
+25,I have a plan to hurt myself,1,0,0,1,1,1,CRITICAL
+26,They are threatening to harm my parents,1,1,1,0,0,0,CRITICAL
+27,I am scared they will find me,1,1,0,0,0,0,HIGH
+28,I am afraid someone will come looking for me,1,1,0,0,0,0,HIGH
+29,They are trying to force me to do something,1,1,0,0,0,0,HIGH
+30,They are blackmailing me,1,1,0,0,0,0,HIGH
+31,I am worried that The same person keeps appearing wherever I go and I need help dealing with this.,1,0,0,0,0,0,HIGH
+32,"Right now, I am afraid because of repeated threats these days.",1,1,0,0,0,0,HIGH
+33,I keep feeling that They keep warning me to stay silent and I don't know what to do.,0,1,0,0,0,0,HIGH
+34,I am scared that Someone keeps following me and it is becoming difficult to cope.,1,0,0,0,0,0,HIGH
+35,I feel that I keep thinking about ending my life lately.,1,0,0,1,0,0,CRITICAL
+36,I feel that They may harm my family because I spoke up and I am worried about my safety.,1,1,0,0,0,0,CRITICAL
+37,"Recently, Someone hit me during an argument and I am worried about my safety.",1,0,1,0,0,0,CRITICAL
+38,I feel that I am worried because someone keeps tracking me and the situation is getting worse.,1,0,0,0,0,0,HIGH
+39,I keep feeling that Someone is pressuring me to stop reporting the incident and I am worried about my safety.,0,1,0,0,0,0,HIGH
+40,I am worried that They repeatedly insult and bother me right now.,0,1,0,0,0,0,HIGH
+41,I am scared that I am afraid of being physically attacked again and the situation is getting worse.,1,0,1,0,0,0,CRITICAL
+42,"For the past few days, I don't see a reason to keep going and I don't know what to do.",1,0,0,1,0,0,CRITICAL
+43,"At the moment, I feel like hurting myself and I don't know what to do.",1,0,0,1,0,0,CRITICAL
+44,I feel that I think I am in immediate danger lately.,1,1,0,0,0,0,CRITICAL
+45,I am scared that I feel that I may act on my suicidal thoughts and I don't know what to do.,1,0,0,1,1,0,CRITICAL
+46,I am afraid they will retaliate against me and I am very frightened.,1,1,0,0,0,0,CRITICAL
+47,"At the moment, They are trying to make me afraid to report what happened these days.",0,1,0,0,0,0,HIGH
+48,I feel that I am being pressured to remain silent and I am worried about my safety.,0,1,0,0,0,0,HIGH
+49,"For the past few days, I have made a plan to end my life and it is becoming difficult to cope.",1,0,0,1,1,1,CRITICAL
+50,"For the past few days, They warned me not to seek help right now.",0,1,0,0,0,0,HIGH
+51,"For the past few days, I am currently hiding because I am afraid and I am very frightened.",1,1,0,0,0,0,CRITICAL
+52,I was pushed and injured and the situation is getting worse.,1,0,1,0,0,0,CRITICAL
+53,"Recently, I know when and how I might hurt myself these days.",1,0,0,1,1,1,CRITICAL
+54,"At the moment, I feel forced to agree with them and it is becoming difficult to cope.",1,1,0,0,0,0,HIGH
+55,I am scared that Someone is pressuring me to stop reporting the incident and I don't know what to do.,0,1,0,0,0,0,HIGH
+56,"Recently, I feel intimidated whenever I speak about the incident these days.",0,1,0,0,0,0,HIGH
+57,I am worried that They are trying to frighten me into withdrawing my complaint right now.,0,1,0,0,0,0,HIGH
+58,I fear that the threats may become real and I need help dealing with this.,1,1,0,0,0,0,HIGH
+59,I am worried that Someone keeps following me,1,0,0,0,0,0,HIGH
+60,I feel that I am being pressured to remain silent and I need help dealing with this.,0,1,0,0,0,0,HIGH
+61,"Right now, I am being repeatedly harassed right now.",0,1,0,0,0,0,HIGH
+62,I am scared that Someone is threatening to harm my family right now.,1,1,0,0,0,0,HIGH
+63,"Recently, I feel that I may act on my suicidal thoughts and I am worried about my safety.",1,0,0,1,1,0,CRITICAL
+64,I am scared that I don't see a reason to keep going these days.,1,0,0,1,0,0,CRITICAL
+65,"For the past few days, I have a specific plan for suicide and I am very frightened.",1,0,0,1,1,1,CRITICAL
+66,"Lately, The person threatening me is nearby right now and I need help dealing with this.",1,1,0,0,0,0,CRITICAL
+67,I feel that I am scared of what they might do after my complaint and it is becoming difficult to cope.,1,1,0,0,0,0,CRITICAL
+68,I feel that I feel unsafe because someone is following me and it is becoming difficult to cope.,1,0,0,0,0,0,HIGH
+69,I am worried that They are trying to frighten me into withdrawing my complaint these days.,0,1,0,0,0,0,HIGH
+70,"At the moment, They are using threats to control my decisions and I don't know what to do.",1,1,0,0,0,0,HIGH
+71,I keep feeling that I am currently hiding because I am afraid and it is becoming difficult to cope.,1,1,0,0,0,0,CRITICAL
+72,"For the past few days, They have used physical force against me",1,0,1,0,0,0,CRITICAL
+73,"At the moment, I am scared that I may be harmed right now and it is becoming difficult to cope.",1,1,0,0,0,0,CRITICAL
+74,"Lately, I feel that I cannot continue living like this and I am worried about my safety.",1,0,0,1,0,0,CRITICAL
+75,"Right now, Someone has been following me on my way home and it is becoming difficult to cope.",1,0,0,0,0,0,HIGH
+76,I feel that They are forcing me to stay quiet about what happened and it is becoming difficult to cope.,1,1,0,0,0,0,HIGH
+77,I keep feeling that I am being pressured to withdraw my complaint and I don't know what to do.,1,1,0,0,0,0,HIGH
+78,I am scared that I am currently hiding because I am afraid and I am very frightened.,1,1,0,0,0,0,CRITICAL
+79,"At the moment, I fear something will happen because I complained and I am very frightened.",1,1,0,0,0,0,CRITICAL
+80,I keep feeling that I need help because I am not safe at this moment and it is becoming difficult to cope.,1,1,0,0,0,0,CRITICAL
+81,I feel that I am thinking about hurting myself and I am very frightened.,1,0,0,1,0,0,CRITICAL
+82,I feel that I am currently thinking about ending my life and I am worried about my safety.,1,0,0,1,1,0,CRITICAL
+83,"Lately, Someone has physically attacked me and I need help dealing with this.",1,0,1,0,0,0,CRITICAL
+84,"For the past few days, Someone is threatening to harm my family and the situation is getting worse.",1,1,0,0,0,0,HIGH
+85,"Lately, They are using threats to control my decisions right now.",1,1,0,0,0,0,HIGH
+86,"Recently, They told me not to speak about what happened and I need help dealing with this.",1,1,0,0,0,0,HIGH
+87,"Recently, I don't know how to keep myself safe right now and I need help dealing with this.",1,1,0,0,0,0,CRITICAL
+88,"For the past few days, Someone is threatening to harm my family right now.",1,1,0,0,0,0,HIGH
+89,I keep feeling that I receive unwanted messages repeatedly these days.,0,1,0,0,0,0,HIGH
+90,"Lately, I feel intimidated whenever I speak about the incident and I am very frightened.",0,1,0,0,0,0,HIGH
+91,I keep feeling that They are forcing me to do something I don't want to do and the situation is getting worse.,1,1,0,0,0,0,HIGH
+92,"For the past few days, Someone has harmed me physically",1,0,1,0,0,0,CRITICAL
+93,I keep feeling that I keep thinking about ending my life and I need help dealing with this.,1,0,0,1,0,0,CRITICAL
+94,"Lately, I think someone is watching where I go and I need help dealing with this.",1,0,0,0,0,0,HIGH
+95,I keep feeling that I know when and how I might hurt myself and I am worried about my safety.,1,0,0,1,1,1,CRITICAL
+96,"Lately, I am being pressured to withdraw my complaint these days.",1,1,0,0,0,0,HIGH
+97,I am scared that Someone is forcing me to remain silent and I am worried about my safety.,1,1,0,0,0,0,HIGH
+98,"For the past few days, Someone has physically attacked me these days.",1,0,1,0,0,0,CRITICAL
+99,I feel that I am being repeatedly harassed,0,1,0,0,0,0,HIGH
+100,I am scared that I am currently thinking about ending my life lately.,1,0,0,1,1,0,CRITICAL
+101,"For the past few days, I don't know how to keep myself safe right now and it is becoming difficult to cope.",1,1,0,0,0,0,CRITICAL
+102,"At the moment, I believe someone is about to attack me right now.",1,1,0,0,0,0,CRITICAL
+103,Someone is outside my home threatening me and the situation is getting worse.,1,1,0,0,0,0,CRITICAL
+104,"At the moment, Someone follows me whenever I leave the house and the situation is getting worse.",1,0,0,0,0,0,HIGH
+105,"Right now, They are using fear to stop me from asking for help right now.",0,1,0,0,0,0,HIGH
+106,I am worried that I don't know if I can stop myself from acting on these thoughts these days.,1,0,0,1,1,0,CRITICAL
+107,"Lately, The harassment has become difficult to tolerate and I need help dealing with this.",0,1,0,0,0,0,HIGH
+108,I am worried that I am currently hiding because I am afraid and I am worried about my safety.,1,1,0,0,0,0,CRITICAL
+109,I keep feeling that I worry that reporting this will make things worse and the situation is getting worse.,1,1,0,0,0,0,CRITICAL
+110,I feel that The person threatening me is nearby right now lately.,1,1,0,0,0,0,CRITICAL
+111,"At the moment, Someone is pressuring me to stop reporting the incident and I am worried about my safety.",0,1,0,0,0,0,HIGH
+112,"Lately, The person threatening me is nearby right now",1,1,0,0,0,0,CRITICAL
+113,I am worried that They are forcing me to do something I don't want to do,1,1,0,0,0,0,HIGH
+114,I am worried that I know what I would do if I decided to hurt myself and I don't know what to do.,1,0,0,1,1,1,CRITICAL
+115,I believe I may face retaliation for speaking out lately.,1,1,0,0,0,0,CRITICAL
+116,"Lately, I have been planning how to harm myself and the situation is getting worse.",1,0,0,1,1,1,CRITICAL
+117,I am being forced to cooperate against my wishes lately.,1,1,0,0,0,0,HIGH
+118,"At the moment, I am worried because someone keeps tracking me lately.",1,0,0,0,0,0,HIGH
+119,I feel that They may harm my family because I spoke up,1,1,0,0,0,0,CRITICAL
+120,I keep feeling that I don't want to be alive anymore and the situation is getting worse.,1,0,0,1,0,0,CRITICAL
+121,I am worried that I fear something will happen because I complained and I don't know what to do.,1,1,0,0,0,0,CRITICAL
+122,I keep feeling that Someone keeps contacting me even after I asked them to stop and I don't know what to do.,0,1,0,0,0,0,HIGH
+123,I am worried that I am afraid of being physically attacked again and I am very frightened.,1,0,1,0,0,0,CRITICAL
+124,I am worried that I have been preparing to act on my plan and I don't know what to do.,1,0,0,1,1,1,CRITICAL
+125,I am worried about retaliation after reporting the incident and it is becoming difficult to cope.,1,1,0,0,0,0,CRITICAL
+126,"Lately, I am scared that I may be harmed right now and I am worried about my safety.",1,1,0,0,0,0,CRITICAL
+127,I feel that I am scared that I may be harmed right now and I am worried about my safety.,1,1,0,0,0,0,CRITICAL
+128,I feel that Someone keeps disturbing me at home and I don't know what to do.,0,1,0,0,0,0,HIGH
+129,"Recently, I fear the person I reported will retaliate and I don't know what to do.",1,1,0,0,0,0,CRITICAL
+130,"Lately, I receive unwanted messages repeatedly and it is becoming difficult to cope.",0,1,0,0,0,0,HIGH
+131,I keep feeling that Someone is pressuring me to stop reporting the incident and I need help dealing with this.,0,1,0,0,0,0,HIGH
+132,"Right now, I am being pressured to remain silent these days.",0,1,0,0,0,0,HIGH
+133,"Lately, They are threatening me unless I do what they want these days.",1,1,0,0,0,0,HIGH
+134,"Lately, I receive unwanted messages repeatedly right now.",0,1,0,0,0,0,HIGH
+135,I keep feeling that I feel that I cannot continue living like this lately.,1,0,0,1,0,0,CRITICAL
+136,I am scared that They keep warning me to stay silent and I need help dealing with this.,0,1,0,0,0,0,HIGH
+137,I am scared that I fear something will happen because I complained and I need help dealing with this.,1,1,0,0,0,0,CRITICAL
+138,"For the past few days, Someone is forcing me to remain silent and I am worried about my safety.",1,1,0,0,0,0,HIGH
+139,I feel that They are trying to make me afraid to report what happened and the situation is getting worse.,0,1,0,0,0,0,HIGH
+140,I feel that I know when and how I might hurt myself and I am worried about my safety.,1,0,0,1,1,1,CRITICAL
+141,I am worried that I think someone is watching where I go and I don't know what to do.,1,0,0,0,0,0,HIGH
+142,I feel that Someone has been following me on my way home,1,0,0,0,0,0,HIGH
+143,"Lately, Someone follows me whenever I leave the house",1,0,0,0,0,0,HIGH
+144,"Recently, Someone hit me during an argument",1,0,1,0,0,0,CRITICAL
+145,"Lately, I am worried because someone keeps tracking me and the situation is getting worse.",1,0,0,0,0,0,HIGH
+146,I keep feeling that I have been preparing to act on my plan and the situation is getting worse.,1,0,0,1,1,1,CRITICAL
+147,They keep trying to silence me right now.,0,1,0,0,0,0,HIGH
+148,"Recently, Someone keeps following me",1,0,0,0,0,0,HIGH
+149,I keep feeling that I receive threatening and unwanted calls right now.,0,1,0,0,0,0,HIGH
+150,I feel that They are trying to make me afraid to report what happened right now.,0,1,0,0,0,0,HIGH
+151,"Recently, I have a plan to hurt myself lately.",1,0,0,1,1,1,CRITICAL
+152,"At the moment, I am being intimidated because I spoke up and the situation is getting worse.",0,1,0,0,0,0,HIGH
+153,I am scared that I am scared of what they might do after my complaint and I am very frightened.,1,1,0,0,0,0,CRITICAL
+154,"Right now, Someone keeps following me right now.",1,0,0,0,0,0,HIGH
+155,"Right now, I feel intimidated whenever I speak about the incident and it is becoming difficult to cope.",0,1,0,0,0,0,HIGH
+156,I feel that I am scared of what they might do after my complaint and I am very frightened.,1,1,0,0,0,0,CRITICAL
+157,"Right now, I am afraid I may act on these thoughts and I am worried about my safety.",1,0,0,1,1,0,CRITICAL
+158,"Recently, I am scared that I may be harmed right now and the situation is getting worse.",1,1,0,0,0,0,CRITICAL
+159,"For the past few days, Someone is pressuring me to stop reporting the incident right now.",0,1,0,0,0,0,HIGH
+160,"For the past few days, I was pushed and injured lately.",1,0,1,0,0,0,CRITICAL
+161,Someone is threatening to harm my family,1,1,0,0,0,0,HIGH
+162,I feel forced to agree with them and it is becoming difficult to cope.,1,1,0,0,0,0,HIGH
+163,"For the past few days, I know what I would do if I decided to hurt myself and the situation is getting worse.",1,0,0,1,1,1,CRITICAL
+164,"For the past few days, I feel that I cannot refuse their demands and the situation is getting worse.",1,1,0,0,0,0,HIGH
+165,I feel that I feel that I might hurt myself right now and I am very frightened.,1,0,0,1,1,0,CRITICAL
+166,I am scared that I am scared that I may be harmed right now right now.,1,1,0,0,0,0,CRITICAL
+167,I am being forced to cooperate against my wishes and I don't know what to do.,1,1,0,0,0,0,HIGH
+168,I feel that I feel forced to agree with them and I don't know what to do.,1,1,0,0,0,0,HIGH
+169,I am worried that They are threatening me unless I do what they want right now.,1,1,0,0,0,0,HIGH
+170,I keep feeling that I fear the person I reported will retaliate and I need help dealing with this.,1,1,0,0,0,0,CRITICAL
+171,"Lately, I don't know how to keep myself safe right now and I am very frightened.",1,1,0,0,0,0,CRITICAL
+172,"Recently, I am having strong thoughts of harming myself right now and I don't know what to do.",1,0,0,1,1,0,CRITICAL
+173,"At the moment, Someone has physically attacked me lately.",1,0,1,0,0,0,CRITICAL
+174,"Right now, I think someone is watching where I go and it is becoming difficult to cope.",1,0,0,0,0,0,HIGH
+175,"Recently, I am scared of what they might do after my complaint and I am very frightened.",1,1,0,0,0,0,CRITICAL
+176,"Recently, I am scared of what they might do after my complaint and I am worried about my safety.",1,1,0,0,0,0,CRITICAL
+177,I am scared that I received a serious threat and it is becoming difficult to cope.,1,1,0,0,0,0,HIGH
+178,"Right now, Someone has been following me on my way home lately.",1,0,0,0,0,0,HIGH
+179,I have been receiving threatening messages and I don't know what to do.,1,1,0,0,0,0,HIGH
+180,"Right now, I know when and how I might hurt myself right now.",1,0,0,1,1,1,CRITICAL
+181,I am worried that Someone is threatening to harm my family and the situation is getting worse.,1,1,0,0,0,0,HIGH
+182,"For the past few days, Someone is outside my home threatening me and it is becoming difficult to cope.",1,1,0,0,0,0,CRITICAL
+183,I feel that I feel forced to agree with them and I need help dealing with this.,1,1,0,0,0,0,HIGH
+184,I keep feeling that The person threatening me is nearby right now and it is becoming difficult to cope.,1,1,0,0,0,0,CRITICAL
+185,"Right now, Someone is outside my home threatening me and I don't know what to do.",1,1,0,0,0,0,CRITICAL
+186,"At the moment, I am struggling with thoughts of harming myself and the situation is getting worse.",1,0,0,1,0,0,CRITICAL
+187,I am worried that Someone warned me that they would hurt me and the situation is getting worse.,1,1,0,0,0,0,HIGH
+188,"Lately, They repeatedly insult and bother me lately.",0,1,0,0,0,0,HIGH
+189,I feel that Someone warned me that they would hurt me right now.,1,1,0,0,0,0,HIGH
+190,I keep feeling that The same person keeps appearing wherever I go and it is becoming difficult to cope.,1,0,0,0,0,0,HIGH
+191,I feel that They are using threats to control my decisions and the situation is getting worse.,1,1,0,0,0,0,HIGH
+192,"For the past few days, I was attacked because I spoke up these days.",1,0,1,0,0,0,CRITICAL
+193,I am scared that I was pushed and injured and I am very frightened.,1,0,1,0,0,0,CRITICAL
+194,"Recently, I am afraid they will retaliate against me lately.",1,1,0,0,0,0,CRITICAL
+195,I am scared that I have decided how I might hurt myself,1,0,0,1,1,1,CRITICAL
+196,"Lately, Someone keeps following me and the situation is getting worse.",1,0,0,0,0,0,HIGH
+197,"Right now, Someone follows me whenever I leave the house and I am worried about my safety.",1,0,0,0,0,0,HIGH
+198,I feel that I have been receiving threatening messages and I don't know what to do.,1,1,0,0,0,0,HIGH
+199,"For the past few days, I feel like I am being watched lately.",1,0,0,0,0,0,HIGH
+200,"Recently, Someone has physically attacked me and the situation is getting worse.",1,0,1,0,0,0,CRITICAL
+201,I am worried that I have been receiving threatening messages and I need help dealing with this.,1,1,0,0,0,0,HIGH
+202,I am worried that They keep warning me to stay silent and I need help dealing with this.,0,1,0,0,0,0,HIGH
+203,"Recently, They may harm my family because I spoke up and the situation is getting worse.",1,1,0,0,0,0,CRITICAL
+204,"For the past few days, Someone keeps contacting me even after I asked them to stop and I don't know what to do.",0,1,0,0,0,0,HIGH
+205,"For the past few days, I have decided how I might hurt myself",1,0,0,1,1,1,CRITICAL
+206,"Lately, I am being pressured to withdraw my complaint and the situation is getting worse.",1,1,0,0,0,0,HIGH
+207,I am worried that I don't see a reason to keep going and I don't know what to do.,1,0,0,1,0,0,CRITICAL
+208,"Lately, I am afraid they will retaliate against me and I am very frightened.",1,1,0,0,0,0,CRITICAL
+209,They are trying to frighten me into withdrawing my complaint these days.,0,1,0,0,0,0,HIGH
+210,"Lately, Someone hit me during an argument and it is becoming difficult to cope.",1,0,1,0,0,0,CRITICAL
+211,"Right now, I feel forced to agree with them",1,1,0,0,0,0,HIGH
+212,I feel that I don't know if I can stop myself from acting on these thoughts and I don't know what to do.,1,0,0,1,1,0,CRITICAL
+213,I feel that I receive unwanted messages repeatedly,0,1,0,0,0,0,HIGH
+214,I keep feeling that I have thought through a specific way to harm myself these days.,1,0,0,1,1,1,CRITICAL
+215,"For the past few days, I am afraid of being physically attacked again and the situation is getting worse.",1,0,1,0,0,0,CRITICAL
+216,I am scared that Someone is outside my home threatening me these days.,1,1,0,0,0,0,CRITICAL
+217,"At the moment, I fear something will happen because I complained and I am worried about my safety.",1,1,0,0,0,0,CRITICAL
+218,"Recently, I know what I would do if I decided to hurt myself lately.",1,0,0,1,1,1,CRITICAL
+219,I keep feeling that I am worried about consequences after reporting them and I am worried about my safety.,1,1,0,0,0,0,CRITICAL
+220,"Recently, Someone is outside my home threatening me",1,1,0,0,0,0,CRITICAL
+221,I am worried that I think someone is watching where I go lately.,1,0,0,0,0,0,HIGH
+222,"Recently, I don't feel safe right now these days.",1,1,0,0,0,0,CRITICAL
+223,I feel that Someone has threatened me lately.,1,1,0,0,0,0,HIGH
+224,"Recently, I am afraid someone may hurt me right now and I don't know what to do.",1,1,0,0,0,0,CRITICAL
+225,I am scared that Someone warned me that they would hurt me and the situation is getting worse.,1,1,0,0,0,0,HIGH
+226,"At the moment, I am being repeatedly harassed and I need help dealing with this.",0,1,0,0,0,0,HIGH
+227,I keep feeling that I am afraid I may act on these thoughts and I am very frightened.,1,0,0,1,1,0,CRITICAL
+228,I feel that I am worried about consequences after reporting them and I am worried about my safety.,1,1,0,0,0,0,CRITICAL
+229,I am worried that I am currently hiding because I am afraid and I am very frightened.,1,1,0,0,0,0,CRITICAL
+230,I am scared that I am worried about retaliation after reporting the incident and I am worried about my safety.,1,1,0,0,0,0,CRITICAL
+231,"Recently, I have decided how I might hurt myself and I don't know what to do.",1,0,0,1,1,1,CRITICAL
+232,"Recently, I am thinking about hurting myself",1,0,0,1,0,0,CRITICAL
+233,I am scared that I have decided how I might hurt myself right now.,1,0,0,1,1,1,CRITICAL
+234,"Right now, I am afraid I may act on these thoughts these days.",1,0,0,1,1,0,CRITICAL
+235,"Right now, I have been receiving threatening messages and I am very frightened.",1,1,0,0,0,0,HIGH
+236,"For the past few days, I know what I would do if I decided to hurt myself and I don't know what to do.",1,0,0,1,1,1,CRITICAL
+237,"For the past few days, They are pressuring me to change my statement and I need help dealing with this.",1,1,0,0,0,0,HIGH
+238,I feel that I fear the person I reported will retaliate and I need help dealing with this.,1,1,0,0,0,0,CRITICAL
+239,I am scared that I feel that I cannot continue living like this and the situation is getting worse.,1,0,0,1,0,0,CRITICAL
+240,I am scared that They keep threatening my family and I need help dealing with this.,1,1,0,0,0,0,HIGH
+241,"Right now, I feel like I am being watched and it is becoming difficult to cope.",1,0,0,0,0,0,HIGH
+242,I am scared that Someone is forcing me to remain silent right now.,1,1,0,0,0,0,HIGH
+243,"For the past few days, I feel like hurting myself and I am very frightened.",1,0,0,1,0,0,CRITICAL
+244,"At the moment, I am being verbally harassed and I am worried about my safety.",0,1,0,0,0,0,HIGH
+245,I feel that I feel that I cannot refuse their demands and I don't know what to do.,1,1,0,0,0,0,HIGH
+246,"Right now, I feel unsafe because someone is following me and it is becoming difficult to cope.",1,0,0,0,0,0,HIGH
+247,I keep feeling that I am afraid I may act on these thoughts and it is becoming difficult to cope.,1,0,0,1,1,0,CRITICAL
+248,I keep feeling that I don't see a reason to keep going these days.,1,0,0,1,0,0,CRITICAL
+249,"At the moment, They are pressuring me to change my statement these days.",1,1,0,0,0,0,HIGH
+250,"Right now, I am afraid someone may hurt me right now and the situation is getting worse.",1,1,0,0,0,0,CRITICAL

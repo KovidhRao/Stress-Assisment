@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# RAVDESS raw audio
+data/ravdess/audio/
+
+# ZIP files
+*.zip
+
+# Generated outputs
+nlp/output/
+
+# Virtual environments
+venv/
+.venv/
+env/

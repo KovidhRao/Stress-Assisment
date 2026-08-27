@@ -1,0 +1,501 @@
+id,text,language,situation,risk_level
+1,I am stressed about my exams,en,ACADEMIC_STRESS,LOW
+2,I am worried that I will fail my exams,en,ACADEMIC_STRESS,LOW
+3,I cannot concentrate because of my studies,en,ACADEMIC_STRESS,LOW
+4,I feel overwhelmed by my college work,en,ACADEMIC_STRESS,LOW
+5,I am nervous about my future,en,GENERAL_ANXIETY,MODERATE
+6,I cannot sleep because I keep worrying,en,GENERAL_ANXIETY,MODERATE
+7,I keep thinking that something bad will happen,en,GENERAL_ANXIETY,MODERATE
+8,I feel anxious all the time,en,GENERAL_ANXIETY,MODERATE
+9,I feel completely alone,en,SOCIAL_ISOLATION,MODERATE
+10,Nobody in my family talks to me anymore,en,SOCIAL_ISOLATION,MODERATE
+11,I have no one to turn to for help,en,SOCIAL_ISOLATION,MODERATE
+12,I feel isolated from everyone around me,en,SOCIAL_ISOLATION,MODERATE
+13,They keep threatening my family,en,THREAT,HIGH
+14,Someone has threatened to hurt me,en,THREAT,HIGH
+15,I am receiving threats because I complained,en,THREAT,HIGH
+16,They told me they would come after my family,en,THREAT,HIGH
+17,I am afraid to leave my house,en,FEAR,HIGH
+18,I am scared that someone is following me,en,FEAR,HIGH
+19,I am afraid to return home,en,FEAR,HIGH
+20,I feel unsafe whenever I go outside,en,FEAR,HIGH
+21,We were forced to leave our home,en,DISPLACEMENT,HIGH
+22,My family had to leave the area because of threats,en,DISPLACEMENT,HIGH
+23,I no longer have a safe place to stay,en,DISPLACEMENT,HIGH
+24,They forced us to move away from our community,en,DISPLACEMENT,HIGH
+25,Everyone has stopped talking to us,en,SOCIAL_BOYCOTT,HIGH
+26,Our community has refused to interact with my family,en,SOCIAL_BOYCOTT,HIGH
+27,People are deliberately excluding my family,en,SOCIAL_BOYCOTT,HIGH
+28,We are being isolated by the community,en,SOCIAL_BOYCOTT,HIGH
+29,They are forcing me to withdraw my complaint,en,INTIMIDATION,HIGH
+30,They are pressuring me not to report what happened,en,INTIMIDATION,HIGH
+31,I am being intimidated because I spoke up,en,INTIMIDATION,HIGH
+32,They keep warning me not to complain,en,INTIMIDATION,HIGH
+33,"For the past few days, I have been receiving threatening messages and I need help dealing with it.",en,THREAT,HIGH
+34,I have started to feel that Someone is pressuring me to stop reporting the incident and I need help dealing with it.,en,INTIMIDATION,HIGH
+35,"Right now, People are deliberately avoiding my family and I am finding it difficult to manage.",en,SOCIAL_BOYCOTT,HIGH
+36,"Lately, I am scared that someone will hurt me and this situation is becoming overwhelming.",en,FEAR,HIGH
+37,I feel that People refuse to include us in community activities,en,SOCIAL_BOYCOTT,HIGH
+38,"Recently, I feel scared whenever I leave home every day.",en,FEAR,HIGH
+39,"Recently, Someone warned me that they would hurt me and I am finding it difficult to manage.",en,THREAT,HIGH
+40,I keep feeling that I am struggling to cope with academic pressure lately.,en,ACADEMIC_STRESS,LOW
+41,"At the moment, I am frightened about what might happen and I am finding it difficult to manage.",en,FEAR,HIGH
+42,"Recently, I am being pressured to remain silent and I don't know what to do.",en,INTIMIDATION,HIGH
+43,"Right now, I have nobody to talk to every day.",en,SOCIAL_ISOLATION,MODERATE
+44,"For the past few days, I am being intimidated because I spoke up and I need help dealing with it.",en,INTIMIDATION,HIGH
+45,"Recently, My family had to move because of threats lately.",en,DISPLACEMENT,HIGH
+46,I have started to feel that I have been receiving threatening messages and I need help dealing with it.,en,THREAT,HIGH
+47,"For the past few days, I am being intimidated because I spoke up and it is becoming difficult to cope.",en,INTIMIDATION,HIGH
+48,"Lately, I am living somewhere else because it was unsafe and I am finding it difficult to manage.",en,DISPLACEMENT,HIGH
+49,"These days, I am constantly expecting something bad and I need help dealing with it.",en,GENERAL_ANXIETY,MODERATE
+50,"Right now, My thoughts keep making me anxious and I need help dealing with it.",en,GENERAL_ANXIETY,MODERATE
+51,"For the past few days, My college workload is becoming difficult to handle and I am finding it difficult to manage.",en,ACADEMIC_STRESS,LOW
+52,"For the past few days, My family cannot safely return home and I need help dealing with it.",en,DISPLACEMENT,HIGH
+53,"At the moment, I am frightened by the situation and this situation is becoming overwhelming.",en,FEAR,HIGH
+54,"For the past few days, They are trying to frighten me into withdrawing my complaint and I am finding it difficult to manage.",en,INTIMIDATION,HIGH
+55,People refuse to interact with us and I am finding it difficult to manage.,en,SOCIAL_BOYCOTT,HIGH
+56,"Right now, I am overwhelmed by my exams and it is affecting my daily life.",en,ACADEMIC_STRESS,LOW
+57,"These days, I feel like nobody understands me and I need help dealing with it.",en,SOCIAL_ISOLATION,MODERATE
+58,"For the past few days, I feel exhausted because of my studies every day.",en,ACADEMIC_STRESS,LOW
+59,"These days, I am afraid to speak because of their intimidation and it is affecting my daily life.",en,INTIMIDATION,HIGH
+60,"These days, I am afraid to go outside",en,FEAR,HIGH
+61,"For the past few days, I keep worrying about what might happen and this situation is becoming overwhelming.",en,GENERAL_ANXIETY,MODERATE
+62,I feel that I received a serious threat and I need help dealing with it.,en,THREAT,HIGH
+63,"Recently, I am being pressured to remain silent and I am finding it difficult to manage.",en,INTIMIDATION,HIGH
+64,I feel that I keep worrying about what might happen and I don't know what to do.,en,GENERAL_ANXIETY,MODERATE
+65,"At the moment, We were forced to leave our home lately.",en,DISPLACEMENT,HIGH
+66,"For the past few days, They keep threatening my family and I am finding it difficult to manage.",en,THREAT,HIGH
+67,"For the past few days, I have nobody to talk to and I don't know what to do.",en,SOCIAL_ISOLATION,MODERATE
+68,I keep feeling that Someone has threatened me,en,THREAT,HIGH
+69,"For the past few days, Our community has stopped supporting us every day.",en,SOCIAL_BOYCOTT,HIGH
+70,"Lately, We had to leave everything behind and I need help dealing with it.",en,DISPLACEMENT,HIGH
+71,I keep feeling that I am frightened about what might happen and I don't know what to do.,en,FEAR,HIGH
+72,I have started to feel that I am scared to return home,en,FEAR,HIGH
+73,"For the past few days, People refuse to interact with us every day.",en,SOCIAL_BOYCOTT,HIGH
+74,I keep feeling that I cannot stop thinking about possible problems and I don't know what to do.,en,GENERAL_ANXIETY,MODERATE
+75,I feel that I have been receiving threatening messages lately.,en,THREAT,HIGH
+76,"For the past few days, I feel nervous most of the time and I don't know what to do.",en,GENERAL_ANXIETY,MODERATE
+77,I keep feeling that I am afraid someone may find me and I don't know what to do.,en,FEAR,HIGH
+78,People refuse to interact with us every day.,en,SOCIAL_BOYCOTT,HIGH
+79,Everyone has stopped talking to my family every day.,en,SOCIAL_BOYCOTT,HIGH
+80,I keep feeling that I constantly worry about things going wrong and I am finding it difficult to manage.,en,GENERAL_ANXIETY,MODERATE
+81,"Recently, I am frightened by the situation lately.",en,FEAR,HIGH
+82,I feel that I keep worrying about failing my exams and it is affecting my daily life.,en,ACADEMIC_STRESS,LOW
+83,I am frightened about what might happen because of everything happening.,en,FEAR,HIGH
+84,"Lately, I feel separated from everyone else because of everything happening.",en,SOCIAL_ISOLATION,MODERATE
+85,"Recently, We were displaced from our area because of everything happening.",en,DISPLACEMENT,HIGH
+86,"Recently, I feel separated from everyone else and this situation is becoming overwhelming.",en,SOCIAL_ISOLATION,MODERATE
+87,"These days, I am scared to return home and I am finding it difficult to manage.",en,FEAR,HIGH
+88,I am constantly expecting something bad,en,GENERAL_ANXIETY,MODERATE
+89,I keep feeling that I feel nervous most of the time and I am finding it difficult to manage.,en,GENERAL_ANXIETY,MODERATE
+90,I have started to feel that I am constantly afraid for my safety and I need help dealing with it.,en,FEAR,HIGH
+91,I keep feeling that I don't have anyone I can rely on because of everything happening.,en,SOCIAL_ISOLATION,MODERATE
+92,I keep feeling that I am being pressured to remain silent,en,INTIMIDATION,HIGH
+93,"These days, Our community has stopped supporting us and it is becoming difficult to cope.",en,SOCIAL_BOYCOTT,HIGH
+94,I have started to feel that Everyone has stopped talking to my family and I am finding it difficult to manage.,en,SOCIAL_BOYCOTT,HIGH
+95,I keep feeling that They told me not to speak about what happened and I am finding it difficult to manage.,en,THREAT,HIGH
+96,I have started to feel that Someone warned me that they would hurt me because of everything happening.,en,THREAT,HIGH
+97,I am frightened by the situation every day.,en,FEAR,HIGH
+98,I have started to feel that I keep worrying about failing my exams,en,ACADEMIC_STRESS,LOW
+99,I have started to feel that Someone is pressuring me to stop reporting the incident because of everything happening.,en,INTIMIDATION,HIGH
+100,"At the moment, I spend most of my time alone",en,SOCIAL_ISOLATION,MODERATE
+101,We were forced to leave our home and it is affecting my daily life.,en,DISPLACEMENT,HIGH
+102,I have started to feel that I feel nervous most of the time and I am finding it difficult to manage.,en,GENERAL_ANXIETY,MODERATE
+103,"Right now, They keep threatening my family lately.",en,THREAT,HIGH
+104,I feel that I am constantly afraid for my safety and it is becoming difficult to cope.,en,FEAR,HIGH
+105,I have started to feel that Nobody wants to associate with us every day.,en,SOCIAL_BOYCOTT,HIGH
+106,"For the past few days, We were forced to leave our home and this situation is becoming overwhelming.",en,DISPLACEMENT,HIGH
+107,I feel that Our community has stopped supporting us because of everything happening.,en,SOCIAL_BOYCOTT,HIGH
+108,"Right now, They keep trying to silence me and it is affecting my daily life.",en,INTIMIDATION,HIGH
+109,My studies are causing me a lot of stress lately.,en,ACADEMIC_STRESS,LOW
+110,Someone is pressuring me to stop reporting the incident and this situation is becoming overwhelming.,en,INTIMIDATION,HIGH
+111,I have started to feel that I feel nervous most of the time because of everything happening.,en,GENERAL_ANXIETY,MODERATE
+112,"For the past few days, I find it difficult to relax because I keep worrying every day.",en,GENERAL_ANXIETY,MODERATE
+113,"Right now, I find it difficult to relax because I keep worrying lately.",en,GENERAL_ANXIETY,MODERATE
+114,I have started to feel that My thoughts keep making me anxious every day.,en,GENERAL_ANXIETY,MODERATE
+115,"These days, They warned me not to seek help and it is affecting my daily life.",en,INTIMIDATION,HIGH
+116,"Recently, I am overwhelmed by my exams",en,ACADEMIC_STRESS,LOW
+117,"These days, I keep worrying about what might happen and I need help dealing with it.",en,GENERAL_ANXIETY,MODERATE
+118,"Right now, We were forced to leave our home and it is affecting my daily life.",en,DISPLACEMENT,HIGH
+119,"For the past few days, I am afraid to speak because of their intimidation and I need help dealing with it.",en,INTIMIDATION,HIGH
+120,"At the moment, I keep worrying about failing my exams and this situation is becoming overwhelming.",en,ACADEMIC_STRESS,LOW
+121,"These days, Nobody wants to associate with us and this situation is becoming overwhelming.",en,SOCIAL_BOYCOTT,HIGH
+122,"Lately, I constantly worry about things going wrong lately.",en,GENERAL_ANXIETY,MODERATE
+123,I feel that I am scared to return home and I don't know what to do.,en,FEAR,HIGH
+124,"Recently, I have stopped spending time with other people and it is becoming difficult to cope.",en,SOCIAL_ISOLATION,MODERATE
+125,I feel that They keep threatening my family and I am finding it difficult to manage.,en,THREAT,HIGH
+126,"Recently, I find it difficult to relax because I keep worrying lately.",en,GENERAL_ANXIETY,MODERATE
+127,I was forced to relocate and it is affecting my daily life.,en,DISPLACEMENT,HIGH
+128,"Lately, They are trying to make me afraid to report what happened and I need help dealing with it.",en,INTIMIDATION,HIGH
+129,"Recently, I am afraid to speak because of their intimidation and this situation is becoming overwhelming.",en,INTIMIDATION,HIGH
+130,"Recently, I find it difficult to relax because I keep worrying and I need help dealing with it.",en,GENERAL_ANXIETY,MODERATE
+131,"These days, I keep worrying about what might happen",en,GENERAL_ANXIETY,MODERATE
+132,"Recently, I feel anxious about my upcoming exams lately.",en,ACADEMIC_STRESS,LOW
+133,Someone warned me that they would hurt me because of everything happening.,en,THREAT,HIGH
+134,I keep feeling that I find it difficult to relax because I keep worrying and it is becoming difficult to cope.,en,GENERAL_ANXIETY,MODERATE
+135,"For the past few days, I am worried about my academic performance and it is becoming difficult to cope.",en,ACADEMIC_STRESS,LOW
+136,"Lately, I am living somewhere else because it was unsafe and it is becoming difficult to cope.",en,DISPLACEMENT,HIGH
+137,"These days, I cannot stop thinking about possible problems because of everything happening.",en,GENERAL_ANXIETY,MODERATE
+138,"Lately, I have nobody to talk to every day.",en,SOCIAL_ISOLATION,MODERATE
+139,I am afraid someone may find me lately.,en,FEAR,HIGH
+140,I keep feeling that People refuse to include us in community activities every day.,en,SOCIAL_BOYCOTT,HIGH
+141,I keep feeling that People refuse to include us in community activities and this situation is becoming overwhelming.,en,SOCIAL_BOYCOTT,HIGH
+142,People are deliberately avoiding my family and it is affecting my daily life.,en,SOCIAL_BOYCOTT,HIGH
+143,People are deliberately avoiding my family and this situation is becoming overwhelming.,en,SOCIAL_BOYCOTT,HIGH
+144,"At the moment, I have withdrawn from people around me",en,SOCIAL_ISOLATION,MODERATE
+145,"For the past few days, I feel isolated from my friends and this situation is becoming overwhelming.",en,SOCIAL_ISOLATION,MODERATE
+146,"Lately, They keep trying to silence me and it is affecting my daily life.",en,INTIMIDATION,HIGH
+147,"Recently, I keep worrying about what might happen because of everything happening.",en,GENERAL_ANXIETY,MODERATE
+148,I feel that They threatened me after I complained and I am finding it difficult to manage.,en,THREAT,HIGH
+149,"Lately, I don't feel safe in my surroundings and I don't know what to do.",en,FEAR,HIGH
+150,"For the past few days, Everyone has stopped talking to my family every day.",en,SOCIAL_BOYCOTT,HIGH
+151,"At the moment, I am being pressured to remain silent",en,INTIMIDATION,HIGH
+152,"Lately, I find it difficult to relax because I keep worrying lately.",en,GENERAL_ANXIETY,MODERATE
+153,"For the past few days, Someone is pressuring me to stop reporting the incident every day.",en,INTIMIDATION,HIGH
+154,"Recently, We were displaced from our area and I don't know what to do.",en,DISPLACEMENT,HIGH
+155,"These days, I am living somewhere else because it was unsafe and it is becoming difficult to cope.",en,DISPLACEMENT,HIGH
+156,"These days, I cannot manage the pressure from my coursework and it is affecting my daily life.",en,ACADEMIC_STRESS,LOW
+157,"At the moment, They are trying to frighten me into withdrawing my complaint and this situation is becoming overwhelming.",en,INTIMIDATION,HIGH
+158,"At the moment, I feel like nobody understands me",en,SOCIAL_ISOLATION,MODERATE
+159,"Recently, Someone warned me that they would hurt me and this situation is becoming overwhelming.",en,THREAT,HIGH
+160,"Recently, I am afraid someone may find me because of everything happening.",en,FEAR,HIGH
+161,I keep feeling that They are trying to frighten me into withdrawing my complaint and I don't know what to do.,en,INTIMIDATION,HIGH
+162,I feel that I am being pressured to remain silent every day.,en,INTIMIDATION,HIGH
+163,I have started to feel that I am being intimidated because I spoke up and I need help dealing with it.,en,INTIMIDATION,HIGH
+164,"For the past few days, I have stopped spending time with other people and it is becoming difficult to cope.",en,SOCIAL_ISOLATION,MODERATE
+165,"Right now, I don't feel safe in my surroundings because of everything happening.",en,FEAR,HIGH
+166,"These days, People have stopped doing business with us lately.",en,SOCIAL_BOYCOTT,HIGH
+167,"Right now, I am being pressured to remain silent lately.",en,INTIMIDATION,HIGH
+168,"Lately, They warned me not to seek help and this situation is becoming overwhelming.",en,INTIMIDATION,HIGH
+169,"Right now, I have nobody to talk to and I don't know what to do.",en,SOCIAL_ISOLATION,MODERATE
+170,I have started to feel that Someone is threatening to harm my family and it is becoming difficult to cope.,en,THREAT,HIGH
+171,"Lately, I feel nervous most of the time and I don't know what to do.",en,GENERAL_ANXIETY,MODERATE
+172,"For the past few days, I don't have anyone I can rely on because of everything happening.",en,SOCIAL_ISOLATION,MODERATE
+173,"Recently, My studies are causing me a lot of stress because of everything happening.",en,ACADEMIC_STRESS,LOW
+174,"These days, They told me not to speak about what happened and it is becoming difficult to cope.",en,THREAT,HIGH
+175,I keep feeling that I no longer have a safe place to stay,en,DISPLACEMENT,HIGH
+176,I keep feeling that I am afraid someone may find me because of everything happening.,en,FEAR,HIGH
+177,Everyone has stopped talking to my family lately.,en,SOCIAL_BOYCOTT,HIGH
+178,"Right now, They are trying to frighten me into withdrawing my complaint and it is affecting my daily life.",en,INTIMIDATION,HIGH
+179,"Right now, I have been receiving threatening messages",en,THREAT,HIGH
+180,"For the past few days, I have stopped spending time with other people and I don't know what to do.",en,SOCIAL_ISOLATION,MODERATE
+181,"Recently, I constantly worry about things going wrong lately.",en,GENERAL_ANXIETY,MODERATE
+182,I keep feeling that I fear that the threats may become real because of everything happening.,en,THREAT,HIGH
+183,My family cannot safely return home,en,DISPLACEMENT,HIGH
+184,I feel anxious about my upcoming exams and I don't know what to do.,en,ACADEMIC_STRESS,LOW
+185,"At the moment, I feel exhausted because of my studies and it is affecting my daily life.",en,ACADEMIC_STRESS,LOW
+186,I feel that I feel completely alone and it is affecting my daily life.,en,SOCIAL_ISOLATION,MODERATE
+187,"At the moment, I was forced to relocate",en,DISPLACEMENT,HIGH
+188,"At the moment, The pressure to perform well is affecting me and I am finding it difficult to manage.",en,ACADEMIC_STRESS,LOW
+189,I keep feeling that The pressure to perform well is affecting me because of everything happening.,en,ACADEMIC_STRESS,LOW
+190,"Recently, My thoughts keep making me anxious and it is affecting my daily life.",en,GENERAL_ANXIETY,MODERATE
+191,"At the moment, I feel anxious about my future and I need help dealing with it.",en,GENERAL_ANXIETY,MODERATE
+192,"At the moment, I have been receiving threatening messages and this situation is becoming overwhelming.",en,THREAT,HIGH
+193,I have started to feel that I am constantly expecting something bad because of everything happening.,en,GENERAL_ANXIETY,MODERATE
+194,I keep feeling that I no longer have a safe place to stay and I don't know what to do.,en,DISPLACEMENT,HIGH
+195,I feel that We had to leave our community every day.,en,DISPLACEMENT,HIGH
+196,"For the past few days, I no longer have a safe place to stay and I am finding it difficult to manage.",en,DISPLACEMENT,HIGH
+197,"These days, I am overwhelmed by my exams every day.",en,ACADEMIC_STRESS,LOW
+198,"At the moment, I cannot manage the pressure from my coursework lately.",en,ACADEMIC_STRESS,LOW
+199,They told me not to speak about what happened and it is affecting my daily life.,en,THREAT,HIGH
+200,I am being intimidated because I spoke up every day.,en,INTIMIDATION,HIGH
+201,"Recently, I feel isolated from my friends and I don't know what to do.",en,SOCIAL_ISOLATION,MODERATE
+202,"Lately, We had to leave everything behind and it is affecting my daily life.",en,DISPLACEMENT,HIGH
+203,"Lately, They are trying to frighten me into withdrawing my complaint and it is affecting my daily life.",en,INTIMIDATION,HIGH
+204,"Recently, They are trying to make me afraid to report what happened and this situation is becoming overwhelming.",en,INTIMIDATION,HIGH
+205,"Lately, I am afraid someone may find me every day.",en,FEAR,HIGH
+206,"Right now, They are pressuring me not to complain and it is affecting my daily life.",en,INTIMIDATION,HIGH
+207,"For the past few days, I have been receiving threatening messages and it is becoming difficult to cope.",en,THREAT,HIGH
+208,"Lately, They told me not to speak about what happened and I don't know what to do.",en,THREAT,HIGH
+209,I keep feeling that I am scared that someone will hurt me every day.,en,FEAR,HIGH
+210,"At the moment, I have stopped spending time with other people because of everything happening.",en,SOCIAL_ISOLATION,MODERATE
+211,"Recently, I feel anxious about my future and it is becoming difficult to cope.",en,GENERAL_ANXIETY,MODERATE
+212,"For the past few days, People refuse to interact with us",en,SOCIAL_BOYCOTT,HIGH
+213,I feel that I cannot stop thinking about possible problems and I need help dealing with it.,en,GENERAL_ANXIETY,MODERATE
+214,"At the moment, I have been receiving threatening messages lately.",en,THREAT,HIGH
+215,"Right now, My family had to move because of threats lately.",en,DISPLACEMENT,HIGH
+216,"Right now, People are deliberately avoiding my family and it is affecting my daily life.",en,SOCIAL_BOYCOTT,HIGH
+217,I keep worrying about what might happen and I need help dealing with it.,en,GENERAL_ANXIETY,MODERATE
+218,"Lately, People refuse to include us in community activities lately.",en,SOCIAL_BOYCOTT,HIGH
+219,I have started to feel that I don't know when I can return home and this situation is becoming overwhelming.,en,DISPLACEMENT,HIGH
+220,"Lately, I am living somewhere else because it was unsafe",en,DISPLACEMENT,HIGH
+221,"Lately, I feel like nobody understands me and I need help dealing with it.",en,SOCIAL_ISOLATION,MODERATE
+222,I keep feeling that I am afraid because of repeated threats every day.,en,THREAT,HIGH
+223,"These days, Our community has stopped supporting us every day.",en,SOCIAL_BOYCOTT,HIGH
+224,I keep feeling that I feel scared whenever I leave home because of everything happening.,en,FEAR,HIGH
+225,"For the past few days, My studies are causing me a lot of stress and this situation is becoming overwhelming.",en,ACADEMIC_STRESS,LOW
+226,I have started to feel that I have withdrawn from people around me and this situation is becoming overwhelming.,en,SOCIAL_ISOLATION,MODERATE
+227,"Lately, I am afraid because of repeated threats every day.",en,THREAT,HIGH
+228,I keep feeling that I feel unsafe when I am alone because of everything happening.,en,FEAR,HIGH
+229,"At the moment, I feel nervous most of the time",en,GENERAL_ANXIETY,MODERATE
+230,I feel that We were forced to leave our home and I don't know what to do.,en,DISPLACEMENT,HIGH
+231,"At the moment, They told me not to speak about what happened and I need help dealing with it.",en,THREAT,HIGH
+232,"Lately, I am worried about my academic performance and I don't know what to do.",en,ACADEMIC_STRESS,LOW
+233,I have started to feel that I find it difficult to relax because I keep worrying and I need help dealing with it.,en,GENERAL_ANXIETY,MODERATE
+234,Everyone has stopped talking to my family and this situation is becoming overwhelming.,en,SOCIAL_BOYCOTT,HIGH
+235,"Right now, I am afraid to go outside lately.",en,FEAR,HIGH
+236,"At the moment, People have stopped doing business with us and I need help dealing with it.",en,SOCIAL_BOYCOTT,HIGH
+237,"Recently, People are deliberately avoiding my family and it is affecting my daily life.",en,SOCIAL_BOYCOTT,HIGH
+238,I have started to feel that I feel exhausted because of my studies every day.,en,ACADEMIC_STRESS,LOW
+239,"Right now, I am constantly expecting something bad and I don't know what to do.",en,GENERAL_ANXIETY,MODERATE
+240,My thoughts keep making me anxious,en,GENERAL_ANXIETY,MODERATE
+241,I feel that I no longer have a safe place to stay and this situation is becoming overwhelming.,en,DISPLACEMENT,HIGH
+242,"These days, My family cannot safely return home lately.",en,DISPLACEMENT,HIGH
+243,"For the past few days, They are pressuring me not to complain and it is becoming difficult to cope.",en,INTIMIDATION,HIGH
+244,I feel that We had to leave everything behind because of everything happening.,en,DISPLACEMENT,HIGH
+245,"At the moment, I am constantly expecting something bad and I need help dealing with it.",en,GENERAL_ANXIETY,MODERATE
+246,"Recently, I keep worrying about what might happen and I don't know what to do.",en,GENERAL_ANXIETY,MODERATE
+247,"For the past few days, I fear that the threats may become real and I am finding it difficult to manage.",en,THREAT,HIGH
+248,I have started to feel that They keep warning me to stay silent and this situation is becoming overwhelming.,en,INTIMIDATION,HIGH
+249,"Lately, Someone is threatening to harm my family",en,THREAT,HIGH
+250,I cannot stop thinking about possible problems,en,GENERAL_ANXIETY,MODERATE
+251,"For the past few days, I feel anxious about my future and it is becoming difficult to cope.",en,GENERAL_ANXIETY,MODERATE
+252,"At the moment, I don't know when I can return home and I don't know what to do.",en,DISPLACEMENT,HIGH
+253,"These days, Our family is being socially boycotted lately.",en,SOCIAL_BOYCOTT,HIGH
+254,I feel that My studies are causing me a lot of stress because of everything happening.,en,ACADEMIC_STRESS,LOW
+255,I feel that Someone is threatening to harm my family and it is becoming difficult to cope.,en,THREAT,HIGH
+256,"These days, People refuse to include us in community activities and I need help dealing with it.",en,SOCIAL_BOYCOTT,HIGH
+257,"For the past few days, I find it difficult to relax because I keep worrying and this situation is becoming overwhelming.",en,GENERAL_ANXIETY,MODERATE
+258,"Right now, They are trying to frighten me into withdrawing my complaint and I am finding it difficult to manage.",en,INTIMIDATION,HIGH
+259,"Right now, I don't feel safe in my surroundings and it is becoming difficult to cope.",en,FEAR,HIGH
+260,They are trying to make me afraid to report what happened lately.,en,INTIMIDATION,HIGH
+261,"Right now, I feel exhausted because of my studies lately.",en,ACADEMIC_STRESS,LOW
+262,"For the past few days, I am overwhelmed by my exams every day.",en,ACADEMIC_STRESS,LOW
+263,"For the past few days, I am constantly expecting something bad and it is affecting my daily life.",en,GENERAL_ANXIETY,MODERATE
+264,I feel that I feel uneasy without knowing why,en,GENERAL_ANXIETY,MODERATE
+265,"Right now, I am scared to return home because of everything happening.",en,FEAR,HIGH
+266,People are deliberately avoiding my family lately.,en,SOCIAL_BOYCOTT,HIGH
+267,I feel isolated from my friends lately.,en,SOCIAL_ISOLATION,MODERATE
+268,"These days, I am afraid because of repeated threats and I am finding it difficult to manage.",en,THREAT,HIGH
+269,"Lately, We were displaced from our area and I need help dealing with it.",en,DISPLACEMENT,HIGH
+270,"At the moment, I no longer have a safe place to stay",en,DISPLACEMENT,HIGH
+271,"At the moment, We had to leave our community every day.",en,DISPLACEMENT,HIGH
+272,"These days, We are being deliberately excluded lately.",en,SOCIAL_BOYCOTT,HIGH
+273,"Recently, People refuse to interact with us",en,SOCIAL_BOYCOTT,HIGH
+274,I am frightened by the situation and this situation is becoming overwhelming.,en,FEAR,HIGH
+275,"Right now, Our community has stopped supporting us because of everything happening.",en,SOCIAL_BOYCOTT,HIGH
+276,I have started to feel that I cannot stop thinking about possible problems and this situation is becoming overwhelming.,en,GENERAL_ANXIETY,MODERATE
+277,I feel that I received a serious threat and I am finding it difficult to manage.,en,THREAT,HIGH
+278,"For the past few days, Someone warned me that they would hurt me and I don't know what to do.",en,THREAT,HIGH
+279,I feel that I feel separated from everyone else and it is affecting my daily life.,en,SOCIAL_ISOLATION,MODERATE
+280,"At the moment, My studies are causing me a lot of stress and it is becoming difficult to cope.",en,ACADEMIC_STRESS,LOW
+281,"For the past few days, We are being deliberately excluded",en,SOCIAL_BOYCOTT,HIGH
+282,We were forced to leave our home every day.,en,DISPLACEMENT,HIGH
+283,"These days, I no longer have a safe place to stay because of everything happening.",en,DISPLACEMENT,HIGH
+284,I have started to feel that I am overwhelmed by my exams,en,ACADEMIC_STRESS,LOW
+285,"Right now, People refuse to include us in community activities and I need help dealing with it.",en,SOCIAL_BOYCOTT,HIGH
+286,"For the past few days, I have withdrawn from people around me and I don't know what to do.",en,SOCIAL_ISOLATION,MODERATE
+287,"Right now, I am worried about my academic performance and I don't know what to do.",en,ACADEMIC_STRESS,LOW
+288,"At the moment, I feel separated from everyone else",en,SOCIAL_ISOLATION,MODERATE
+289,I feel that I feel scared whenever I leave home and it is becoming difficult to cope.,en,FEAR,HIGH
+290,I have started to feel that I constantly worry about things going wrong and it is affecting my daily life.,en,GENERAL_ANXIETY,MODERATE
+291,"These days, I feel nervous most of the time because of everything happening.",en,GENERAL_ANXIETY,MODERATE
+292,"Recently, People refuse to interact with us because of everything happening.",en,SOCIAL_BOYCOTT,HIGH
+293,"These days, I fear that the threats may become real and it is becoming difficult to cope.",en,THREAT,HIGH
+294,I keep feeling that I keep worrying about failing my exams and it is affecting my daily life.,en,ACADEMIC_STRESS,LOW
+295,"At the moment, I received a serious threat and it is affecting my daily life.",en,THREAT,HIGH
+296,"For the past few days, They keep trying to silence me and it is affecting my daily life.",en,INTIMIDATION,HIGH
+297,"Recently, They warned me not to seek help and this situation is becoming overwhelming.",en,INTIMIDATION,HIGH
+298,"Recently, I keep worrying about failing my exams and I don't know what to do.",en,ACADEMIC_STRESS,LOW
+299,"Recently, I feel completely alone and this situation is becoming overwhelming.",en,SOCIAL_ISOLATION,MODERATE
+300,"For the past few days, The pressure to perform well is affecting me because of everything happening.",en,ACADEMIC_STRESS,LOW
+301,I keep feeling that I am frightened about what might happen and I am finding it difficult to manage.,en,FEAR,HIGH
+302,I feel that I am worried about my academic performance every day.,en,ACADEMIC_STRESS,LOW
+303,I keep feeling that I am afraid because of repeated threats lately.,en,THREAT,HIGH
+304,"Right now, I am frightened by the situation and this situation is becoming overwhelming.",en,FEAR,HIGH
+305,I keep feeling that We were displaced from our area and it is becoming difficult to cope.,en,DISPLACEMENT,HIGH
+306,I keep feeling that The community has isolated our family lately.,en,SOCIAL_BOYCOTT,HIGH
+307,"These days, They keep warning me to stay silent because of everything happening.",en,INTIMIDATION,HIGH
+308,"Recently, We had to leave everything behind because of everything happening.",en,DISPLACEMENT,HIGH
+309,I have started to feel that I fear that the threats may become real and it is becoming difficult to cope.,en,THREAT,HIGH
+310,I have started to feel that I am afraid because of repeated threats and it is becoming difficult to cope.,en,THREAT,HIGH
+311,I keep feeling that I fear that the threats may become real and this situation is becoming overwhelming.,en,THREAT,HIGH
+312,I feel that I feel isolated from my friends and I need help dealing with it.,en,SOCIAL_ISOLATION,MODERATE
+313,My studies are causing me a lot of stress and I am finding it difficult to manage.,en,ACADEMIC_STRESS,LOW
+314,"These days, I am afraid someone may find me and this situation is becoming overwhelming.",en,FEAR,HIGH
+315,"Lately, I am worried about my academic performance and it is affecting my daily life.",en,ACADEMIC_STRESS,LOW
+316,I keep feeling that I am constantly afraid for my safety and it is affecting my daily life.,en,FEAR,HIGH
+317,"Lately, I feel disconnected from everyone around me and I don't know what to do.",en,SOCIAL_ISOLATION,MODERATE
+318,I feel that I am scared that someone will hurt me lately.,en,FEAR,HIGH
+319,"At the moment, I am worried about my academic performance because of everything happening.",en,ACADEMIC_STRESS,LOW
+320,I feel that Our family is being socially boycotted because of everything happening.,en,SOCIAL_BOYCOTT,HIGH
+321,"For the past few days, I am constantly afraid for my safety lately.",en,FEAR,HIGH
+322,"At the moment, I feel nervous most of the time every day.",en,GENERAL_ANXIETY,MODERATE
+323,"These days, My college workload is becoming difficult to handle",en,ACADEMIC_STRESS,LOW
+324,I keep feeling that I was forced to relocate every day.,en,DISPLACEMENT,HIGH
+325,"These days, I cannot stop thinking about possible problems and I need help dealing with it.",en,GENERAL_ANXIETY,MODERATE
+326,"Recently, I fear that the threats may become real and it is becoming difficult to cope.",en,THREAT,HIGH
+327,"Recently, I cannot manage the pressure from my coursework and I don't know what to do.",en,ACADEMIC_STRESS,LOW
+328,"Recently, Everyone has stopped talking to my family every day.",en,SOCIAL_BOYCOTT,HIGH
+329,My college workload is becoming difficult to handle lately.,en,ACADEMIC_STRESS,LOW
+330,"Recently, Our family is being socially boycotted lately.",en,SOCIAL_BOYCOTT,HIGH
+331,"These days, I have stopped spending time with other people because of everything happening.",en,SOCIAL_ISOLATION,MODERATE
+332,"For the past few days, I constantly worry about things going wrong",en,GENERAL_ANXIETY,MODERATE
+333,"These days, They are trying to make me afraid to report what happened lately.",en,INTIMIDATION,HIGH
+334,"Right now, I received a serious threat",en,THREAT,HIGH
+335,I spend most of my time alone because of everything happening.,en,SOCIAL_ISOLATION,MODERATE
+336,"At the moment, I have been receiving threatening messages and it is affecting my daily life.",en,THREAT,HIGH
+337,"Right now, My studies are causing me a lot of stress every day.",en,ACADEMIC_STRESS,LOW
+338,I keep feeling that I am afraid someone may find me and it is becoming difficult to cope.,en,FEAR,HIGH
+339,I keep feeling that They keep warning me to stay silent lately.,en,INTIMIDATION,HIGH
+340,I have started to feel that I am afraid someone may find me every day.,en,FEAR,HIGH
+341,"At the moment, I constantly worry about things going wrong and this situation is becoming overwhelming.",en,GENERAL_ANXIETY,MODERATE
+342,I have started to feel that I am scared to return home and I don't know what to do.,en,FEAR,HIGH
+343,I have started to feel that I am constantly afraid for my safety and this situation is becoming overwhelming.,en,FEAR,HIGH
+344,"For the past few days, I feel uneasy without knowing why",en,GENERAL_ANXIETY,MODERATE
+345,"Recently, I have stopped spending time with other people because of everything happening.",en,SOCIAL_ISOLATION,MODERATE
+346,"Recently, My family had to move because of threats because of everything happening.",en,DISPLACEMENT,HIGH
+347,They are pressuring me not to complain,en,INTIMIDATION,HIGH
+348,"These days, I have nobody to talk to and I need help dealing with it.",en,SOCIAL_ISOLATION,MODERATE
+349,"Recently, I have stopped spending time with other people and I don't know what to do.",en,SOCIAL_ISOLATION,MODERATE
+350,"These days, They are pressuring me not to complain and I don't know what to do.",en,INTIMIDATION,HIGH
+351,I have started to feel that I feel disconnected from everyone around me and it is becoming difficult to cope.,en,SOCIAL_ISOLATION,MODERATE
+352,"Right now, I constantly worry about things going wrong because of everything happening.",en,GENERAL_ANXIETY,MODERATE
+353,"Right now, I cannot stop thinking about possible problems and this situation is becoming overwhelming.",en,GENERAL_ANXIETY,MODERATE
+354,"Lately, I am frightened about what might happen and I am finding it difficult to manage.",en,FEAR,HIGH
+355,"Right now, I have withdrawn from people around me and it is becoming difficult to cope.",en,SOCIAL_ISOLATION,MODERATE
+356,"Right now, I am scared to return home every day.",en,FEAR,HIGH
+357,I find it difficult to relax because I keep worrying,en,GENERAL_ANXIETY,MODERATE
+358,"Right now, I have stopped spending time with other people and I don't know what to do.",en,SOCIAL_ISOLATION,MODERATE
+359,"At the moment, I keep worrying about failing my exams and I don't know what to do.",en,ACADEMIC_STRESS,LOW
+360,"These days, I am living somewhere else because it was unsafe",en,DISPLACEMENT,HIGH
+361,"For the past few days, My family had to move because of threats and it is becoming difficult to cope.",en,DISPLACEMENT,HIGH
+362,I have stopped spending time with other people every day.,en,SOCIAL_ISOLATION,MODERATE
+363,"Right now, I feel like nobody understands me lately.",en,SOCIAL_ISOLATION,MODERATE
+364,"For the past few days, Nobody wants to associate with us and it is becoming difficult to cope.",en,SOCIAL_BOYCOTT,HIGH
+365,"At the moment, I keep worrying about what might happen because of everything happening.",en,GENERAL_ANXIETY,MODERATE
+366,"Recently, My college workload is becoming difficult to handle and I need help dealing with it.",en,ACADEMIC_STRESS,LOW
+367,I keep feeling that I don't feel safe in my surroundings every day.,en,FEAR,HIGH
+368,Our family is being socially boycotted,en,SOCIAL_BOYCOTT,HIGH
+369,"For the past few days, Someone is threatening to harm my family and I need help dealing with it.",en,THREAT,HIGH
+370,I have started to feel that The community has isolated our family and I don't know what to do.,en,SOCIAL_BOYCOTT,HIGH
+371,"Lately, I am constantly afraid for my safety because of everything happening.",en,FEAR,HIGH
+372,"For the past few days, I have withdrawn from people around me every day.",en,SOCIAL_ISOLATION,MODERATE
+373,I have started to feel that We are being deliberately excluded every day.,en,SOCIAL_BOYCOTT,HIGH
+374,"For the past few days, I am afraid to go outside every day.",en,FEAR,HIGH
+375,I feel that People are deliberately avoiding my family and this situation is becoming overwhelming.,en,SOCIAL_BOYCOTT,HIGH
+376,"For the past few days, I am scared that someone will hurt me because of everything happening.",en,FEAR,HIGH
+377,"For the past few days, We had to leave everything behind and it is affecting my daily life.",en,DISPLACEMENT,HIGH
+378,"These days, I spend most of my time alone and I don't know what to do.",en,SOCIAL_ISOLATION,MODERATE
+379,I feel that I feel isolated from my friends lately.,en,SOCIAL_ISOLATION,MODERATE
+380,I feel isolated from my friends and this situation is becoming overwhelming.,en,SOCIAL_ISOLATION,MODERATE
+381,"These days, I am living somewhere else because it was unsafe because of everything happening.",en,DISPLACEMENT,HIGH
+382,"Right now, I have nobody to talk to and it is affecting my daily life.",en,SOCIAL_ISOLATION,MODERATE
+383,"For the past few days, Our community has stopped supporting us",en,SOCIAL_BOYCOTT,HIGH
+384,"Recently, Our community has stopped supporting us and this situation is becoming overwhelming.",en,SOCIAL_BOYCOTT,HIGH
+385,I feel uneasy without knowing why every day.,en,GENERAL_ANXIETY,MODERATE
+386,"These days, They keep threatening my family because of everything happening.",en,THREAT,HIGH
+387,I keep feeling that I am struggling to cope with academic pressure and I need help dealing with it.,en,ACADEMIC_STRESS,LOW
+388,"Recently, I cannot stop thinking about possible problems every day.",en,GENERAL_ANXIETY,MODERATE
+389,"Recently, I fear that the threats may become real and it is affecting my daily life.",en,THREAT,HIGH
+390,"For the past few days, I don't know when I can return home and this situation is becoming overwhelming.",en,DISPLACEMENT,HIGH
+391,"For the past few days, I feel unsafe when I am alone and it is affecting my daily life.",en,FEAR,HIGH
+392,"Lately, My family cannot safely return home lately.",en,DISPLACEMENT,HIGH
+393,"These days, I am frightened about what might happen and it is affecting my daily life.",en,FEAR,HIGH
+394,"Lately, Someone is pressuring me to stop reporting the incident and this situation is becoming overwhelming.",en,INTIMIDATION,HIGH
+395,I keep feeling that They warned me not to seek help,en,INTIMIDATION,HIGH
+396,"These days, My studies are causing me a lot of stress because of everything happening.",en,ACADEMIC_STRESS,LOW
+397,I feel that I keep worrying about what might happen and it is affecting my daily life.,en,GENERAL_ANXIETY,MODERATE
+398,"At the moment, I constantly worry about things going wrong lately.",en,GENERAL_ANXIETY,MODERATE
+399,"Recently, We had to leave our community and it is affecting my daily life.",en,DISPLACEMENT,HIGH
+400,I keep feeling that We had to leave our community every day.,en,DISPLACEMENT,HIGH
+401,"At the moment, Someone has threatened me lately.",en,THREAT,HIGH
+402,"Recently, I am afraid to speak because of their intimidation every day.",en,INTIMIDATION,HIGH
+403,"Recently, They are trying to make me afraid to report what happened and it is becoming difficult to cope.",en,INTIMIDATION,HIGH
+404,I am afraid because of repeated threats lately.,en,THREAT,HIGH
+405,"At the moment, I feel anxious about my upcoming exams and I am finding it difficult to manage.",en,ACADEMIC_STRESS,LOW
+406,"These days, I am worried about my academic performance and I am finding it difficult to manage.",en,ACADEMIC_STRESS,LOW
+407,I have started to feel that Someone is threatening to harm my family because of everything happening.,en,THREAT,HIGH
+408,"Lately, We had to leave our community and I don't know what to do.",en,DISPLACEMENT,HIGH
+409,"Recently, We had to leave our community and I need help dealing with it.",en,DISPLACEMENT,HIGH
+410,I have started to feel that Someone has threatened me and I don't know what to do.,en,THREAT,HIGH
+411,I have started to feel that I no longer have a safe place to stay lately.,en,DISPLACEMENT,HIGH
+412,"Right now, They are trying to make me afraid to report what happened and I am finding it difficult to manage.",en,INTIMIDATION,HIGH
+413,"At the moment, I am struggling to cope with academic pressure and I don't know what to do.",en,ACADEMIC_STRESS,LOW
+414,"Lately, I feel unsafe when I am alone and I am finding it difficult to manage.",en,FEAR,HIGH
+415,"For the past few days, The pressure to perform well is affecting me and it is becoming difficult to cope.",en,ACADEMIC_STRESS,LOW
+416,"Recently, I feel unsafe when I am alone every day.",en,FEAR,HIGH
+417,I am being pressured to remain silent and I don't know what to do.,en,INTIMIDATION,HIGH
+418,I am afraid to speak because of their intimidation and I am finding it difficult to manage.,en,INTIMIDATION,HIGH
+419,I feel that We are being deliberately excluded and I am finding it difficult to manage.,en,SOCIAL_BOYCOTT,HIGH
+420,"These days, Someone has threatened me and it is becoming difficult to cope.",en,THREAT,HIGH
+421,"For the past few days, Someone is threatening to harm my family and I don't know what to do.",en,THREAT,HIGH
+422,I find it difficult to relax because I keep worrying lately.,en,GENERAL_ANXIETY,MODERATE
+423,"For the past few days, Our family is being socially boycotted and it is affecting my daily life.",en,SOCIAL_BOYCOTT,HIGH
+424,I have started to feel that We are being deliberately excluded and it is becoming difficult to cope.,en,SOCIAL_BOYCOTT,HIGH
+425,"For the past few days, People are deliberately avoiding my family and I am finding it difficult to manage.",en,SOCIAL_BOYCOTT,HIGH
+426,"These days, Someone is threatening to harm my family lately.",en,THREAT,HIGH
+427,I keep feeling that I feel anxious about my future because of everything happening.,en,GENERAL_ANXIETY,MODERATE
+428,I am living somewhere else because it was unsafe because of everything happening.,en,DISPLACEMENT,HIGH
+429,"Recently, I feel disconnected from everyone around me and I don't know what to do.",en,SOCIAL_ISOLATION,MODERATE
+430,I keep feeling that The pressure to perform well is affecting me every day.,en,ACADEMIC_STRESS,LOW
+431,"For the past few days, We were displaced from our area and it is affecting my daily life.",en,DISPLACEMENT,HIGH
+432,I have started to feel that They keep threatening my family every day.,en,THREAT,HIGH
+433,"These days, I am scared to return home",en,FEAR,HIGH
+434,"These days, Someone warned me that they would hurt me",en,THREAT,HIGH
+435,"These days, They are trying to make me afraid to report what happened and I am finding it difficult to manage.",en,INTIMIDATION,HIGH
+436,"These days, I feel completely alone every day.",en,SOCIAL_ISOLATION,MODERATE
+437,"For the past few days, I have nobody to talk to every day.",en,SOCIAL_ISOLATION,MODERATE
+438,I feel anxious about my upcoming exams because of everything happening.,en,ACADEMIC_STRESS,LOW
+439,"Right now, I am worried about my academic performance because of everything happening.",en,ACADEMIC_STRESS,LOW
+440,My thoughts keep making me anxious and I don't know what to do.,en,GENERAL_ANXIETY,MODERATE
+441,I have started to feel that We had to leave our community,en,DISPLACEMENT,HIGH
+442,"Right now, I feel nervous most of the time and I don't know what to do.",en,GENERAL_ANXIETY,MODERATE
+443,I keep feeling that My thoughts keep making me anxious every day.,en,GENERAL_ANXIETY,MODERATE
+444,"At the moment, I keep worrying about failing my exams lately.",en,ACADEMIC_STRESS,LOW
+445,"Recently, I spend most of my time alone",en,SOCIAL_ISOLATION,MODERATE
+446,I feel that Someone is pressuring me to stop reporting the incident and I don't know what to do.,en,INTIMIDATION,HIGH
+447,"For the past few days, They keep trying to silence me because of everything happening.",en,INTIMIDATION,HIGH
+448,I feel that I am frightened by the situation because of everything happening.,en,FEAR,HIGH
+449,"Lately, We were forced to leave our home and I am finding it difficult to manage.",en,DISPLACEMENT,HIGH
+450,"These days, They are trying to make me afraid to report what happened and I need help dealing with it.",en,INTIMIDATION,HIGH
+451,I am living somewhere else because it was unsafe and it is affecting my daily life.,en,DISPLACEMENT,HIGH
+452,"These days, My family had to move because of threats and this situation is becoming overwhelming.",en,DISPLACEMENT,HIGH
+453,"Lately, We were displaced from our area and I don't know what to do.",en,DISPLACEMENT,HIGH
+454,I keep feeling that My thoughts keep making me anxious and I don't know what to do.,en,GENERAL_ANXIETY,MODERATE
+455,"These days, I find it difficult to relax because I keep worrying because of everything happening.",en,GENERAL_ANXIETY,MODERATE
+456,"Lately, I keep worrying about failing my exams lately.",en,ACADEMIC_STRESS,LOW
+457,"Recently, People refuse to include us in community activities and I need help dealing with it.",en,SOCIAL_BOYCOTT,HIGH
+458,I have started to feel that I feel like nobody understands me and this situation is becoming overwhelming.,en,SOCIAL_ISOLATION,MODERATE
+459,"These days, I feel isolated from my friends because of everything happening.",en,SOCIAL_ISOLATION,MODERATE
+460,"At the moment, Our family is being socially boycotted because of everything happening.",en,SOCIAL_BOYCOTT,HIGH
+461,Someone has threatened me lately.,en,THREAT,HIGH
+462,"Right now, We were forced to leave our home lately.",en,DISPLACEMENT,HIGH
+463,I have started to feel that I am overwhelmed by my exams and it is becoming difficult to cope.,en,ACADEMIC_STRESS,LOW
+464,I keep feeling that I received a serious threat and I need help dealing with it.,en,THREAT,HIGH
+465,I feel that I find it difficult to relax because I keep worrying lately.,en,GENERAL_ANXIETY,MODERATE
+466,"For the past few days, They told me not to speak about what happened and I don't know what to do.",en,THREAT,HIGH
+467,"At the moment, I fear that the threats may become real",en,THREAT,HIGH
+468,"Lately, I am afraid to speak because of their intimidation because of everything happening.",en,INTIMIDATION,HIGH
+469,"These days, I am constantly expecting something bad because of everything happening.",en,GENERAL_ANXIETY,MODERATE
+470,I have started to feel that I feel like nobody understands me and I am finding it difficult to manage.,en,SOCIAL_ISOLATION,MODERATE
+471,"At the moment, They are trying to make me afraid to report what happened and it is affecting my daily life.",en,INTIMIDATION,HIGH
+472,The pressure to perform well is affecting me and I need help dealing with it.,en,ACADEMIC_STRESS,LOW
+473,I keep feeling that They told me not to speak about what happened and I don't know what to do.,en,THREAT,HIGH
+474,The pressure to perform well is affecting me every day.,en,ACADEMIC_STRESS,LOW
+475,"Recently, I am afraid because of repeated threats because of everything happening.",en,THREAT,HIGH
+476,"At the moment, I am constantly afraid for my safety and I need help dealing with it.",en,FEAR,HIGH
+477,"At the moment, Someone warned me that they would hurt me and this situation is becoming overwhelming.",en,THREAT,HIGH
+478,I have started to feel that I feel anxious about my future because of everything happening.,en,GENERAL_ANXIETY,MODERATE
+479,I have started to feel that I have nobody to talk to and this situation is becoming overwhelming.,en,SOCIAL_ISOLATION,MODERATE
+480,"Recently, Our family is being socially boycotted and I don't know what to do.",en,SOCIAL_BOYCOTT,HIGH
+481,I feel that I feel nervous most of the time and it is becoming difficult to cope.,en,GENERAL_ANXIETY,MODERATE
+482,I feel exhausted because of my studies every day.,en,ACADEMIC_STRESS,LOW
+483,"At the moment, They keep trying to silence me and I don't know what to do.",en,INTIMIDATION,HIGH
+484,I keep feeling that My family cannot safely return home and it is becoming difficult to cope.,en,DISPLACEMENT,HIGH
+485,"These days, I feel anxious about my upcoming exams",en,ACADEMIC_STRESS,LOW
+486,I feel that I feel exhausted because of my studies,en,ACADEMIC_STRESS,LOW
+487,"Lately, My thoughts keep making me anxious and I need help dealing with it.",en,GENERAL_ANXIETY,MODERATE
+488,"At the moment, Our family is being socially boycotted and this situation is becoming overwhelming.",en,SOCIAL_BOYCOTT,HIGH
+489,I keep feeling that I am worried about my academic performance and it is becoming difficult to cope.,en,ACADEMIC_STRESS,LOW
+490,I spend most of my time alone every day.,en,SOCIAL_ISOLATION,MODERATE
+491,My college workload is becoming difficult to handle,en,ACADEMIC_STRESS,LOW
+492,I have started to feel that I feel disconnected from everyone around me because of everything happening.,en,SOCIAL_ISOLATION,MODERATE
+493,"Right now, My worries are interfering with my daily life and this situation is becoming overwhelming.",en,GENERAL_ANXIETY,MODERATE
+494,"Right now, I don't feel safe in my surroundings and I need help dealing with it.",en,FEAR,HIGH
+495,I keep feeling that Someone is pressuring me to stop reporting the incident and I don't know what to do.,en,INTIMIDATION,HIGH
+496,"For the past few days, I have stopped spending time with other people because of everything happening.",en,SOCIAL_ISOLATION,MODERATE
+497,"Recently, They keep trying to silence me and I need help dealing with it.",en,INTIMIDATION,HIGH
+498,"These days, I feel uneasy without knowing why because of everything happening.",en,GENERAL_ANXIETY,MODERATE
+499,I feel that I don't feel safe in my surroundings every day.,en,FEAR,HIGH
+500,"These days, I have withdrawn from people around me and this situation is becoming overwhelming.",en,SOCIAL_ISOLATION,MODERATE

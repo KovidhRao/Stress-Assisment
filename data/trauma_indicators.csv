@@ -1,0 +1,301 @@
+id,text,language,indicator,present
+1,I keep remembering what happened,en,INTRUSIVE_MEMORY,1
+2,The incident keeps coming back to my mind,en,INTRUSIVE_MEMORY,1
+3,I cannot stop thinking about what happened,en,INTRUSIVE_MEMORY,1
+4,The memories of that event keep disturbing me,en,INTRUSIVE_MEMORY,1
+5,I keep having nightmares about what happened,en,NIGHTMARES,1
+6,I wake up after dreaming about the incident,en,NIGHTMARES,1
+7,The same frightening event appears in my dreams,en,NIGHTMARES,1
+8,I am afraid to sleep because of the nightmares,en,NIGHTMARES,1
+9,I avoid going to places that remind me of it,en,AVOIDANCE,1
+10,I don't want to talk about what happened,en,AVOIDANCE,1
+11,I stay away from people connected to the incident,en,AVOIDANCE,1
+12,I avoid anything that reminds me of that experience,en,AVOIDANCE,1
+13,I constantly feel like something bad is about to happen,en,HYPERVIGILANCE,1
+14,I am always watching my surroundings,en,HYPERVIGILANCE,1
+15,I never feel relaxed because I am always alert,en,HYPERVIGILANCE,1
+16,I keep checking whether someone is following me,en,HYPERVIGILANCE,1
+17,I get extremely frightened by sudden sounds,en,STARTLE_RESPONSE,1
+18,Even small noises make me jump,en,STARTLE_RESPONSE,1
+19,I become very scared when someone approaches suddenly,en,STARTLE_RESPONSE,1
+20,I feel on edge whenever I hear a loud sound,en,STARTLE_RESPONSE,1
+21,I feel emotionally numb,en,EMOTIONAL_NUMBNESS,1
+22,I don't feel anything anymore,en,EMOTIONAL_NUMBNESS,1
+23,I feel disconnected from everyone around me,en,DETACHMENT,1
+24,It feels like I am emotionally separated from what is happening,en,DETACHMENT,1
+25,I cannot sleep properly since the incident,en,SLEEP_DISTURBANCE,1
+26,I keep waking up during the night,en,SLEEP_DISTURBANCE,1
+27,I have trouble falling asleep because I keep worrying,en,SLEEP_DISTURBANCE,1
+28,My sleep has become very disturbed,en,SLEEP_DISTURBANCE,1
+29,I cannot concentrate on my work anymore,en,DIFFICULTY_CONCENTRATING,1
+30,I find it difficult to focus on anything,en,DIFFICULTY_CONCENTRATING,1
+31,My mind keeps wandering because of the distress,en,DIFFICULTY_CONCENTRATING,1
+32,I cannot focus on my studies after what happened,en,DIFFICULTY_CONCENTRATING,1
+33,I am distressed almost every day,en,PERSISTENT_DISTRESS,1
+34,I continue to feel disturbed by what happened,en,PERSISTENT_DISTRESS,1
+35,The distress has not gone away,en,PERSISTENT_DISTRESS,1
+36,I feel unsafe even when there is no immediate danger,en,REDUCED_SENSE_OF_SAFETY,1
+37,I don't feel safe anywhere anymore,en,REDUCED_SENSE_OF_SAFETY,1
+38,I constantly feel that I am not safe,en,REDUCED_SENSE_OF_SAFETY,1
+39,I find it difficult to feel secure after what happened,en,REDUCED_SENSE_OF_SAFETY,1
+40,I feel detached from my surroundings,en,DETACHMENT,1
+41,"Lately, I try not to talk about the incident these days.",en,AVOIDANCE,1
+42,"Since the incident, I dream about the incident repeatedly these days.",en,NIGHTMARES,1
+43,"For the past few days, I am easily startled by people approaching me and I don't know how to deal with it.",en,STARTLE_RESPONSE,1
+44,"At the moment, I dream about the incident repeatedly and it has become difficult to manage.",en,NIGHTMARES,1
+45,I avoid people connected to what happened these days.,en,AVOIDANCE,1
+46,I have noticed that I get startled very easily and it is getting worse.,en,STARTLE_RESPONSE,1
+47,I have noticed that I cannot sleep properly since the incident and this is causing me a lot of distress.,en,SLEEP_DISTURBANCE,1
+48,"Since the incident, I have repeated memories of what happened and I don't know how to deal with it.",en,INTRUSIVE_MEMORY,1
+49,My sense of safety has changed completely and I am struggling to cope.,en,REDUCED_SENSE_OF_SAFETY,1
+50,"Recently, I am easily startled by people approaching me and it is affecting my daily life.",en,STARTLE_RESPONSE,1
+51,"At the moment, I have repeated memories of what happened lately.",en,INTRUSIVE_MEMORY,1
+52,"Recently, I keep waking up during the night and I don't know how to deal with it.",en,SLEEP_DISTURBANCE,1
+53,"Since the incident, I feel emotionally empty most of the time",en,EMOTIONAL_NUMBNESS,1
+54,I feel that I feel unsafe even when nothing is happening and I find it difficult to control.,en,HYPERVIGILANCE,1
+55,I cannot stop remembering the incident and I find it difficult to control.,en,INTRUSIVE_MEMORY,1
+56,"Recently, I no longer feel safe and this is causing me a lot of distress.",en,REDUCED_SENSE_OF_SAFETY,1
+57,"At the moment, I have not been able to recover emotionally and it is affecting my daily life.",en,PERSISTENT_DISTRESS,1
+58,"Lately, My mind keeps wandering when I try to study lately.",en,DIFFICULTY_CONCENTRATING,1
+59,"For the past few days, Unexpected sounds make me feel unsafe",en,STARTLE_RESPONSE,1
+60,"At the moment, Nothing seems to affect me emotionally and it is getting worse.",en,EMOTIONAL_NUMBNESS,1
+61,I avoid going to places where the incident occurred and it is getting worse.,en,AVOIDANCE,1
+62,I feel that My sense of safety has changed completely and it is affecting my daily life.,en,REDUCED_SENSE_OF_SAFETY,1
+63,"Since the incident, I get startled very easily lately.",en,STARTLE_RESPONSE,1
+64,"Right now, The memories return even when I don't want them these days.",en,INTRUSIVE_MEMORY,1
+65,"At the moment, I keep losing my train of thought",en,DIFFICULTY_CONCENTRATING,1
+66,I keep feeling that Sudden sounds make me extremely frightened and I don't know how to deal with it.,en,STARTLE_RESPONSE,1
+67,"Recently, It is difficult for me to pay attention lately.",en,DIFFICULTY_CONCENTRATING,1
+68,I feel like I have shut down emotionally and it has become difficult to manage.,en,EMOTIONAL_NUMBNESS,1
+69,I feel that I struggle to fall asleep and I find it difficult to control.,en,SLEEP_DISTURBANCE,1
+70,"Lately, My sleep is disturbed by frightening dreams",en,NIGHTMARES,1
+71,I keep feeling that I don't want to think about what happened lately.,en,AVOIDANCE,1
+72,"Right now, I keep checking my surroundings and I don't know how to deal with it.",en,HYPERVIGILANCE,1
+73,I keep feeling that I become frightened very quickly these days.,en,STARTLE_RESPONSE,1
+74,"Lately, Unexpected sounds make me feel unsafe and I don't know how to deal with it.",en,STARTLE_RESPONSE,1
+75,I feel that I have repeated memories of what happened these days.,en,INTRUSIVE_MEMORY,1
+76,I keep checking my surroundings and I find it difficult to control.,en,HYPERVIGILANCE,1
+77,"For the past few days, I suddenly remember what happened and I don't know how to deal with it.",en,INTRUSIVE_MEMORY,1
+78,"At the moment, I avoid places that remind me of what happened",en,AVOIDANCE,1
+79,"Lately, I find it difficult to focus and I don't know how to deal with it.",en,DIFFICULTY_CONCENTRATING,1
+80,I have noticed that My sleep is disturbed by frightening dreams these days.,en,NIGHTMARES,1
+81,"At the moment, My mind keeps wandering when I try to study and I find it difficult to control.",en,DIFFICULTY_CONCENTRATING,1
+82,"Right now, I dream about the incident repeatedly and I don't know how to deal with it.",en,NIGHTMARES,1
+83,"For the past few days, I avoid discussing the experience with others and this is causing me a lot of distress.",en,AVOIDANCE,1
+84,"Lately, I struggle to fall asleep and it is getting worse.",en,SLEEP_DISTURBANCE,1
+85,I am constantly watching for danger and it has become difficult to manage.,en,HYPERVIGILANCE,1
+86,"For the past few days, I struggle to fall asleep and I am struggling to cope.",en,SLEEP_DISTURBANCE,1
+87,"For the past few days, My sleep is disturbed by frightening dreams these days.",en,NIGHTMARES,1
+88,I have noticed that I find it difficult to focus and this is causing me a lot of distress.,en,DIFFICULTY_CONCENTRATING,1
+89,I cannot concentrate on my work and this is causing me a lot of distress.,en,DIFFICULTY_CONCENTRATING,1
+90,"For the past few days, I wake up feeling restless and I find it difficult to control.",en,SLEEP_DISTURBANCE,1
+91,I feel that I wake up from frightening dreams about the event and I find it difficult to control.,en,NIGHTMARES,1
+92,"Lately, I am constantly watching for danger and it is getting worse.",en,HYPERVIGILANCE,1
+93,I have noticed that I struggle to fall asleep these days.,en,SLEEP_DISTURBANCE,1
+94,"Since the incident, I cannot sleep properly since the incident and it has become difficult to manage.",en,SLEEP_DISTURBANCE,1
+95,"Recently, I feel unsafe even when I am at home and it is affecting my daily life.",en,REDUCED_SENSE_OF_SAFETY,1
+96,I feel that I feel emotionally empty most of the time and this is causing me a lot of distress.,en,EMOTIONAL_NUMBNESS,1
+97,"Right now, My thoughts make it difficult to concentrate and I don't know how to deal with it.",en,DIFFICULTY_CONCENTRATING,1
+98,"Recently, I don't want to think about what happened and this is causing me a lot of distress.",en,AVOIDANCE,1
+99,I have noticed that Small noises make me feel alarmed and I find it difficult to control.,en,STARTLE_RESPONSE,1
+100,"For the past few days, I don't want to think about what happened and this is causing me a lot of distress.",en,AVOIDANCE,1
+101,I have become emotionally distant and I am struggling to cope.,en,DETACHMENT,1
+102,I keep feeling that My sense of safety has changed completely and it has become difficult to manage.,en,REDUCED_SENSE_OF_SAFETY,1
+103,I keep feeling that I keep having nightmares about what happened lately.,en,NIGHTMARES,1
+104,I have noticed that I have been sleeping poorly lately lately.,en,SLEEP_DISTURBANCE,1
+105,"At the moment, I feel like I am disconnected from everything and this is causing me a lot of distress.",en,DETACHMENT,1
+106,"Right now, I no longer feel safe and it has become difficult to manage.",en,REDUCED_SENSE_OF_SAFETY,1
+107,I keep feeling that I feel emotionally distant from everyone and this is causing me a lot of distress.,en,DETACHMENT,1
+108,"For the past few days, I find it difficult to focus and this is causing me a lot of distress.",en,DIFFICULTY_CONCENTRATING,1
+109,I feel that I feel detached from my surroundings and I don't know how to deal with it.,en,DETACHMENT,1
+110,"For the past few days, I keep having nightmares about what happened these days.",en,NIGHTMARES,1
+111,"For the past few days, I try to keep myself away from reminders of the incident",en,AVOIDANCE,1
+112,I find it difficult to focus,en,DIFFICULTY_CONCENTRATING,1
+113,"Lately, I feel unsafe even when I am at home and I don't know how to deal with it.",en,REDUCED_SENSE_OF_SAFETY,1
+114,"Right now, My sleep is disturbed by frightening dreams and this is causing me a lot of distress.",en,NIGHTMARES,1
+115,"Lately, The experience continues to cause me emotional pain and it is getting worse.",en,PERSISTENT_DISTRESS,1
+116,"At the moment, I avoid going to places where the incident occurred and it has become difficult to manage.",en,AVOIDANCE,1
+117,"At the moment, I react strongly to sudden movements lately.",en,STARTLE_RESPONSE,1
+118,Sudden sounds make me extremely frightened,en,STARTLE_RESPONSE,1
+119,I keep feeling that I cannot stop remembering the incident and it is affecting my daily life.,en,INTRUSIVE_MEMORY,1
+120,"For the past few days, I don't feel protected anymore and I find it difficult to control.",en,REDUCED_SENSE_OF_SAFETY,1
+121,"At the moment, I avoid people connected to what happened and this is causing me a lot of distress.",en,AVOIDANCE,1
+122,"Since the incident, I feel detached from my surroundings lately.",en,DETACHMENT,1
+123,"Recently, I dream about the incident repeatedly and it has become difficult to manage.",en,NIGHTMARES,1
+124,I keep having nightmares about what happened and it is affecting my daily life.,en,NIGHTMARES,1
+125,I keep feeling that My mind keeps wandering when I try to study and it has become difficult to manage.,en,DIFFICULTY_CONCENTRATING,1
+126,"Since the incident, I get startled very easily and it has become difficult to manage.",en,STARTLE_RESPONSE,1
+127,"At the moment, I feel emotionally numb these days.",en,EMOTIONAL_NUMBNESS,1
+128,"Recently, I feel disconnected from my emotions and it has become difficult to manage.",en,EMOTIONAL_NUMBNESS,1
+129,"Since the incident, I am always expecting something bad to happen and I don't know how to deal with it.",en,HYPERVIGILANCE,1
+130,I feel emotionally distant from everyone and it has become difficult to manage.,en,DETACHMENT,1
+131,I keep feeling that The incident keeps appearing in my dreams lately.,en,NIGHTMARES,1
+132,"For the past few days, I avoid people connected to what happened and I am struggling to cope.",en,AVOIDANCE,1
+133,"At the moment, My sense of safety has changed completely lately.",en,REDUCED_SENSE_OF_SAFETY,1
+134,"At the moment, I cannot feel happiness or sadness properly and I don't know how to deal with it.",en,EMOTIONAL_NUMBNESS,1
+135,My emotions feel empty and it has become difficult to manage.,en,EMOTIONAL_NUMBNESS,1
+136,I feel that I feel emotionally numb and I don't know how to deal with it.,en,EMOTIONAL_NUMBNESS,1
+137,"Lately, I regularly wake up after nightmares and it is getting worse.",en,NIGHTMARES,1
+138,"Recently, My nightmares remind me of the experience lately.",en,NIGHTMARES,1
+139,"For the past few days, I dream about the incident repeatedly lately.",en,NIGHTMARES,1
+140,I feel unsafe even when I am at home and it has become difficult to manage.,en,REDUCED_SENSE_OF_SAFETY,1
+141,"Lately, I feel unsafe even when nothing is happening and I don't know how to deal with it.",en,HYPERVIGILANCE,1
+142,I keep feeling that I feel disconnected from people around me and this is causing me a lot of distress.,en,DETACHMENT,1
+143,I avoid going to places where the incident occurred and I don't know how to deal with it.,en,AVOIDANCE,1
+144,It is difficult for me to pay attention these days.,en,DIFFICULTY_CONCENTRATING,1
+145,I feel that I still feel deeply upset about the incident these days.,en,PERSISTENT_DISTRESS,1
+146,I keep feeling that I feel upset whenever I think about what happened and it is getting worse.,en,PERSISTENT_DISTRESS,1
+147,"Right now, The emotional pain is still affecting me and this is causing me a lot of distress.",en,PERSISTENT_DISTRESS,1
+148,"Since the incident, I keep losing my train of thought and I find it difficult to control.",en,DIFFICULTY_CONCENTRATING,1
+149,"Right now, I cannot sleep properly since the incident lately.",en,SLEEP_DISTURBANCE,1
+150,"Since the incident, I regularly wake up after nightmares",en,NIGHTMARES,1
+151,I keep feeling that I am easily startled by people approaching me and this is causing me a lot of distress.,en,STARTLE_RESPONSE,1
+152,I feel that I cannot sleep properly since the incident and it is getting worse.,en,SLEEP_DISTURBANCE,1
+153,"Recently, The emotional pain is still affecting me and I find it difficult to control.",en,PERSISTENT_DISTRESS,1
+154,I have noticed that The emotional pain is still affecting me and I find it difficult to control.,en,PERSISTENT_DISTRESS,1
+155,"Since the incident, I don't feel safe in places where I used to feel comfortable and this is causing me a lot of distress.",en,REDUCED_SENSE_OF_SAFETY,1
+156,"At the moment, I avoid discussing the experience with others and this is causing me a lot of distress.",en,AVOIDANCE,1
+157,"Recently, I feel disconnected from people around me and it is getting worse.",en,DETACHMENT,1
+158,"For the past few days, I cannot stop remembering the incident lately.",en,INTRUSIVE_MEMORY,1
+159,"Right now, I have been sleeping poorly lately these days.",en,SLEEP_DISTURBANCE,1
+160,"Lately, I wake up feeling restless and I am struggling to cope.",en,SLEEP_DISTURBANCE,1
+161,"Recently, I avoid places that remind me of what happened and I find it difficult to control.",en,AVOIDANCE,1
+162,"Right now, I suddenly remember what happened and I am struggling to cope.",en,INTRUSIVE_MEMORY,1
+163,I keep feeling that I feel vulnerable wherever I go and I am struggling to cope.,en,REDUCED_SENSE_OF_SAFETY,1
+164,"Lately, I get startled very easily these days.",en,STARTLE_RESPONSE,1
+165,The emotional pain is still affecting me and I don't know how to deal with it.,en,PERSISTENT_DISTRESS,1
+166,"Recently, I don't feel much of anything anymore and it is getting worse.",en,EMOTIONAL_NUMBNESS,1
+167,"At the moment, I am constantly watching for danger and I am struggling to cope.",en,HYPERVIGILANCE,1
+168,"At the moment, I jump whenever I hear an unexpected noise lately.",en,STARTLE_RESPONSE,1
+169,"Lately, My sleep pattern has changed since what happened lately.",en,SLEEP_DISTURBANCE,1
+170,"For the past few days, I continue to struggle emotionally after the event",en,PERSISTENT_DISTRESS,1
+171,"Since the incident, I try not to talk about the incident and I don't know how to deal with it.",en,AVOIDANCE,1
+172,I have noticed that I feel emotionally numb and I find it difficult to control.,en,EMOTIONAL_NUMBNESS,1
+173,"At the moment, I feel like I am disconnected from everything and it is getting worse.",en,DETACHMENT,1
+174,I have noticed that I still feel deeply upset about the incident and I find it difficult to control.,en,PERSISTENT_DISTRESS,1
+175,I feel that I cannot concentrate since the incident and this is causing me a lot of distress.,en,DIFFICULTY_CONCENTRATING,1
+176,"For the past few days, The distress has not gone away and it is getting worse.",en,PERSISTENT_DISTRESS,1
+177,I try not to talk about the incident and it is getting worse.,en,AVOIDANCE,1
+178,"Recently, Sudden sounds make me extremely frightened",en,STARTLE_RESPONSE,1
+179,My sleep has become very disturbed lately.,en,SLEEP_DISTURBANCE,1
+180,I keep feeling that I don't want to think about what happened and this is causing me a lot of distress.,en,AVOIDANCE,1
+181,"For the past few days, I have been sleeping poorly lately",en,SLEEP_DISTURBANCE,1
+182,"Lately, I don't feel protected anymore lately.",en,REDUCED_SENSE_OF_SAFETY,1
+183,"Right now, I regularly wake up after nightmares",en,NIGHTMARES,1
+184,"Since the incident, I keep checking whether someone is nearby and it is affecting my daily life.",en,HYPERVIGILANCE,1
+185,I keep feeling that I dream about the incident repeatedly and this is causing me a lot of distress.,en,NIGHTMARES,1
+186,"Recently, I continue to struggle emotionally after the event these days.",en,PERSISTENT_DISTRESS,1
+187,I have become emotionally distant and it is affecting my daily life.,en,DETACHMENT,1
+188,"For the past few days, I become frightened very quickly these days.",en,STARTLE_RESPONSE,1
+189,I have noticed that My nightmares remind me of the experience and this is causing me a lot of distress.,en,NIGHTMARES,1
+190,I keep feeling that I get startled very easily,en,STARTLE_RESPONSE,1
+191,I keep feeling that I keep having nightmares about what happened and it is getting worse.,en,NIGHTMARES,1
+192,I keep feeling that I feel separated from the people I care about and it is getting worse.,en,DETACHMENT,1
+193,"At the moment, I am always expecting something bad to happen and this is causing me a lot of distress.",en,HYPERVIGILANCE,1
+194,"Lately, I feel like I must always stay alert and I am struggling to cope.",en,HYPERVIGILANCE,1
+195,"For the past few days, Sudden sounds make me extremely frightened these days.",en,STARTLE_RESPONSE,1
+196,"For the past few days, My sleep pattern has changed since what happened and I find it difficult to control.",en,SLEEP_DISTURBANCE,1
+197,I keep feeling that I feel like I must always stay alert and I don't know how to deal with it.,en,HYPERVIGILANCE,1
+198,"Lately, My mind keeps wandering when I try to study and it is affecting my daily life.",en,DIFFICULTY_CONCENTRATING,1
+199,"Since the incident, I am constantly looking over my shoulder and I don't know how to deal with it.",en,HYPERVIGILANCE,1
+200,"At the moment, The memories return even when I don't want them",en,INTRUSIVE_MEMORY,1
+201,"Since the incident, I feel emotionally numb and it is getting worse.",en,EMOTIONAL_NUMBNESS,1
+202,"Recently, I cannot stop remembering the incident lately.",en,INTRUSIVE_MEMORY,1
+203,"Right now, I keep checking whether someone is nearby lately.",en,HYPERVIGILANCE,1
+204,I have noticed that I keep checking whether someone is nearby and it has become difficult to manage.,en,HYPERVIGILANCE,1
+205,"Right now, I cannot relax because I am always alert and it is affecting my daily life.",en,HYPERVIGILANCE,1
+206,I have noticed that My mind keeps wandering when I try to study lately.,en,DIFFICULTY_CONCENTRATING,1
+207,"At the moment, I keep having nightmares about what happened these days.",en,NIGHTMARES,1
+208,"Lately, My sleep pattern has changed since what happened and I don't know how to deal with it.",en,SLEEP_DISTURBANCE,1
+209,I have become emotionally distant lately.,en,DETACHMENT,1
+210,I keep waking up during the night and this is causing me a lot of distress.,en,SLEEP_DISTURBANCE,1
+211,"Right now, I don't feel connected to my family anymore these days.",en,DETACHMENT,1
+212,I react strongly to sudden movements and it is getting worse.,en,STARTLE_RESPONSE,1
+213,"For the past few days, I am always expecting something bad to happen and it is getting worse.",en,HYPERVIGILANCE,1
+214,"For the past few days, The emotional pain is still affecting me and I don't know how to deal with it.",en,PERSISTENT_DISTRESS,1
+215,"At the moment, It is difficult for me to pay attention and it is getting worse.",en,DIFFICULTY_CONCENTRATING,1
+216,I am constantly watching for danger and I don't know how to deal with it.,en,HYPERVIGILANCE,1
+217,"Lately, I feel disconnected from people around me and I don't know how to deal with it.",en,DETACHMENT,1
+218,"Lately, I avoid discussing the experience with others and I don't know how to deal with it.",en,AVOIDANCE,1
+219,"Right now, I feel unsafe even when nothing is happening these days.",en,HYPERVIGILANCE,1
+220,"Since the incident, I feel vulnerable wherever I go lately.",en,REDUCED_SENSE_OF_SAFETY,1
+221,"Right now, I have repeated memories of what happened and it has become difficult to manage.",en,INTRUSIVE_MEMORY,1
+222,"Right now, I feel like I am disconnected from everything and I find it difficult to control.",en,DETACHMENT,1
+223,I have noticed that I regularly wake up after nightmares and I am struggling to cope.,en,NIGHTMARES,1
+224,I have noticed that My sleep has become very disturbed and it is getting worse.,en,SLEEP_DISTURBANCE,1
+225,I keep feeling that I dream about the incident repeatedly and it has become difficult to manage.,en,NIGHTMARES,1
+226,"Lately, I feel like I have shut down emotionally and I find it difficult to control.",en,EMOTIONAL_NUMBNESS,1
+227,"Lately, I have disturbing dreams related to what happened these days.",en,NIGHTMARES,1
+228,"At the moment, I feel upset whenever I think about what happened and it is getting worse.",en,PERSISTENT_DISTRESS,1
+229,"Since the incident, Memories of what happened keep coming back and it is getting worse.",en,INTRUSIVE_MEMORY,1
+230,"Right now, I feel separated from the people I care about and I don't know how to deal with it.",en,DETACHMENT,1
+231,I feel that I feel like I am disconnected from everything and it has become difficult to manage.,en,DETACHMENT,1
+232,"Lately, I am constantly looking over my shoulder and I don't know how to deal with it.",en,HYPERVIGILANCE,1
+233,"Right now, I keep waking up during the night lately.",en,SLEEP_DISTURBANCE,1
+234,I feel that I cannot stop remembering the incident and I am struggling to cope.,en,INTRUSIVE_MEMORY,1
+235,"Right now, I avoid discussing the experience with others and I am struggling to cope.",en,AVOIDANCE,1
+236,I feel that My thoughts make it difficult to concentrate and I am struggling to cope.,en,DIFFICULTY_CONCENTRATING,1
+237,I feel emotionally numb lately.,en,EMOTIONAL_NUMBNESS,1
+238,"For the past few days, I feel disconnected from people around me",en,DETACHMENT,1
+239,"At the moment, I avoid discussing the experience with others",en,AVOIDANCE,1
+240,I keep feeling that I am easily startled by people approaching me and it is affecting my daily life.,en,STARTLE_RESPONSE,1
+241,"For the past few days, I don't want to think about what happened and I am struggling to cope.",en,AVOIDANCE,1
+242,I keep feeling that My thoughts make it difficult to concentrate and this is causing me a lot of distress.,en,DIFFICULTY_CONCENTRATING,1
+243,I have noticed that I keep reliving parts of the experience in my mind and I don't know how to deal with it.,en,INTRUSIVE_MEMORY,1
+244,"Since the incident, My emotions feel empty lately.",en,EMOTIONAL_NUMBNESS,1
+245,"For the past few days, The experience continues to cause me emotional pain these days.",en,PERSISTENT_DISTRESS,1
+246,I feel separated from the people I care about and I find it difficult to control.,en,DETACHMENT,1
+247,"Lately, I dream about the incident repeatedly and it has become difficult to manage.",en,NIGHTMARES,1
+248,"Lately, I don't feel protected anymore and I find it difficult to control.",en,REDUCED_SENSE_OF_SAFETY,1
+249,I feel separated from the people I care about and I am struggling to cope.,en,DETACHMENT,1
+250,I keep feeling that I am constantly watching for danger and it is getting worse.,en,HYPERVIGILANCE,1
+251,"Right now, I feel emotionally numb",en,EMOTIONAL_NUMBNESS,1
+252,"Right now, The experience continues to cause me emotional pain and this is causing me a lot of distress.",en,PERSISTENT_DISTRESS,1
+253,I keep feeling that I cannot stop remembering the incident and I don't know how to deal with it.,en,INTRUSIVE_MEMORY,1
+254,I feel that I have not been able to recover emotionally lately.,en,PERSISTENT_DISTRESS,1
+255,I feel that I don't feel connected to my family anymore lately.,en,DETACHMENT,1
+256,I have noticed that I try to keep myself away from reminders of the incident and it is getting worse.,en,AVOIDANCE,1
+257,"For the past few days, I feel emotionally empty most of the time and I find it difficult to control.",en,EMOTIONAL_NUMBNESS,1
+258,"Recently, I become frightened very quickly these days.",en,STARTLE_RESPONSE,1
+259,"For the past few days, I wake up from frightening dreams about the event and it is affecting my daily life.",en,NIGHTMARES,1
+260,I have noticed that I feel emotionally numb and it is affecting my daily life.,en,EMOTIONAL_NUMBNESS,1
+261,"For the past few days, I have become emotionally distant and it is getting worse.",en,DETACHMENT,1
+262,"Lately, I constantly worry about my safety and I don't know how to deal with it.",en,REDUCED_SENSE_OF_SAFETY,1
+263,"Recently, I regularly wake up after nightmares lately.",en,NIGHTMARES,1
+264,"For the past few days, I continue to struggle emotionally after the event these days.",en,PERSISTENT_DISTRESS,1
+265,"Lately, It is difficult for me to pay attention and it has become difficult to manage.",en,DIFFICULTY_CONCENTRATING,1
+266,"At the moment, I feel unsafe even when nothing is happening these days.",en,HYPERVIGILANCE,1
+267,"Right now, I try not to talk about the incident lately.",en,AVOIDANCE,1
+268,"At the moment, I cannot concentrate since the incident and it is affecting my daily life.",en,DIFFICULTY_CONCENTRATING,1
+269,"Recently, I still feel deeply upset about the incident and I am struggling to cope.",en,PERSISTENT_DISTRESS,1
+270,I have noticed that I struggle to fall asleep and I am struggling to cope.,en,SLEEP_DISTURBANCE,1
+271,I don't feel connected to my family anymore and it is getting worse.,en,DETACHMENT,1
+272,"Since the incident, I am always expecting something bad to happen and it has become difficult to manage.",en,HYPERVIGILANCE,1
+273,"Since the incident, The experience continues to cause me emotional pain lately.",en,PERSISTENT_DISTRESS,1
+274,"At the moment, I cannot concentrate since the incident and it has become difficult to manage.",en,DIFFICULTY_CONCENTRATING,1
+275,"Recently, The event keeps coming into my thoughts lately.",en,INTRUSIVE_MEMORY,1
+276,"Since the incident, My thoughts make it difficult to concentrate and I am struggling to cope.",en,DIFFICULTY_CONCENTRATING,1
+277,"Right now, I still feel deeply upset about the incident and it is getting worse.",en,PERSISTENT_DISTRESS,1
+278,"At the moment, I feel disconnected from people around me and it is affecting my daily life.",en,DETACHMENT,1
+279,"Recently, I continue to struggle emotionally after the event and I am struggling to cope.",en,PERSISTENT_DISTRESS,1
+280,"Since the incident, I feel emotionally empty most of the time and I don't know how to deal with it.",en,EMOTIONAL_NUMBNESS,1
+281,"Since the incident, I don't feel much of anything anymore",en,EMOTIONAL_NUMBNESS,1
+282,I have noticed that It is difficult for me to pay attention and it is affecting my daily life.,en,DIFFICULTY_CONCENTRATING,1
+283,"For the past few days, The experience continues to cause me emotional pain and this is causing me a lot of distress.",en,PERSISTENT_DISTRESS,1
+284,I have noticed that I feel emotionally empty most of the time,en,EMOTIONAL_NUMBNESS,1
+285,"Recently, I cannot relax because I am always alert and it is getting worse.",en,HYPERVIGILANCE,1
+286,"Recently, I keep checking whether someone is nearby and it has become difficult to manage.",en,HYPERVIGILANCE,1
+287,"For the past few days, I cannot relax because I am always alert",en,HYPERVIGILANCE,1
+288,"Since the incident, I cannot relax because I am always alert and it is affecting my daily life.",en,HYPERVIGILANCE,1
+289,I keep feeling that My nightmares remind me of the experience and I am struggling to cope.,en,NIGHTMARES,1
+290,"For the past few days, I continue to struggle emotionally after the event lately.",en,PERSISTENT_DISTRESS,1
+291,I keep feeling that I feel unsafe even when I am at home and I am struggling to cope.,en,REDUCED_SENSE_OF_SAFETY,1
+292,"Recently, Unwanted memories of the incident keep appearing lately.",en,INTRUSIVE_MEMORY,1
+293,"Right now, Unwanted memories of the incident keep appearing these days.",en,INTRUSIVE_MEMORY,1
+294,"Since the incident, I have repeated memories of what happened and it has become difficult to manage.",en,INTRUSIVE_MEMORY,1
+295,I have disturbing dreams related to what happened and I don't know how to deal with it.,en,NIGHTMARES,1
+296,I feel that I feel disconnected from people around me and I don't know how to deal with it.,en,DETACHMENT,1
+297,"Recently, I don't feel much of anything anymore and I don't know how to deal with it.",en,EMOTIONAL_NUMBNESS,1
+298,I feel upset whenever I think about what happened and it has become difficult to manage.,en,PERSISTENT_DISTRESS,1
+299,"Recently, I am constantly watching for danger and it has become difficult to manage.",en,HYPERVIGILANCE,1
+300,"For the past few days, I have repeated memories of what happened",en,INTRUSIVE_MEMORY,1
