@@ -1,5 +1,5 @@
 -- ==============================================================================
--- NHAA 14566 - COMPLETE DB Setup & Fix
+-- NHAA 14566 - COMPLETE DB Setup & Fix (v2)
 -- Run this ENTIRE file in Supabase SQL Editor
 -- Dashboard → SQL Editor → New Query → Paste → Run
 -- ==============================================================================
@@ -8,13 +8,9 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ── 1. PROFILES TABLE ────────────────────────────────────────────────────────
--- Drop old role enum if it causes problems and re-create as TEXT
--- (TEXT is simpler and avoids enum casting issues)
-
 ALTER TABLE public.profiles
   ALTER COLUMN role TYPE TEXT;
 
--- Reset to safe defaults
 ALTER TABLE public.profiles
   ALTER COLUMN role SET DEFAULT 'victim';
 
@@ -24,8 +20,6 @@ ALTER TABLE public.profiles
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 
--- Add email column if it doesn't exist (our code no longer writes to it,
--- but the trigger populates it for reference)
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS email TEXT;
 
@@ -40,15 +34,12 @@ DROP POLICY IF EXISTS "Profiles: own insert"    ON public.profiles;
 DROP POLICY IF EXISTS "Profiles: own update"    ON public.profiles;
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.profiles;
 
--- Anyone can read profiles (officers need to see victim profiles)
 CREATE POLICY "Profiles: public read" ON public.profiles
   FOR SELECT USING (true);
 
--- User can insert their own row (id must equal their auth uid)
 CREATE POLICY "Profiles: own insert" ON public.profiles
   FOR INSERT WITH CHECK (auth.uid() = id);
 
--- User can update their own row
 CREATE POLICY "Profiles: own update" ON public.profiles
   FOR UPDATE USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
@@ -71,8 +62,6 @@ CREATE POLICY "Addresses: own update" ON public.addresses
   WITH CHECK (auth.uid() = user_id);
 
 -- ── 4. AUTH TRIGGER: Auto-create profile on signup ───────────────────────────
--- Uses TEXT for role (no enum casting) so it works for both email + Google OAuth
-
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -103,31 +92,75 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- ── 5. CASES TABLE: Ensure it exists with correct schema ─────────────────────
-CREATE TABLE IF NOT EXISTS public.cases (
-  id                TEXT PRIMARY KEY,
-  user_id           UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
-  victim_name       TEXT,
-  initials          TEXT,
-  is_anonymous      BOOLEAN DEFAULT false,
-  contact_number    TEXT,
-  incident_category TEXT,
-  incident_location JSONB,
-  channel           TEXT DEFAULT 'integrated_portal',
-  language          TEXT DEFAULT 'en',
-  reported_at       TIMESTAMPTZ DEFAULT NOW(),
-  narrative_text    TEXT,
-  voice_analysis    JSONB,
-  stress_assessment JSONB,
-  status            TEXT DEFAULT 'New Intake',
-  assigned_officer  TEXT,
-  assigned_counsellor TEXT,
-  priority_tier     INTEGER DEFAULT 3,
-  notes             JSONB DEFAULT '[]',
-  dispatched_actions JSONB DEFAULT '[]',
-  created_at        TIMESTAMPTZ DEFAULT NOW(),
-  updated_at        TIMESTAMPTZ DEFAULT NOW()
+-- ── 5. OFFICERS TABLE: Real officers only from admin-inserted records ─────────
+-- Officers must be inserted MANUALLY by admin via Supabase dashboard or admin API.
+-- No seed data — real officers only.
+CREATE TABLE IF NOT EXISTS public.officers (
+  id                  UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id             UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  officer_badge_id    TEXT UNIQUE NOT NULL,
+  full_name           TEXT NOT NULL,
+  email               TEXT,
+  phone               TEXT,
+  department          TEXT,
+  role                TEXT DEFAULT 'officer',
+  assigned_state      TEXT,
+  assigned_district   TEXT,
+  station_name        TEXT,
+  jurisdiction_pincodes TEXT[],
+  active_cases_count  INTEGER DEFAULT 0,
+  is_available        BOOLEAN DEFAULT true,
+  created_at          TIMESTAMPTZ DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE public.officers ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Officers: public read"   ON public.officers;
+DROP POLICY IF EXISTS "Officers: auth insert"   ON public.officers;
+DROP POLICY IF EXISTS "Officers: own update"    ON public.officers;
+
+-- Any authenticated user can read officers list (needed for proximity matching)
+CREATE POLICY "Officers: public read" ON public.officers FOR SELECT USING (true);
+-- Only service role / admin can insert officers (via dashboard)
+CREATE POLICY "Officers: auth insert" ON public.officers FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Officers: own update" ON public.officers FOR UPDATE USING (auth.uid() = user_id);
+
+-- ── 6. CASES TABLE: with session_id and assigned_officer_id columns ───────────
+CREATE TABLE IF NOT EXISTS public.cases (
+  id                    TEXT PRIMARY KEY,
+  session_id            TEXT,
+  user_id               UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  victim_name           TEXT,
+  initials              TEXT,
+  is_anonymous          BOOLEAN DEFAULT false,
+  contact_number        TEXT,
+  incident_category     TEXT,
+  incident_location     JSONB,
+  channel               TEXT DEFAULT 'integrated_portal',
+  language              TEXT DEFAULT 'en',
+  reported_at           TIMESTAMPTZ DEFAULT NOW(),
+  narrative_text        TEXT,
+  voice_analysis        JSONB,
+  stress_assessment     JSONB,
+  status                TEXT DEFAULT 'New Intake',
+  assigned_officer      TEXT,
+  assigned_officer_id   TEXT,
+  assigned_counsellor   TEXT,
+  assigned_counsellor_id TEXT,
+  proximity_routing     TEXT,
+  priority_tier         INTEGER DEFAULT 3,
+  notes                 JSONB DEFAULT '[]',
+  dispatched_actions    JSONB DEFAULT '[]',
+  created_at            TIMESTAMPTZ DEFAULT NOW(),
+  updated_at            TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Add missing columns to existing cases table (safe ALTER for existing deployments)
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS session_id TEXT;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS assigned_officer_id TEXT;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS assigned_counsellor_id TEXT;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS proximity_routing TEXT;
 
 ALTER TABLE public.cases ENABLE ROW LEVEL SECURITY;
 
@@ -135,11 +168,12 @@ DROP POLICY IF EXISTS "Cases: public read"   ON public.cases;
 DROP POLICY IF EXISTS "Cases: auth insert"   ON public.cases;
 DROP POLICY IF EXISTS "Cases: auth update"   ON public.cases;
 
+-- Authenticated victims can insert their own cases
 CREATE POLICY "Cases: public read" ON public.cases FOR SELECT USING (true);
 CREATE POLICY "Cases: auth insert" ON public.cases FOR INSERT WITH CHECK (true);
 CREATE POLICY "Cases: auth update" ON public.cases FOR UPDATE USING (true);
 
--- ── 6. ASSESSMENTS TABLE ─────────────────────────────────────────────────────
+-- ── 7. ASSESSMENTS TABLE ─────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.assessments (
   id               UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id          UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
@@ -164,7 +198,7 @@ DROP POLICY IF EXISTS "Assessments: auth insert"  ON public.assessments;
 CREATE POLICY "Assessments: public read" ON public.assessments FOR SELECT USING (true);
 CREATE POLICY "Assessments: auth insert" ON public.assessments FOR INSERT WITH CHECK (true);
 
--- ── 7. Enable Realtime (Idempotent) ───────────────────────────────────────────
+-- ── 8. Enable Realtime (Idempotent) ───────────────────────────────────────────
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -183,6 +217,7 @@ BEGIN
 END $$;
 
 -- ── Done ──────────────────────────────────────────────────────────────────────
--- All tables: profiles, addresses, cases, assessments are ready.
+-- All tables: profiles, addresses, officers, cases, assessments are ready.
 -- RLS is enabled with correct policies.
--- Auth trigger creates profile automatically on signup (email + Google OAuth).
+-- Officers must be inserted by admin — no seed data.
+-- Session ID and assigned_officer_id are stored with every case submission.

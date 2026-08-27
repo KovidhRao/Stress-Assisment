@@ -1,55 +1,11 @@
 import { CaseRecord, OfficerProfile, UserStory, TrustedContact, UserActivity, AppointmentRecord } from '@/types'
 
-export const DEFAULT_OFFICERS: OfficerProfile[] = [
-  {
-    id: 'OFF-01',
-    officer_badge_id: 'NHAA-DL-8092',
-    full_name: 'Dr. Ramesh Chandra',
-    department: 'Psychological Triage',
-    role: 'counsellor',
-    assigned_state: 'National HQ (New Delhi)',
-    assigned_district: 'Central Delhi',
-    active_cases_count: 8,
-    email: 'dr.chandra@nhaa.gov.in',
-    phone: '+91 98101 23456'
-  },
-  {
-    id: 'OFF-02',
-    officer_badge_id: 'NHAA-MH-4421',
-    full_name: 'Insp. Vikram Pratap Singh',
-    department: 'Law Enforcement Liaison',
-    role: 'officer',
-    assigned_state: 'Maharashtra',
-    assigned_district: 'Pune',
-    active_cases_count: 5,
-    email: 'vikram.singh@mahapolice.gov.in',
-    phone: '+91 94220 98765'
-  },
-  {
-    id: 'OFF-03',
-    officer_badge_id: 'NHAA-UP-3319',
-    full_name: 'Adv. Radhika Nair',
-    department: 'Legal Aid Cell (NALSA)',
-    role: 'officer',
-    assigned_state: 'Uttar Pradesh',
-    assigned_district: 'Lucknow',
-    active_cases_count: 11,
-    email: 'radhika.nair@nalsa.gov.in',
-    phone: '+91 97112 34567'
-  },
-  {
-    id: 'OFF-04',
-    officer_badge_id: 'NHAA-RJ-6712',
-    full_name: 'Sunita Devi IAS',
-    department: 'District Nodal Redressal',
-    role: 'admin',
-    assigned_state: 'Rajasthan',
-    assigned_district: 'Jaipur',
-    active_cases_count: 14,
-    email: 'sunita.devi@rajasthan.gov.in',
-    phone: '+91 94140 11223'
-  }
-]
+/**
+ * DEFAULT_OFFICERS is intentionally empty — all officers are loaded from Supabase.
+ * Used only as a safe fallback type-anchor; never shown in the UI.
+ */
+export const DEFAULT_OFFICERS: OfficerProfile[] = []
+
 
 export const INITIAL_CASES: CaseRecord[] = [
   {

@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
-import { CaseRecord, UserProfile, VoiceAnalysisMetrics } from '@/types'
-import { INITIAL_CASES } from '@/lib/mock-data'
+import { CaseRecord, OfficerProfile, UserProfile, VoiceAnalysisMetrics } from '@/types'
+import { INITIAL_CASES, DEFAULT_OFFICERS } from '@/lib/mock-data'
 
 /**
  * Service to manage Supabase database operations with fallback resilience.
@@ -317,11 +317,88 @@ export async function saveUserAddress(
 
 // ─── Cases ───────────────────────────────────────────────────────────────────
 
-export async function fetchCasesFromDb(): Promise<CaseRecord[]> {
+// ─── Officers ─────────────────────────────────────────────────────────────────
+
+export async function fetchOfficersFromDb(): Promise<OfficerProfile[]> {
   try {
     const { data, error } = await supabase
-      .from('cases')
+      .from('officers')
       .select('*')
+      .order('active_cases_count', { ascending: true })
+
+    if (error || !data || data.length === 0) {
+      console.warn('Could not fetch officers from Supabase, using defaults:', error?.message)
+      return DEFAULT_OFFICERS
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return data.map((o: any) => ({
+      id: o.id,
+      officer_badge_id: o.officer_badge_id,
+      full_name: o.full_name,
+      department: o.department,
+      role: o.role || 'officer',
+      assigned_state: o.assigned_state,
+      assigned_district: o.assigned_district,
+      station_name: o.station_name || `${o.assigned_district} Redressal Unit`,
+      jurisdiction_pincodes: Array.isArray(o.jurisdiction_pincodes) ? o.jurisdiction_pincodes : [],
+      active_cases_count: o.active_cases_count || 0,
+      email: o.email,
+      phone: o.phone,
+      is_available: o.is_available !== false,
+      avatar_url: o.avatar_url
+    }))
+  } catch (err) {
+    console.error('Error in fetchOfficersFromDb:', err)
+    return DEFAULT_OFFICERS
+  }
+}
+
+export async function saveOfficerProfile(
+  officer: Partial<OfficerProfile> & { id: string }
+): Promise<{ success: boolean; data?: OfficerProfile; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('officers')
+      .upsert({
+        id: officer.id,
+        officer_badge_id: officer.officer_badge_id,
+        full_name: officer.full_name,
+        department: officer.department,
+        role: officer.role || 'officer',
+        assigned_state: officer.assigned_state,
+        assigned_district: officer.assigned_district,
+        station_name: officer.station_name,
+        email: officer.email,
+        phone: officer.phone,
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.warn('Supabase saveOfficerProfile error:', error.message)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, data: data as OfficerProfile }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to save officer profile'
+    return { success: false, error: msg }
+  }
+}
+
+// ─── Cases ───────────────────────────────────────────────────────────────────
+
+export async function fetchCasesFromDb(filterOfficerId?: string, district?: string): Promise<CaseRecord[]> {
+  try {
+    let query = supabase.from('cases').select('*')
+
+    if (filterOfficerId) {
+      query = query.or(`assigned_officer_id.eq.${filterOfficerId},incident_location->>district.ilike.%${district || ''}%`)
+    }
+
+    const { data, error } = await query
 
     if (error) {
       console.warn('Error fetching cases from Supabase:', error.message)
@@ -341,21 +418,26 @@ export async function fetchCasesFromDb(): Promise<CaseRecord[]> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return sorted.map((c: any) => ({
       id: c.id,
+      session_id: c.session_id,
+      user_id: c.user_id,
       victim_name: c.victim_name,
       initials: c.initials || (c.victim_name ? c.victim_name.slice(0, 2).toUpperCase() : 'AN'),
       is_anonymous: !!c.is_anonymous,
       contact_number: c.contact_number,
       incident_category: c.incident_category,
-      incident_location: c.incident_location || { village_town_city: '', district: '', state: '' },
+      incident_location: c.incident_location || { village_town_city: '', district: '', state: '', pincode: '' },
       channel: c.channel || 'integrated_portal',
-      language: c.language || 'English',
+      language: c.language || 'en',
       reported_at: c.reported_at,
       narrative_text: c.narrative_text,
       voice_analysis: c.voice_analysis,
       stress_assessment: c.stress_assessment,
       status: c.status || 'New Intake',
       assigned_officer: c.assigned_officer,
+      assigned_officer_id: c.assigned_officer_id,
       assigned_counsellor: c.assigned_counsellor,
+      assigned_counsellor_id: c.assigned_counsellor_id,
+      proximity_routing: c.proximity_routing,
       priority_tier: c.priority_tier || 3,
       notes: Array.isArray(c.notes) ? c.notes : [],
       dispatched_actions: Array.isArray(c.dispatched_actions) ? c.dispatched_actions : []
@@ -371,9 +453,19 @@ export async function createCaseInDb(
   userId?: string
 ): Promise<{ success: boolean; data?: CaseRecord; error?: string }> {
   try {
+    // Helper: only pass a value as FK if it looks like a real UUID
+    const isUuid = (v?: string | null) =>
+      typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
+
+    // user_id must also be a real UUID from auth
+    const safeUserId = isUuid(userId || caseRecord.user_id)
+      ? (userId || caseRecord.user_id)
+      : null
+
     const payload = {
       id: caseRecord.id,
-      user_id: userId || null,
+      session_id: caseRecord.session_id || `SESS-${Date.now().toString().slice(-6)}`,
+      user_id: safeUserId,
       victim_name: caseRecord.victim_name,
       initials: caseRecord.initials,
       is_anonymous: caseRecord.is_anonymous,
@@ -382,13 +474,17 @@ export async function createCaseInDb(
       incident_location: caseRecord.incident_location,
       channel: caseRecord.channel,
       language: caseRecord.language,
-      reported_at: caseRecord.reported_at || new Date().toISOString(),
+      reported_at: new Date().toISOString(),
       narrative_text: caseRecord.narrative_text,
       voice_analysis: caseRecord.voice_analysis || null,
       stress_assessment: caseRecord.stress_assessment,
       status: caseRecord.status,
       assigned_officer: caseRecord.assigned_officer || null,
+      // Only send UUID officer FK if it's a real UUID; otherwise store name-only
+      assigned_officer_id: isUuid(caseRecord.assigned_officer_id) ? caseRecord.assigned_officer_id : null,
       assigned_counsellor: caseRecord.assigned_counsellor || null,
+      assigned_counsellor_id: isUuid(caseRecord.assigned_counsellor_id) ? caseRecord.assigned_counsellor_id : null,
+      proximity_routing: caseRecord.proximity_routing || null,
       priority_tier: caseRecord.priority_tier,
       notes: caseRecord.notes || [],
       dispatched_actions: caseRecord.dispatched_actions || [],
@@ -408,6 +504,7 @@ export async function createCaseInDb(
     return { success: false, error: msg, data: caseRecord }
   }
 }
+
 
 export async function updateCaseInDb(caseId: string, updates: Partial<CaseRecord>): Promise<boolean> {
   try {
@@ -477,21 +574,26 @@ export function subscribeToRealtimeCases(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const formatCase = (c: any): CaseRecord => ({
     id: c.id,
+    session_id: c.session_id,
+    user_id: c.user_id,
     victim_name: c.victim_name,
     initials: c.initials || (c.victim_name ? c.victim_name.slice(0, 2).toUpperCase() : 'AN'),
     is_anonymous: !!c.is_anonymous,
     contact_number: c.contact_number,
     incident_category: c.incident_category,
-    incident_location: c.incident_location || { village_town_city: '', district: '', state: '' },
+    incident_location: c.incident_location || { village_town_city: '', district: '', state: '', pincode: '' },
     channel: c.channel || 'integrated_portal',
-    language: c.language || 'English',
+    language: c.language || 'en',
     reported_at: c.reported_at,
     narrative_text: c.narrative_text,
     voice_analysis: c.voice_analysis,
     stress_assessment: c.stress_assessment,
     status: c.status || 'New Intake',
     assigned_officer: c.assigned_officer,
+    assigned_officer_id: c.assigned_officer_id,
     assigned_counsellor: c.assigned_counsellor,
+    assigned_counsellor_id: c.assigned_counsellor_id,
+    proximity_routing: c.proximity_routing,
     priority_tier: c.priority_tier || 3,
     notes: Array.isArray(c.notes) ? c.notes : [],
     dispatched_actions: Array.isArray(c.dispatched_actions) ? c.dispatched_actions : []
@@ -511,3 +613,4 @@ export function subscribeToRealtimeCases(
     supabase.removeChannel(channel)
   }
 }
+

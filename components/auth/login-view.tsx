@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   ShieldCheck, 
   UserRound, 
@@ -17,29 +17,43 @@ import {
   Building2,
   FileSearch,
   Send,
-  Database
+  Database,
+  MapPin,
+  BadgeAlert,
+  Globe2
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { DEFAULT_OFFICERS } from '@/lib/mock-data'
 import { OfficerProfile, UserProfile } from '@/types'
-import { fetchUserProfile, saveUserProfile } from '@/lib/supabase-service'
+import { fetchOfficersFromDb, fetchUserProfile, saveUserProfile } from '@/lib/supabase-service'
+import { SUPPORTED_LANGUAGES, t } from '@/lib/i18n'
 
 interface LoginViewProps {
   onLoginSuccess: (user: UserProfile, officer?: OfficerProfile | null) => void
   onCancel?: () => void
+  initialLanguage?: string
+  onLanguageChange?: (lang: string) => void
 }
 
-export function LoginView({ onLoginSuccess }: LoginViewProps) {
+export function LoginView({
+  onLoginSuccess,
+  initialLanguage = 'en',
+  onLanguageChange
+}: LoginViewProps) {
   const [activeTab, setActiveTab] = useState<'victim' | 'officer'>('victim')
+  const [selectedLang, setSelectedLang] = useState(initialLanguage)
   
+  // Real officers from database
+  const [officersList, setOfficersList] = useState<OfficerProfile[]>(DEFAULT_OFFICERS)
+
   // Victim form state
   const [victimMode, setVictimMode] = useState<'signin' | 'signup' | 'otp' | 'anonymous' | 'case_track'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
-  const [otpToken, setOtpToken] = useState('')
-  const [otpSent, setOtpSent] = useState(false)
+  const [victimDistrict, setVictimDistrict] = useState('Pune')
+  const [victimState, setVictimState] = useState('Maharashtra')
   const [trackCaseId, setTrackCaseId] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -51,15 +65,26 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
   const [officerPassword, setOfficerPassword] = useState('')
   const [selectedDemoOfficer, setSelectedDemoOfficer] = useState<OfficerProfile | null>(null)
 
-  // Helper to load or create profile and dispatch onLoginSuccess
+  // Load real officers from Supabase
+  useEffect(() => {
+    fetchOfficersFromDb().then(officers => {
+      if (officers && officers.length > 0) {
+        setOfficersList(officers)
+      }
+    })
+  }, [])
+
+  const handleLanguageSelect = (lang: string) => {
+    setSelectedLang(lang)
+    if (onLanguageChange) onLanguageChange(lang)
+  }
+
+  // Finalize Victim Login
   const finalizeUserLogin = async (authUser: { id: string; email?: string; user_metadata?: Record<string, string> }) => {
-    // Try fetching existing profile (includes joined address)
     let profile = await fetchUserProfile(authUser.id, authUser.email)
 
     if (!profile) {
-      // First login: create skeleton profile
       const meta = authUser.user_metadata ?? {}
-      // Google provides full_name, name, avatar_url
       const guessedName =
         fullName.trim() ||
         meta.full_name ||
@@ -71,7 +96,9 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
         email: authUser.email ?? email,
         full_name: guessedName,
         phone: phone.trim() || meta.phone || '',
-        preferred_language: 'en', // short code
+        preferred_language: selectedLang,
+        district: victimDistrict,
+        state: victimState,
         role: 'victim',
         is_profile_complete: false
       }
@@ -112,9 +139,8 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
         })
 
         if (error) {
-          // If signup fails due to rate limit or email confirmation requirement, show clear message
           if (error.message.includes('confirm') || error.message.includes('rate limit')) {
-            setErrorMsg(`${error.message} (You can also sign in directly if previously registered).`)
+            setErrorMsg(`${error.message} (You can also sign in directly if registered).`)
           } else {
             setErrorMsg(error.message)
           }
@@ -122,15 +148,8 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
         }
 
         if (data.user) {
-          if (data.session) {
-            setSuccessMsg('Account created successfully!')
-            await finalizeUserLogin(data.user)
-          } else {
-            // Confirmation email sent
-            setSuccessMsg('Verification link sent to your email! Please check your inbox or proceed.')
-            // Allow instant test onboarding
-            await finalizeUserLogin(data.user)
-          }
+          setSuccessMsg('Account created successfully!')
+          await finalizeUserLogin(data.user)
         }
       } else if (victimMode === 'signin') {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -140,9 +159,7 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
 
         if (error) {
           if (error.message.toLowerCase().includes('invalid login credentials')) {
-            setErrorMsg('Invalid email or password. Note: If you previously signed in with "Continue with Google", please use the Google button to log in.')
-          } else if (error.message.toLowerCase().includes('email not confirmed')) {
-            setErrorMsg('Please confirm your email address via the link sent to your inbox, or disable "Confirm email" in Supabase Dashboard settings.')
+            setErrorMsg('Invalid email or password. Please verify your credentials or register.')
           } else {
             setErrorMsg(error.message || 'Invalid email or password.')
           }
@@ -162,69 +179,22 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
     }
   }
 
-  // Handle Magic Link / OTP Sign In
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email) {
-      setErrorMsg('Please enter your email address to receive a login link.')
-      return
-    }
-    setLoading(true)
-    setErrorMsg(null)
-    setSuccessMsg(null)
-
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: {
-          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined
-        }
-      })
-      if (error) {
-        throw error
-      }
-      setOtpSent(true)
-      setSuccessMsg('One-Time Login Link sent to your email! Check your inbox to sign in.')
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to send login code'
-      setErrorMsg(message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Handle Google / Gmail OAuth
-  // Requires: Supabase Dashboard → Auth → Providers → Google → Enabled with Client ID + Secret
-  // The OAuth flow redirects to Google, then back to this app's origin (/auth/callback is handled by Supabase SDK)
+  // Google OAuth
   const handleGoogleLogin = async () => {
     setLoading(true)
     setErrorMsg(null)
     try {
-      const redirectTo = typeof window !== 'undefined'
-        ? `${window.location.origin}`
-        : undefined
-
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}` : undefined
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo,
-          // Request profile scopes so we get name + picture
-          scopes: 'openid email profile',
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent'
-          }
+          scopes: 'openid email profile'
         }
       })
-
       if (error) {
-        // Real error — Google provider probably not enabled in Supabase
-        setErrorMsg(
-          `Google login failed: ${error.message}. ` +
-          'Please enable Google in Supabase Dashboard → Authentication → Providers.'
-        )
+        setErrorMsg(`Google login failed: ${error.message}`)
       }
-      // If no error: Supabase redirects to Google. On return the onAuthStateChange listener in page.tsx handles the session.
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Google OAuth failed'
       setErrorMsg(message)
@@ -237,8 +207,11 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
   const handleAnonymousAccess = () => {
     const anonUser: UserProfile = {
       id: `anon-${Date.now().toString().slice(-6)}`,
-      full_name: 'Anonymous Complainant',
+      full_name: 'Anonymous Citizen',
       role: 'victim',
+      preferred_language: selectedLang,
+      district: victimDistrict || 'Pune',
+      state: victimState || 'Maharashtra',
       anonymous: true,
       is_profile_complete: true,
       avatar_initials: 'AC',
@@ -247,10 +220,10 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
     onLoginSuccess(anonUser, null)
   }
 
-  // Handle Case Tracking Quick Search
+  // Handle Case Tracking
   const handleTrackCase = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!trackCaseId) {
+    if (!trackCaseId.trim()) {
       setErrorMsg('Please enter a valid Case Reference ID (e.g. NHAA-2026-9041)')
       return
     }
@@ -258,6 +231,7 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
       id: `track-${Date.now().toString().slice(-6)}`,
       full_name: `Case Inquirer (${trackCaseId.toUpperCase()})`,
       role: 'victim',
+      preferred_language: selectedLang,
       is_profile_complete: true,
       avatar_initials: 'CI',
       created_at: new Date().toISOString()
@@ -265,17 +239,18 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
     onLoginSuccess(trackingUser, null)
   }
 
-  // Handle Officer Login
+  // Handle Real Officer Login
   const handleOfficerLogin = (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg(null)
     setLoading(true)
 
-    // Match officer by Badge ID or Email or selected demo
-    const targetOfficer = selectedDemoOfficer || DEFAULT_OFFICERS.find(
-      o => o.officer_badge_id.toLowerCase() === officerBadgeId.trim().toLowerCase() ||
-           o.email.toLowerCase() === officerBadgeId.trim().toLowerCase()
-    ) || DEFAULT_OFFICERS[0]
+    const cleanInput = officerBadgeId.trim().toLowerCase()
+    const targetOfficer = selectedDemoOfficer || officersList.find(
+      o => o.officer_badge_id.toLowerCase() === cleanInput ||
+           o.email.toLowerCase() === cleanInput ||
+           o.full_name.toLowerCase().includes(cleanInput)
+    ) || officersList[0]
 
     setTimeout(() => {
       const officerUser: UserProfile = {
@@ -283,6 +258,9 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
         email: targetOfficer.email,
         full_name: targetOfficer.full_name,
         role: targetOfficer.role,
+        state: targetOfficer.assigned_state,
+        district: targetOfficer.assigned_district,
+        preferred_language: selectedLang,
         is_profile_complete: true,
         avatar_initials: targetOfficer.full_name.split(' ').map(n => n[0]).join('').slice(0, 2),
         created_at: new Date().toISOString()
@@ -299,146 +277,234 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f0f6f4] via-[#f7faf8] to-[#e8f3ef] flex flex-col justify-between py-8 px-4 sm:px-6 lg:px-8">
-      {/* Top Government & NHAA Branding Bar */}
-      <div className="max-w-4xl mx-auto w-full flex items-center justify-between border-b border-[#dfe8e4] pb-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#f0f9f6] via-[#f7fbf9] to-[#e8f4f0] flex flex-col justify-between p-4 sm:p-6 text-[#163a34]">
+      {/* Top Navbar */}
+      <header className="max-w-6xl w-full mx-auto flex items-center justify-between py-2">
         <div className="flex items-center gap-3">
-          <div className="size-11 rounded-2xl bg-[#1d8b79] text-white flex items-center justify-center shadow-md font-bold text-xl">
-            14566
+          <div className="flex size-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#1d8272] to-[#12584d] text-white shadow-md shadow-[#1d8272]/20">
+            <ShieldCheck size={22} />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-lg text-[#163a35] tracking-tight">NHAA &amp; Integrated Redressal Portal</span>
-              <span className="text-[10px] bg-[#dcf2eb] text-[#197565] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                MoSJE Govt of India
-              </span>
-            </div>
-            <p className="text-xs text-[#6b827c]">
-              National Helpline Against Atrocities (14566) · Real-time Supabase Auth &amp; Triage
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-[#163a34]">
+              {t('app_title', selectedLang)}
+            </h1>
+            <p className="text-[11px] text-[#557b72] hidden sm:block">
+              National Helpline Against Atrocities (PoA) Act Redressal
             </p>
           </div>
         </div>
 
-        <div className="hidden sm:flex items-center gap-2 text-xs text-[#52746c] bg-white/80 border border-[#d6e5e0] px-3 py-1.5 rounded-xl shadow-xs">
-          <PhoneCall size={14} className="text-[#1d8b79]" />
-          <span>Toll-Free 24x7: <strong className="text-[#163a35]">14566</strong></span>
+        {/* Language Selector */}
+        <div className="flex items-center gap-2 rounded-2xl bg-white/90 border border-[#cfe3dc] px-3 py-1.5 shadow-sm">
+          <Globe2 size={15} className="text-[#1d8272]" />
+          <select
+            value={selectedLang}
+            onChange={e => handleLanguageSelect(e.target.value)}
+            className="bg-transparent text-xs font-semibold text-[#163a34] outline-none cursor-pointer"
+          >
+            {SUPPORTED_LANGUAGES.map(lang => (
+              <option key={lang.code} value={lang.code}>
+                {lang.nativeName} ({lang.label})
+              </option>
+            ))}
+          </select>
         </div>
-      </div>
+      </header>
 
-      {/* Main Login Card */}
-      <div className="max-w-xl mx-auto w-full my-6">
-        <div className="bg-white rounded-3xl border border-[#d8e6e1] shadow-[0_20px_50px_-20px_rgba(24,80,70,0.15)] overflow-hidden">
-          {/* Header Switcher: Victim vs Officer */}
-          <div className="grid grid-cols-2 p-2 bg-[#f0f6f3] border-b border-[#e1ece8]">
+      {/* Main Card */}
+      <div className="max-w-4xl w-full mx-auto my-6">
+        <div className="rounded-3xl border border-[#cfe3dc] bg-white/95 shadow-xl shadow-[#1d8272]/5 backdrop-blur-md overflow-hidden">
+          {/* Role Tabs Header */}
+          <div className="grid grid-cols-2 border-b border-[#e2ebe7] bg-[#f8fbf9]">
             <button
-              type="button"
-              onClick={() => { setActiveTab('victim'); setErrorMsg(null); setSuccessMsg(null); }}
-              className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all ${
+              onClick={() => {
+                setActiveTab('victim')
+                setErrorMsg(null)
+              }}
+              className={`flex items-center justify-center gap-2 py-4 text-xs sm:text-sm font-bold transition-all ${
                 activeTab === 'victim'
-                  ? 'bg-white text-[#1b7f6f] shadow-sm'
-                  : 'text-[#647c76] hover:text-[#21433e]'
+                  ? 'border-b-2 border-[#1d8272] bg-white text-[#1d8272]'
+                  : 'text-[#68857e] hover:bg-[#edf5f2] hover:text-[#163a34]'
               }`}
             >
               <UserRound size={17} />
-              <span>Victim / Citizen Portal</span>
+              <span>{t('portal_citizen', selectedLang)}</span>
             </button>
+
             <button
-              type="button"
-              onClick={() => { setActiveTab('officer'); setErrorMsg(null); setSuccessMsg(null); }}
-              className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all ${
+              onClick={() => {
+                setActiveTab('officer')
+                setErrorMsg(null)
+              }}
+              className={`flex items-center justify-center gap-2 py-4 text-xs sm:text-sm font-bold transition-all ${
                 activeTab === 'officer'
-                  ? 'bg-white text-[#1b7f6f] shadow-sm'
-                  : 'text-[#647c76] hover:text-[#21433e]'
+                  ? 'border-b-2 border-[#4338ca] bg-white text-[#4338ca]'
+                  : 'text-[#68857e] hover:bg-[#edf5f2] hover:text-[#163a34]'
               }`}
             >
-              <ShieldCheck size={17} />
-              <span>NHAA Officer Console</span>
+              <Building2 size={17} />
+              <span>{t('portal_officer', selectedLang)}</span>
             </button>
           </div>
 
+          {/* Body */}
           <div className="p-6 sm:p-8">
+            {/* Error / Success Banners */}
             {errorMsg && (
-              <div className="mb-5 flex items-start gap-2.5 p-3.5 bg-[#fef2f2] border border-[#fecaca] rounded-2xl text-xs text-[#991b1b]">
-                <AlertCircle size={16} className="shrink-0 mt-0.5" />
+              <div className="mb-5 flex items-center gap-2.5 rounded-2xl bg-[#fff0ef] border border-[#fca5a5] p-3.5 text-xs text-[#c94b48]">
+                <AlertCircle size={16} className="shrink-0" />
                 <span>{errorMsg}</span>
               </div>
             )}
 
             {successMsg && (
-              <div className="mb-5 flex items-start gap-2.5 p-3.5 bg-[#ecfdf5] border border-[#a7f3d0] rounded-2xl text-xs text-[#065f46]">
-                <CheckCircle2 size={16} className="shrink-0 mt-0.5" />
+              <div className="mb-5 flex items-center gap-2.5 rounded-2xl bg-[#ecfdf5] border border-[#a7f3d0] p-3.5 text-xs text-[#065f46]">
+                <CheckCircle2 size={16} className="shrink-0" />
                 <span>{successMsg}</span>
               </div>
             )}
 
-            {/* TAB 1: VICTIM / CITIZEN ACCESS */}
+            {/* TAB 1: CITIZEN / VICTIM PORTAL */}
             {activeTab === 'victim' && (
-              <div>
-                <div className="mb-6">
-                  <h2 className="text-xl font-bold text-[#1b3d38] tracking-tight">
-                    {victimMode === 'signup' && 'Create Citizen Account (Supabase)'}
-                    {victimMode === 'signin' && 'Sign In to Safe Space'}
-                    {victimMode === 'otp' && 'Instant Passwordless Magic Link'}
-                    {victimMode === 'anonymous' && 'Anonymous Rapid Access'}
-                    {victimMode === 'case_track' && 'Track Existing Case'}
-                  </h2>
-                  <p className="text-xs text-[#718782] mt-1">
-                    {victimMode === 'signup' && 'Register securely via Supabase Auth to store your trauma screening & legal grievance data.'}
-                    {victimMode === 'signin' && 'Enter your email & password to access your real-time records.'}
-                    {victimMode === 'otp' && 'Receive a secure one-time passwordless login link via Supabase Auth.'}
-                    {victimMode === 'anonymous' && 'Report atrocities and receive trauma screening with 100% identity privacy.'}
-                    {victimMode === 'case_track' && 'Check real-time SVI status and dispatched actions for your filed grievance.'}
-                  </p>
-                </div>
-
-                {/* Sub-modes toggle */}
-                <div className="flex gap-2 mb-6 border-b border-[#edf3f0] pb-3 text-xs overflow-x-auto">
+              <div className="space-y-6">
+                {/* Victim Mode Switcher */}
+                <div className="flex flex-wrap items-center gap-2 border-b border-[#e2ebe7] pb-4">
                   <button
-                    type="button"
-                    onClick={() => { setVictimMode('signin'); setErrorMsg(null); setSuccessMsg(null); }}
-                    className={`pb-1 font-medium transition shrink-0 ${victimMode === 'signin' ? 'text-[#1e8373] border-b-2 border-[#1e8373]' : 'text-[#7d938e] hover:text-[#38534e]'}`}
+                    onClick={() => setVictimMode('signin')}
+                    className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition ${
+                      victimMode === 'signin'
+                        ? 'bg-[#1d8272] text-white shadow-sm'
+                        : 'bg-[#f0f5f3] text-[#4f6e66] hover:bg-[#e2ede9]'
+                    }`}
                   >
-                    Email Sign In
+                    Sign In
                   </button>
                   <button
-                    type="button"
-                    onClick={() => { setVictimMode('signup'); setErrorMsg(null); setSuccessMsg(null); }}
-                    className={`pb-1 font-medium transition shrink-0 ${victimMode === 'signup' ? 'text-[#1e8373] border-b-2 border-[#1e8373]' : 'text-[#7d938e] hover:text-[#38534e]'}`}
+                    onClick={() => setVictimMode('signup')}
+                    className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition ${
+                      victimMode === 'signup'
+                        ? 'bg-[#1d8272] text-white shadow-sm'
+                        : 'bg-[#f0f5f3] text-[#4f6e66] hover:bg-[#e2ede9]'
+                    }`}
                   >
-                    Sign Up
+                    Create Account
                   </button>
                   <button
-                    type="button"
-                    onClick={() => { setVictimMode('otp'); setErrorMsg(null); setSuccessMsg(null); }}
-                    className={`pb-1 font-medium transition shrink-0 ${victimMode === 'otp' ? 'text-[#1e8373] border-b-2 border-[#1e8373]' : 'text-[#7d938e] hover:text-[#38534e]'}`}
+                    onClick={() => setVictimMode('anonymous')}
+                    className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition ${
+                      victimMode === 'anonymous'
+                        ? 'bg-[#1d8272] text-white shadow-sm'
+                        : 'bg-[#f0f5f3] text-[#4f6e66] hover:bg-[#e2ede9]'
+                    }`}
                   >
-                    Magic Link
+                    Anonymous Reporting
                   </button>
                   <button
-                    type="button"
-                    onClick={() => { setVictimMode('anonymous'); setErrorMsg(null); setSuccessMsg(null); }}
-                    className={`pb-1 font-medium transition shrink-0 ${victimMode === 'anonymous' ? 'text-[#1e8373] border-b-2 border-[#1e8373]' : 'text-[#7d938e] hover:text-[#38534e]'}`}
+                    onClick={() => setVictimMode('case_track')}
+                    className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition ${
+                      victimMode === 'case_track'
+                        ? 'bg-[#1d8272] text-white shadow-sm'
+                        : 'bg-[#f0f5f3] text-[#4f6e66] hover:bg-[#e2ede9]'
+                    }`}
                   >
-                    Anonymous Access
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setVictimMode('case_track'); setErrorMsg(null); setSuccessMsg(null); }}
-                    className={`pb-1 font-medium transition shrink-0 ${victimMode === 'case_track' ? 'text-[#1e8373] border-b-2 border-[#1e8373]' : 'text-[#7d938e] hover:text-[#38534e]'}`}
-                  >
-                    Track Case ID
+                    Track Existing Case
                   </button>
                 </div>
 
-                {/* Email Sign In / Sign Up Form */}
+                {/* SIGN IN / SIGN UP FORM */}
                 {(victimMode === 'signin' || victimMode === 'signup') && (
                   <form onSubmit={handleVictimAuth} className="space-y-4">
-                    {/* Google / Gmail Button */}
+                    {victimMode === 'signup' && (
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                          <label className="block text-xs font-semibold text-[#30534b]">
+                            {t('full_name', selectedLang)} *
+                          </label>
+                          <input
+                            type="text"
+                            value={fullName}
+                            onChange={e => setFullName(e.target.value)}
+                            placeholder="Ananya S. / Complainant"
+                            required
+                            className="mt-1 w-full rounded-xl border border-[#d3e5df] bg-[#f9fbfa] px-3.5 py-2.5 text-xs text-[#163a34] outline-none transition focus:border-[#1d8272] focus:bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-[#30534b]">
+                            {t('phone_number', selectedLang)}
+                          </label>
+                          <input
+                            type="tel"
+                            value={phone}
+                            onChange={e => setPhone(e.target.value)}
+                            placeholder="+91 98765 43210"
+                            className="mt-1 w-full rounded-xl border border-[#d3e5df] bg-[#f9fbfa] px-3.5 py-2.5 text-xs text-[#163a34] outline-none transition focus:border-[#1d8272] focus:bg-white"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#30534b]">
+                          {t('email_address', selectedLang)} *
+                        </label>
+                        <div className="relative mt-1">
+                          <Mail size={15} className="absolute left-3.5 top-3 text-[#7b9c94]" />
+                          <input
+                            type="email"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            placeholder="citizen@example.com"
+                            required
+                            className="w-full rounded-xl border border-[#d3e5df] bg-[#f9fbfa] pl-10 pr-3.5 py-2.5 text-xs text-[#163a34] outline-none transition focus:border-[#1d8272] focus:bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-[#30534b]">
+                          Password *
+                        </label>
+                        <div className="relative mt-1">
+                          <Lock size={15} className="absolute left-3.5 top-3 text-[#7b9c94]" />
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            placeholder="••••••••"
+                            required
+                            className="w-full rounded-xl border border-[#d3e5df] bg-[#f9fbfa] pl-10 pr-10 py-2.5 text-xs text-[#163a34] outline-none transition focus:border-[#1d8272] focus:bg-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-2.5 text-[#7b9c94] hover:text-[#163a34]"
+                          >
+                            {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1d8272] to-[#166558] py-3 text-xs font-bold text-white shadow-md transition hover:from-[#176d5f] hover:to-[#125247] disabled:opacity-50"
+                    >
+                      <span>{loading ? 'Authenticating...' : victimMode === 'signup' ? 'Create Account & Enter Portal' : 'Sign In to Citizen Portal'}</span>
+                      <ArrowRight size={15} />
+                    </button>
+
+                    <div className="relative my-4 flex items-center justify-center border-t border-[#e2ebe7]">
+                      <span className="bg-white px-3 text-[11px] text-[#7b9c94]">or continue with</span>
+                    </div>
+
                     <button
                       type="button"
                       onClick={handleGoogleLogin}
                       disabled={loading}
-                      className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-2xl border border-[#d6e3df] bg-white text-sm font-semibold text-[#274944] hover:bg-[#f5faf8] transition shadow-xs"
+                      className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-[#cfe3dc] bg-white py-2.5 text-xs font-semibold text-[#163a34] transition hover:bg-[#f7fbf9]"
                     >
                       <svg className="size-4" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -446,301 +512,200 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
                         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                       </svg>
-                      Continue with Google / Gmail
-                    </button>
-
-                    <div className="relative flex items-center justify-center my-4">
-                      <div className="border-t border-[#e6eee9] w-full" />
-                      <span className="bg-white px-3 text-[11px] text-[#869b95] uppercase tracking-wider font-semibold absolute">
-                        or continue with email
-                      </span>
-                    </div>
-
-                    {victimMode === 'signup' && (
-                      <>
-                        <div>
-                          <label className="block text-xs font-semibold text-[#32524d] mb-1.5">
-                            Full Name / Alias <span className="text-rose-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={fullName}
-                            onChange={(e) => setFullName(e.target.value)}
-                            placeholder="e.g. Ramesh Kumar"
-                            className="w-full px-4 py-2.5 rounded-xl border border-[#d6e3de] bg-[#fbfdfc] text-sm text-[#274742] focus:border-[#1e8373] focus:ring-1 focus:ring-[#1e8373] outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-[#32524d] mb-1.5">Mobile Phone (Optional)</label>
-                          <input
-                            type="tel"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            placeholder="+91 98765 43210"
-                            className="w-full px-4 py-2.5 rounded-xl border border-[#d6e3de] bg-[#fbfdfc] text-sm text-[#274742] focus:border-[#1e8373] focus:ring-1 focus:ring-[#1e8373] outline-none"
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    <div>
-                      <label className="block text-xs font-semibold text-[#32524d] mb-1.5">Email Address</label>
-                      <div className="relative">
-                        <input
-                          type="email"
-                          required
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          placeholder="user@example.com"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#d6e3de] bg-[#fbfdfc] text-sm text-[#274742] focus:border-[#1e8373] focus:ring-1 focus:ring-[#1e8373] outline-none"
-                        />
-                        <Mail size={16} className="absolute left-3.5 top-3 text-[#8ba19b]" />
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-xs font-semibold text-[#32524d]">Password</label>
-                        {victimMode === 'signin' && (
-                          <button
-                            type="button"
-                            onClick={() => setVictimMode('otp')}
-                            className="text-[11px] text-[#1e8373] hover:underline"
-                          >
-                            Forgot password? Use Magic Link
-                          </button>
-                        )}
-                      </div>
-                      <div className="relative">
-                        <input
-                          type={showPassword ? 'text' : 'password'}
-                          required
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="••••••••"
-                          className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-[#d6e3de] bg-[#fbfdfc] text-sm text-[#274742] focus:border-[#1e8373] focus:ring-1 focus:ring-[#1e8373] outline-none"
-                        />
-                        <Lock size={16} className="absolute left-3.5 top-3 text-[#8ba19b]" />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3.5 top-3 text-[#8ba19b] hover:text-[#32524d]"
-                        >
-                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#1d8272] text-white text-sm font-semibold shadow-md hover:bg-[#186f61] transition disabled:opacity-50"
-                    >
-                      {loading ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span>Connecting to Supabase...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>{victimMode === 'signup' ? 'Create Account & Enter Details' : 'Sign In with Supabase'}</span>
-                          <ArrowRight size={16} />
-                        </>
-                      )}
+                      <span>Continue with Google / Gmail</span>
                     </button>
                   </form>
                 )}
 
-                {/* Magic Link / OTP Mode */}
-                {victimMode === 'otp' && (
-                  <form onSubmit={handleSendOtp} className="space-y-4">
-                    <div className="p-3.5 bg-teal-50 border border-teal-200 rounded-2xl text-xs text-teal-900 leading-relaxed">
-                      We will send a passwordless magic link to your email address for instant 1-click login.
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-[#32524d] mb-1.5">Email Address</label>
-                      <div className="relative">
-                        <input
-                          type="email"
-                          required
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          placeholder="your.email@example.com"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#d6e3de] bg-[#fbfdfc] text-sm text-[#274742] focus:border-[#1e8373] focus:ring-1 focus:ring-[#1e8373] outline-none"
-                        />
-                        <Mail size={16} className="absolute left-3.5 top-3 text-[#8ba19b]" />
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#1d8272] text-white text-sm font-semibold shadow-md hover:bg-[#186f61] transition disabled:opacity-50"
-                    >
-                      {loading ? 'Sending Magic Link...' : 'Send Magic Login Link'}
-                      <Send size={15} />
-                    </button>
-                  </form>
-                )}
-
-                {/* Anonymous Rapid Entry */}
+                {/* ANONYMOUS ACCESS */}
                 {victimMode === 'anonymous' && (
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-2xl bg-[#eef7f4] border border-[#d1e8df] text-xs text-[#2b5952] leading-relaxed">
-                      <p className="font-semibold text-sm mb-1 text-[#175b50]">Zero-Trace Confidential Mode</p>
-                      In compliance with Prevention of Atrocities guidelines, you can report atrocities, undergo voice/text trauma screening, and request emergency legal &amp; medical protection without revealing your phone or email.
+                  <div className="rounded-2xl border border-[#d3e5df] bg-[#f9fbfa] p-5 space-y-4 text-center">
+                    <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-[#e4f4ef] text-[#1d8272]">
+                      <ShieldCheck size={24} />
                     </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-[#163a34]">100% Confidential Anonymous Access</h3>
+                      <p className="mt-1 text-xs text-[#68857e] max-w-md mx-auto">
+                        Your identity will not be logged. You will receive an encrypted case token to track support and nearest officer dispatch anonymously.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-sm mx-auto text-left">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#30534b]">Your City / District</label>
+                        <input
+                          type="text"
+                          value={victimDistrict}
+                          onChange={e => setVictimDistrict(e.target.value)}
+                          placeholder="e.g. Pune"
+                          className="mt-1 w-full rounded-xl border border-[#d3e5df] bg-white px-3 py-2 text-xs text-[#163a34]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#30534b]">State</label>
+                        <input
+                          type="text"
+                          value={victimState}
+                          onChange={e => setVictimState(e.target.value)}
+                          placeholder="e.g. Maharashtra"
+                          className="mt-1 w-full rounded-xl border border-[#d3e5df] bg-white px-3 py-2 text-xs text-[#163a34]"
+                        />
+                      </div>
+                    </div>
+
                     <button
                       type="button"
                       onClick={handleAnonymousAccess}
-                      className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-[#1d8272] text-white text-sm font-semibold shadow-md hover:bg-[#186f61] transition"
+                      className="rounded-xl bg-[#1d8272] px-6 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#166558]"
                     >
-                      <span>Enter Anonymous Safe Space</span>
-                      <ArrowRight size={16} />
+                      Enter Secure Anonymous Portal
                     </button>
                   </div>
                 )}
 
-                {/* Case Tracking Mode */}
+                {/* CASE TRACKING */}
                 {victimMode === 'case_track' && (
-                  <form onSubmit={handleTrackCase} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-[#32524d] mb-1.5">NHAA Case Tracking ID</label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          required
-                          value={trackCaseId}
-                          onChange={(e) => setTrackCaseId(e.target.value)}
-                          placeholder="e.g. NHAA-2026-9041"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#d6e3de] bg-[#fbfdfc] text-sm text-[#274742] focus:border-[#1e8373] focus:ring-1 focus:ring-[#1e8373] outline-none uppercase font-mono"
-                        />
-                        <FileSearch size={16} className="absolute left-3.5 top-3 text-[#8ba19b]" />
+                  <form onSubmit={handleTrackCase} className="rounded-2xl border border-[#d3e5df] bg-[#f9fbfa] p-5 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-10 items-center justify-center rounded-xl bg-[#e4f4ef] text-[#1d8272]">
+                        <FileSearch size={20} />
                       </div>
-                      <p className="text-[11px] text-[#7d938e] mt-1.5">
-                        Provided during 14566 helpline call or portal registration.
-                      </p>
+                      <div>
+                        <h3 className="text-xs font-bold text-[#163a34]">Track Case Reference Status</h3>
+                        <p className="text-[11px] text-[#68857e]">
+                          Enter your generated Case ID (e.g. NHAA-2026-9041)
+                        </p>
+                      </div>
                     </div>
 
-                    <button
-                      type="submit"
-                      className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#1d8272] text-white text-sm font-semibold shadow-md hover:bg-[#186f61] transition"
-                    >
-                      <span>Track Grievance &amp; Wellbeing Status</span>
-                      <ArrowRight size={16} />
-                    </button>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={trackCaseId}
+                        onChange={e => setTrackCaseId(e.target.value)}
+                        placeholder="NHAA-2026-XXXX"
+                        className="flex-1 rounded-xl border border-[#d3e5df] bg-white px-3.5 py-2.5 text-xs text-[#163a34] outline-none font-mono"
+                      />
+                      <button
+                        type="submit"
+                        className="rounded-xl bg-[#1d8272] px-5 py-2.5 text-xs font-bold text-white transition hover:bg-[#166558]"
+                      >
+                        Track
+                      </button>
+                    </div>
                   </form>
                 )}
               </div>
             )}
 
-            {/* TAB 2: NHAA OFFICER / COUNSELLOR LOGIN */}
+            {/* TAB 2: OFFICER & AUTHORITY CONSOLE */}
             {activeTab === 'officer' && (
-              <div>
-                <div className="mb-5">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold text-[#1b3d38] tracking-tight">NHAA Officer &amp; Cadre Login</h2>
-                    <span className="text-[10px] bg-[#fff1e8] text-[#c25c27] font-semibold px-2 py-0.5 rounded-full">
-                      Authorized Personnel Only
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#718782] mt-1">
-                    Login with your NHAA Cadre Badge ID, Department Key, and 2FA credentials.
-                  </p>
-                </div>
-
-                {/* Pre-configured Demo Accounts for Evaluators */}
-                <div className="mb-5 p-3.5 bg-[#f6faf8] border border-[#dcebe5] rounded-2xl">
-                  <p className="text-[11px] font-semibold text-[#2f5e56] mb-2 flex items-center gap-1.5">
-                    <Sparkles size={13} className="text-[#1e8373]" />
-                    <span>Quick-Select Demo Officer (1-Click for Evaluation):</span>
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {DEFAULT_OFFICERS.map((off) => (
-                      <button
-                        key={off.id}
-                        type="button"
-                        onClick={() => selectDemoOfficer(off)}
-                        className={`text-left p-2.5 rounded-xl border text-xs transition ${
-                          selectedDemoOfficer?.id === off.id
-                            ? 'bg-[#e4f3ee] border-[#228776] text-[#164e44]'
-                            : 'bg-white border-[#e0ece8] text-[#4a6761] hover:border-[#b8d6cd]'
-                        }`}
-                      >
-                        <div className="font-semibold text-[11px] flex items-center justify-between">
-                          <span>{off.full_name}</span>
-                          <span className="text-[9px] bg-white px-1.5 py-0.5 rounded border border-[#d6e5df]">{off.officer_badge_id}</span>
-                        </div>
-                        <p className="text-[10px] text-[#718c85] mt-0.5">{off.department}</p>
-                      </button>
-                    ))}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between rounded-2xl bg-[#eef2ff] border border-[#c7d2fe] p-4 text-[#3730a3]">
+                  <div className="flex items-center gap-3">
+                    <Building2 size={20} />
+                    <div>
+                      <h3 className="text-xs font-bold">Nodal Officer &amp; Redressal Console</h3>
+                      <p className="text-[11px] text-[#4f46e5]">
+                        Live police stations, legal aid desks, and psychiatrist triage centers.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 <form onSubmit={handleOfficerLogin} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#32524d] mb-1.5">Officer Badge ID / Official Email</label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        required
-                        value={officerBadgeId}
-                        onChange={(e) => {
-                          setOfficerBadgeId(e.target.value)
-                          setSelectedDemoOfficer(null)
-                        }}
-                        placeholder="e.g. NHAA-DL-8092 or dr.chandra@nhaa.gov.in"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#d6e3de] bg-[#fbfdfc] text-sm text-[#274742] focus:border-[#1e8373] focus:ring-1 focus:ring-[#1e8373] outline-none"
-                      />
-                      <Building2 size={16} className="absolute left-3.5 top-3 text-[#8ba19b]" />
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#334155]">
+                        Officer Badge ID / Official Email *
+                      </label>
+                      <div className="relative mt-1">
+                        <BadgeAlert size={15} className="absolute left-3.5 top-3 text-[#64748b]" />
+                        <input
+                          type="text"
+                          value={officerBadgeId}
+                          onChange={e => setOfficerBadgeId(e.target.value)}
+                          placeholder="NHAA-MH-4421 or email"
+                          required
+                          className="w-full rounded-xl border border-[#cbd5e1] bg-[#f8fafc] pl-10 pr-3.5 py-2.5 text-xs text-[#1e293b] outline-none transition focus:border-[#4338ca] focus:bg-white"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-[#32524d] mb-1.5">Secure Password / Passcode</label>
-                    <div className="relative">
-                      <input
-                        type="password"
-                        required
-                        value={officerPassword}
-                        onChange={(e) => setOfficerPassword(e.target.value)}
-                        placeholder="••••••••••••"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#d6e3de] bg-[#fbfdfc] text-sm text-[#274742] focus:border-[#1e8373] focus:ring-1 focus:ring-[#1e8373] outline-none"
-                      />
-                      <KeyRound size={16} className="absolute left-3.5 top-3 text-[#8ba19b]" />
+                    <div>
+                      <label className="block text-xs font-semibold text-[#334155]">
+                        Secure Security Passcode *
+                      </label>
+                      <div className="relative mt-1">
+                        <Lock size={15} className="absolute left-3.5 top-3 text-[#64748b]" />
+                        <input
+                          type="password"
+                          value={officerPassword}
+                          onChange={e => setOfficerPassword(e.target.value)}
+                          placeholder="••••••••••••"
+                          required
+                          className="w-full rounded-xl border border-[#cbd5e1] bg-[#f8fafc] pl-10 pr-3.5 py-2.5 text-xs text-[#1e293b] outline-none transition focus:border-[#4338ca] focus:bg-white"
+                        />
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 p-2.5 bg-[#fbfcfb] border border-[#e4ede9] rounded-xl text-[11px] text-[#5b7a73]">
-                    <ShieldCheck size={14} className="text-[#1e8373] shrink-0" />
-                    <span>2FA Verified Hardware Token &amp; IP Geo-fence Active</span>
                   </div>
 
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#1d8272] text-white text-sm font-semibold shadow-md hover:bg-[#186f61] transition"
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#4338ca] to-[#312e81] py-3 text-xs font-bold text-white shadow-md transition hover:from-[#3730a3] hover:to-[#1e1b4b] disabled:opacity-50"
                   >
-                    <span>{loading ? 'Authenticating Cadre...' : 'Access NHAA Redressal Dashboard'}</span>
-                    <ArrowRight size={16} />
+                    <span>{loading ? 'Verifying Official Credentials...' : 'Authenticate & Enter Redressal Console'}</span>
+                    <ArrowRight size={15} />
                   </button>
                 </form>
+
+                {/* Real Live Officers in Database (Quick Select / Demo Fast-Track) */}
+                <div className="pt-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#475569] mb-3">
+                    <Database size={14} className="text-[#4338ca]" />
+                    <span>Real Registered Officers (Live Proximity Nodes):</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {officersList.map(officer => (
+                      <button
+                        key={officer.id}
+                        type="button"
+                        onClick={() => selectDemoOfficer(officer)}
+                        className={`flex items-start gap-3 rounded-2xl border p-3 text-left transition ${
+                          selectedDemoOfficer?.id === officer.id
+                            ? 'border-[#4338ca] bg-[#eef2ff]'
+                            : 'border-[#e2e8f0] bg-white hover:border-[#cbd5e1] hover:bg-[#f8fafc]'
+                        }`}
+                      >
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#e0e7ff] text-[#4338ca] text-xs font-bold">
+                          {officer.full_name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-bold text-[#1e293b] truncate">{officer.full_name}</h4>
+                            <span className="rounded-full bg-[#f1f5f9] px-2 py-0.5 text-[10px] font-semibold text-[#475569]">
+                              {officer.assigned_district}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-[#64748b] truncate">{officer.department}</p>
+                          <p className="text-[10px] font-mono text-[#4338ca] mt-0.5">{officer.officer_badge_id}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Footer Legal & Safety Notice */}
-      <div className="max-w-4xl mx-auto w-full text-center text-xs text-[#718b85] pt-4 border-t border-[#dfe8e4]">
-        <p>
-          National Helpline Against Atrocities (14566) is an initiative of the Ministry of Social Justice and Empowerment (MoSJE), Govt of India.
-        </p>
-        <p className="mt-1 text-[11px] text-[#8ea59f]">
-          Confidentiality governed by SC/ST (Prevention of Atrocities) Act &amp; Ethical AI Psychological Guidelines.
-        </p>
-      </div>
+      {/* Footer */}
+      <footer className="text-center text-[11px] text-[#7b9c94] py-2">
+        <span>Protected under SC/ST (Prevention of Atrocities) Act &bull; 24x7 Emergency Redressal 14566</span>
+      </footer>
     </div>
   )
 }

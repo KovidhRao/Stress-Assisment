@@ -2,6 +2,16 @@ export type RiskLevel = 'Low' | 'Moderate' | 'High' | 'Critical'
 
 export type ChannelType = 'helpline_14566' | 'integrated_portal' | 'chatbot' | 'ivrs' | 'mobile_app'
 
+export type SupportedLanguage = 
+  | 'en' // English
+  | 'hi' // Hindi
+  | 'kn' // Kannada
+  | 'te' // Telugu
+  | 'ta' // Tamil
+  | 'mr' // Marathi
+  | 'bn' // Bengali
+  | 'gu' // Gujarati
+
 export type IncidentCategory = 
   | 'Caste-based Discrimination'
   | 'Atrocity & Physical Violence'
@@ -41,9 +51,13 @@ export interface OfficerProfile {
   role: 'officer' | 'counsellor' | 'admin'
   assigned_state: string
   assigned_district: string
+  station_name?: string
+  jurisdiction_pincodes?: string[]
   active_cases_count: number
   email: string
   phone: string
+  is_available?: boolean
+  avatar_url?: string
 }
 
 export interface ConsentRecord {
@@ -91,6 +105,8 @@ export interface StressAssessment {
 
 export interface CaseRecord {
   id: string // e.g. NHAA-2026-8891
+  session_id?: string
+  user_id?: string
   victim_name: string
   initials: string
   is_anonymous: boolean
@@ -110,7 +126,16 @@ export interface CaseRecord {
   stress_assessment: StressAssessment
   status: 'New Intake' | 'Under Triage' | 'Action Dispatched' | 'Counselling Active' | 'Resolved'
   assigned_officer?: string
+  assigned_officer_id?: string
   assigned_counsellor?: string
+  assigned_counsellor_id?: string
+  proximity_routing?: {
+    nearest_station: string
+    district: string
+    state: string
+    routing_reason: string
+    assigned_at: string
+  }
   priority_tier: 1 | 2 | 3 | 4 // 1 is highest / critical
   notes: Array<{
     id: string
@@ -130,6 +155,8 @@ export interface CaseRecord {
 
 export interface UserStory {
   id: string
+  session_id?: string
+  case_id?: string
   title?: string
   narrative_text: string
   audio_url?: string | null
@@ -142,6 +169,9 @@ export interface UserStory {
   risk_level: RiskLevel
   svi_score: number
   key_triggers?: string[]
+  assigned_officer_name?: string
+  assigned_officer_id?: string
+  nearest_station?: string
 }
 
 export interface AppointmentRecord {
@@ -176,4 +206,5 @@ export interface UserActivity {
   timestamp: string
   type: 'story' | 'mood' | 'exercise' | 'appointment' | 'support'
 }
+
 

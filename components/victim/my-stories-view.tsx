@@ -120,12 +120,25 @@ export function MyStoriesView({
                       #{stories.length - index}
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-[#183d37]">{story.title || 'Personal Experience Statement'}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-sm text-[#183d37]">{story.title || 'Personal Experience Statement'}</h3>
+                        {story.case_id && (
+                          <span className="font-mono text-[10px] font-bold bg-[#edf7f3] text-[#1d8272] px-2 py-0.5 rounded-md border border-[#cfe6dc]">
+                            {story.case_id}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 text-[11px] text-[#6d8a83] mt-0.5">
                         <Clock size={12} />
                         <span>{story.formatted_time}</span>
                         <span>•</span>
                         <span>{story.language || 'English'}</span>
+                        {story.assigned_officer_name && (
+                          <>
+                            <span>•</span>
+                            <span className="text-[#1d8272] font-medium">Nearest Officer: {story.assigned_officer_name}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

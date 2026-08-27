@@ -2,49 +2,35 @@
 
 import React, { useState, useMemo, useEffect } from 'react'
 import {
-  Activity,
   ArrowRight,
   Bell,
   Brain,
-  Check,
   ChevronDown,
-  ClipboardList,
   FileText,
   Headphones,
   HeartHandshake,
   LayoutDashboard,
   Menu,
-  Mic,
-  MoreHorizontal,
-  Search,
   ShieldCheck,
   Sparkles,
-  Target,
   UserRound,
   Users,
   X,
   PhoneCall,
   AlertTriangle,
-  Radio,
   LogOut,
-  SlidersHorizontal,
   Compass,
   Wind,
   Plus,
-  Scale,
-  Building,
   CheckCircle2,
   Lock,
-  Globe,
-  ExternalLink,
   ShieldAlert,
-  Calendar,
   Smile,
   Meh,
   Frown,
   Zap,
-  Waves,
-  Database
+  User,
+  Settings
 } from 'lucide-react'
 
 import {
@@ -71,15 +57,19 @@ import { supabase } from '@/lib/supabase'
 import {
   fetchUserProfile,
   fetchCasesFromDb,
+  fetchOfficersFromDb,
   createCaseInDb,
   updateCaseInDb,
   saveAssessmentInDb,
-  subscribeToRealtimeCases
+  subscribeToRealtimeCases,
+  saveUserProfile
 } from '@/lib/supabase-service'
+import { t } from '@/lib/i18n'
 
 import { LoginView } from '@/components/auth/login-view'
 import { UserDetailsModal } from '@/components/auth/user-details-modal'
-import { SupabaseStatusModal } from '@/components/ui/supabase-status-modal'
+import { ProfileModal } from '@/components/auth/profile-modal'
+// SupabaseStatusModal removed — developer tool not shown in production UI
 import { StoryInputCard } from '@/components/victim/story-input-card'
 import { MyStoriesView } from '@/components/victim/my-stories-view'
 import { WellbeingJourneyView } from '@/components/victim/wellbeing-journey-view'
@@ -102,22 +92,28 @@ const levelStyles: Record<RiskLevel, string> = {
 }
 
 export default function Home() {
-  // Global Auth & User States — starts on Login Page by default
+  // Global Auth & User States
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [currentUser, setCurrentUser] = useState<UserProfile>({
     id: 'usr-default',
     email: 'ananya.s@example.com',
     full_name: 'Ananya S.',
     role: 'victim',
+    preferred_language: 'en',
+    district: 'Pune',
+    state: 'Maharashtra',
     avatar_initials: 'AS',
     created_at: new Date().toISOString()
   })
-  const [currentOfficer, setCurrentOfficer] = useState<OfficerProfile | null>(DEFAULT_OFFICERS[0])
+  
+  // Real officers list from DB
+  const [officersList, setOfficersList] = useState<OfficerProfile[]>([])
+  const [currentOfficer, setCurrentOfficer] = useState<OfficerProfile | null>(null)
   const [isOfficerMode, setIsOfficerMode] = useState(false)
   const [officerRoleView, setOfficerRoleView] = useState<'psychiatrist' | 'police'>('psychiatrist')
   const [activeTab, setActiveTab] = useState<'My space' | 'My story & Audio' | 'Wellbeing journey' | 'Support circle'>('My space')
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [selectedLanguage, setSelectedLanguage] = useState('English')
+  const [selectedLanguage, setSelectedLanguage] = useState('en')
 
   // Prototype Simulated Condition State (Normal / Moderate / High)
   const [simulatedCondition, setSimulatedCondition] = useState<RiskLevel>('Moderate')
@@ -135,8 +131,8 @@ export default function Home() {
   const [selectedCaseModalOpen, setSelectedCaseModalOpen] = useState(false)
 
   // Modals State
+  const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
-  const [supabaseModalOpen, setSupabaseModalOpen] = useState(false)
   const [voiceModalOpen, setVoiceModalOpen] = useState(false)
   const [wellbeingModalOpen, setWellbeingModalOpen] = useState(false)
   const [wellbeingModalTab, setWellbeingModalTab] = useState<'breathing' | 'soundscape' | 'grounding'>('breathing')
@@ -146,13 +142,21 @@ export default function Home() {
   const [intakeModalOpen, setIntakeModalOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
 
+  // Load Real Officers from Database
+  useEffect(() => {
+    fetchOfficersFromDb().then(officers => {
+      if (officers && officers.length > 0) {
+        setOfficersList(officers)
+      }
+    })
+  }, [])
+
   // 1. Supabase Session Check on OAuth Redirect & Real-time Listeners
   useEffect(() => {
     let isMounted = true
 
     const initAuth = async () => {
       try {
-        // Only auto-login if returning from an active OAuth redirect callback (Google)
         const isOAuthRedirect =
           typeof window !== 'undefined' &&
           (window.location.hash.includes('access_token') || window.location.search.includes('code='))
@@ -163,6 +167,7 @@ export default function Home() {
             const profile = await fetchUserProfile(session.user.id, session.user.email)
             if (profile) {
               setCurrentUser(profile)
+              if (profile.preferred_language) setSelectedLanguage(profile.preferred_language)
               const isOff = profile.role === 'officer' || profile.role === 'counsellor' || profile.role === 'admin'
               setIsOfficerMode(isOff)
               setActiveTab('My space')
@@ -203,6 +208,7 @@ export default function Home() {
         const profile = await fetchUserProfile(session.user.id, session.user.email)
         if (profile) {
           setCurrentUser(profile)
+          if (profile.preferred_language) setSelectedLanguage(profile.preferred_language)
           const isOff = profile.role === 'officer' || profile.role === 'counsellor' || profile.role === 'admin'
           setIsOfficerMode(isOff)
           setActiveTab('My space')
@@ -259,9 +265,20 @@ export default function Home() {
   // Handle Login
   const handleLoginSuccess = (user: UserProfile, officer?: OfficerProfile | null) => {
     setCurrentUser(user)
-    setCurrentOfficer(officer || DEFAULT_OFFICERS[0])
-    const isOff = user.role === 'officer' || user.role === 'counsellor' || user.role === 'admin'
-    setIsOfficerMode(isOff)
+    if (user.preferred_language) {
+      setSelectedLanguage(user.preferred_language)
+    }
+    if (officer) {
+      setCurrentOfficer(officer)
+      setIsOfficerMode(true)
+    } else {
+      const isOff = user.role === 'officer' || user.role === 'counsellor' || user.role === 'admin'
+      setIsOfficerMode(isOff)
+      if (isOff) {
+        const matchedOfficer = officersList.find(o => o.id === user.id || o.email === user.email) || officersList[0]
+        setCurrentOfficer(matchedOfficer)
+      }
+    }
     setActiveTab('My space')
     setIsLoggedIn(true)
 
@@ -270,14 +287,30 @@ export default function Home() {
     }
   }
 
-  const handleProfileSaved = (updatedUser: UserProfile) => {
+  const handleProfileUpdated = (updatedUser: UserProfile, updatedOfficer?: OfficerProfile | null) => {
     setCurrentUser(updatedUser)
-    setDetailsModalOpen(false)
+    if (updatedUser.preferred_language) {
+      setSelectedLanguage(updatedUser.preferred_language)
+    }
+    if (updatedOfficer) {
+      setCurrentOfficer(updatedOfficer)
+      setOfficersList(prev => prev.map(o => o.id === updatedOfficer.id ? updatedOfficer : o))
+    }
+  }
+
+  const handleLanguageChange = async (newLang: string) => {
+    setSelectedLanguage(newLang)
+    if (currentUser && currentUser.id) {
+      const updatedUser = { ...currentUser, preferred_language: newLang }
+      setCurrentUser(updatedUser)
+      await saveUserProfile({ id: currentUser.id, preferred_language: newLang })
+    }
   }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     setIsLoggedIn(false)
+    setIsOfficerMode(false)
     setCurrentOfficer(null)
   }
 
@@ -317,50 +350,53 @@ export default function Home() {
   }, [simulatedCondition])
 
   // Handle Story Submission (Syncs with Supabase in real-time)
-  const handleStorySubmitted = async (newStory: UserStory, metrics?: VoiceAnalysisMetrics) => {
+  const handleStorySubmitted = async (
+    newStory: UserStory,
+    metrics?: VoiceAnalysisMetrics,
+    generatedCase?: CaseRecord
+  ) => {
     setStoriesList(prev => [newStory, ...prev])
     setSimulatedCondition(newStory.risk_level)
 
     // Add activity
     const newAct: UserActivity = {
       id: `ACT-${Date.now()}`,
-      title: 'Story added & analyzed',
+      title: `Story #${newStory.case_id || newStory.id} analyzed`,
       description: `"${newStory.title}" safely stored with SVI ${newStory.svi_score}.`,
       timestamp: 'Just now',
       type: 'story'
     }
     setActivitiesList(prev => [newAct, ...prev])
 
-    // Generate real case record linked with user's id
-    const userSuffix = currentUser.id.slice(-4).toUpperCase()
-    const caseId = `NHAA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}-${userSuffix}`
-
-    const newOfficerCase: CaseRecord = {
-      id: caseId,
+    // Generate or use created CaseRecord
+    const targetCase: CaseRecord = generatedCase || {
+      id: `NHAA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      session_id: newStory.session_id,
+      user_id: currentUser.id,
       victim_name: currentUser.full_name,
       initials: currentUser.avatar_initials || 'AS',
       is_anonymous: !!currentUser.anonymous,
       contact_number: currentUser.phone || '+91 97551 12345',
-      incident_category: 'Caste-based Discrimination',
+      incident_category: 'Social Boycott & Ostracization',
       incident_location: {
-        village_town_city: currentUser.village_town_city || currentUser.district || 'District Nodal Center',
-        district: currentUser.district || 'Lucknow',
-        state: currentUser.state || 'Uttar Pradesh',
-        pincode: currentUser.pincode || '226001'
+        village_town_city: currentUser.village_town_city || currentUser.district || 'Pune',
+        district: currentUser.district || 'Pune',
+        state: currentUser.state || 'Maharashtra',
+        pincode: currentUser.pincode || '411001'
       },
       channel: metrics ? 'mobile_app' : 'integrated_portal',
-      language: currentUser.preferred_language || 'English',
+      language: selectedLanguage,
       reported_at: 'Just now',
       narrative_text: newStory.narrative_text,
       voice_analysis: metrics,
       stress_assessment: {
         id: `SA-${Date.now()}`,
-        case_id: caseId,
+        case_id: newStory.case_id || '',
         svi_score: newStory.svi_score,
         risk_level: newStory.risk_level,
-        trauma_score: newStory.risk_level === 'High' ? 82 : 55,
-        fear_score: newStory.risk_level === 'High' ? 78 : 50,
-        anxiety_score: newStory.risk_level === 'High' ? 85 : 62,
+        trauma_score: newStory.risk_level === 'High' || newStory.risk_level === 'Critical' ? 82 : 55,
+        fear_score: newStory.risk_level === 'High' || newStory.risk_level === 'Critical' ? 78 : 50,
+        anxiety_score: newStory.risk_level === 'High' || newStory.risk_level === 'Critical' ? 85 : 62,
         depression_indicator: true,
         suicidal_ideation_flag: false,
         intimidation_flag: true,
@@ -373,14 +409,16 @@ export default function Home() {
         ],
         assessed_at: new Date().toISOString()
       },
-      status: newStory.risk_level === 'High' ? 'New Intake' : 'Under Triage',
-      assigned_officer: 'Insp. Vikram Pratap Singh',
+      status: newStory.risk_level === 'High' || newStory.risk_level === 'Critical' ? 'New Intake' : 'Under Triage',
+      assigned_officer: newStory.assigned_officer_name || currentOfficer?.full_name || 'Insp. Vikram Pratap Singh',
+      assigned_officer_id: newStory.assigned_officer_id || currentOfficer?.id || 'OFF-02',
       assigned_counsellor: 'Dr. Ramesh Chandra',
-      priority_tier: newStory.risk_level === 'High' ? 1 : 2,
+      assigned_counsellor_id: 'OFF-01',
+      priority_tier: newStory.risk_level === 'Critical' ? 1 : newStory.risk_level === 'High' ? 2 : 3,
       notes: [
         {
           id: `N-${Date.now()}`,
-          author: 'AI Triage Engine',
+          author: 'AI SVI Engine',
           role: 'Automated Assessment',
           timestamp: 'Just now',
           text: `Newly submitted story classified as ${newStory.risk_level} SVI (${newStory.svi_score}).`
@@ -389,13 +427,13 @@ export default function Home() {
       dispatched_actions: []
     }
 
-    setCasesList(prev => [newOfficerCase, ...prev])
+    setCasesList(prev => [targetCase, ...prev])
 
     // Save to Supabase
-    await createCaseInDb(newOfficerCase, currentUser.id)
+    await createCaseInDb(targetCase, currentUser.id)
     await saveAssessmentInDb({
       userId: currentUser.id,
-      caseId: caseId,
+      caseId: targetCase.id,
       narrativeText: newStory.narrative_text,
       sviScore: newStory.svi_score,
       riskLevel: newStory.risk_level,
@@ -466,15 +504,21 @@ export default function Home() {
 
   // If user is not logged in, render Login View
   if (!isLoggedIn) {
-    return <LoginView onLoginSuccess={handleLoginSuccess} />
+    return (
+      <LoginView
+        onLoginSuccess={handleLoginSuccess}
+        initialLanguage={selectedLanguage}
+        onLanguageChange={handleLanguageChange}
+      />
+    )
   }
 
-  // Victim Navigation items
+  // Victim Navigation items with dynamic translations
   const victimNavItems = [
-    { label: 'My space' as const, icon: LayoutDashboard, desc: 'Dashboard & Stories' },
-    { label: 'My story & Audio' as const, icon: FileText, desc: 'Your Private Submissions' },
-    { label: 'Wellbeing journey' as const, icon: HeartHandshake, desc: 'Calming & Care Pathways' },
-    { label: 'Support circle' as const, icon: Users, desc: 'Professional & Trusted Allies' }
+    { label: 'My space' as const, key: 'tab_my_space', icon: LayoutDashboard, desc: 'Dashboard & Stories' },
+    { label: 'My story & Audio' as const, key: 'tab_my_story', icon: FileText, desc: 'Your Private Submissions' },
+    { label: 'Wellbeing journey' as const, key: 'tab_wellbeing', icon: HeartHandshake, desc: 'Calming & Care Pathways' },
+    { label: 'Support circle' as const, key: 'tab_support_circle', icon: Users, desc: 'Professional & Trusted Allies' }
   ]
 
   return (
@@ -493,32 +537,6 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Supabase Status Pill */}
-          <button
-            onClick={() => setSupabaseModalOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 text-[11px] font-mono transition"
-            title="View Supabase Realtime Database Status"
-          >
-            <Database size={11} />
-            <span className="hidden sm:inline">Supabase Live</span>
-          </button>
-
-          {/* Language Selector */}
-          <div className="flex items-center gap-1.5 bg-[#12332e] px-2.5 py-1 rounded-lg border border-[#23564e] text-[11px]">
-            <Globe size={12} className="text-[#a7e8db]" />
-            <select
-              value={selectedLanguage}
-              onChange={(e) => setSelectedLanguage(e.target.value)}
-              className="bg-transparent text-white outline-none cursor-pointer"
-            >
-              <option value="English" className="bg-[#173f39] text-white">English</option>
-              <option value="Hindi" className="bg-[#173f39] text-white">हिंदी (Hindi)</option>
-              <option value="Tamil" className="bg-[#173f39] text-white">தமிழ் (Tamil)</option>
-              <option value="Telugu" className="bg-[#173f39] text-white">తెలుగు (Telugu)</option>
-              <option value="Marathi" className="bg-[#173f39] text-white">मराठी (Marathi)</option>
-              <option value="Bengali" className="bg-[#173f39] text-white">বাংলা (Bengali)</option>
-            </select>
-          </div>
 
           {/* Quick Panic Exit Button */}
           <button
@@ -562,30 +580,20 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Mode Badge in Sidebar */}
+          {/* Role Badge in Sidebar — read-only, set by login role */}
           <div className="mt-7 rounded-2xl bg-[#eef6f3] p-2 border border-[#dcebe5]">
-            <button
-              onClick={() => {
-                const nextMode = !isOfficerMode
-                setIsOfficerMode(nextMode)
-                setActiveTab('My space')
-              }}
-              className="flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-left text-xs font-semibold text-[#285750] hover:bg-white transition shadow-xs cursor-pointer"
-            >
-              <span className="flex items-center gap-2">
-                <span className="flex size-6 items-center justify-center rounded-lg bg-white text-[#258b79] shadow-xs">
-                  {isOfficerMode ? <ShieldCheck size={14} /> : <UserRound size={14} />}
-                </span>
-                <span>{isOfficerMode ? 'Officer Console' : 'Victim Support Space'}</span>
+            <div className="flex w-full items-center rounded-xl px-2.5 py-1.5 text-xs font-semibold text-[#285750] gap-2">
+              <span className="flex size-6 items-center justify-center rounded-lg bg-white text-[#258b79] shadow-xs">
+                {isOfficerMode ? <ShieldCheck size={14} /> : <UserRound size={14} />}
               </span>
-              <ChevronDown size={13} className="text-[#64847d]" />
-            </button>
+              <span>{isOfficerMode ? t('portal_officer', selectedLanguage) : t('portal_citizen', selectedLanguage)}</span>
+            </div>
           </div>
 
           {/* Navigation Items */}
           <nav className="mt-6 flex flex-col gap-1.5 flex-1">
             {!isOfficerMode ? (
-              victimNavItems.map(({ label, icon: Icon }) => {
+              victimNavItems.map(({ label, key, icon: Icon }) => {
                 const isActive = activeTab === label
                 return (
                   <button
@@ -601,13 +609,13 @@ export default function Home() {
                     }`}
                   >
                     <Icon size={17} strokeWidth={isActive ? 2.4 : 1.8} className={isActive ? 'text-[#177967]' : 'text-[#7a958e]'} />
-                    <span>{label}</span>
+                    <span>{t(key, selectedLanguage)}</span>
                   </button>
                 )
               })
             ) : (
               <div className="space-y-2">
-                <p className="text-[10px] font-bold text-[#718f88] uppercase px-2">Operational Views</p>
+                <p className="text-[10px] font-bold text-[#718f88] uppercase px-2">Operational Consoles</p>
                 <button
                   onClick={() => setOfficerRoleView('psychiatrist')}
                   className={`w-full flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-xs font-bold transition cursor-pointer ${
@@ -617,7 +625,7 @@ export default function Home() {
                   }`}
                 >
                   <Brain size={16} />
-                  <span>Psychiatrist Queue</span>
+                  <span>Psychiatrist Triage</span>
                 </button>
                 <button
                   onClick={() => setOfficerRoleView('police')}
@@ -634,8 +642,25 @@ export default function Home() {
             )}
           </nav>
 
+          {/* Profile Quick Button */}
+          <button
+            onClick={() => setProfileModalOpen(true)}
+            className="mb-3 flex items-center justify-between rounded-2xl border border-[#cfe2db] bg-[#edf7f3] p-3 text-left transition hover:bg-[#e2f1ec] cursor-pointer"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-7 items-center justify-center rounded-xl bg-[#1d8272] text-white text-xs font-bold">
+                {currentUser.avatar_initials || 'CU'}
+              </div>
+              <div>
+                <p className="text-xs font-bold text-[#163a34] truncate max-w-[110px]">{currentUser.full_name}</p>
+                <p className="text-[10px] text-[#557b72]">{t('profile', selectedLanguage)} &amp; Settings</p>
+              </div>
+            </div>
+            <Settings size={14} className="text-[#1d8272]" />
+          </button>
+
           {/* Ethical AI Info Card */}
-          <div className="mt-auto rounded-2xl border border-[#dfeae5] bg-white p-4 shadow-xs">
+          <div className="rounded-2xl border border-[#dfeae5] bg-white p-4 shadow-xs">
             <div className="mb-2.5 flex size-8 items-center justify-center rounded-lg bg-[#eaf5f2] text-[#238c7b]">
               <Lock size={15} />
             </div>
@@ -689,13 +714,25 @@ export default function Home() {
               <div className="hidden items-center gap-2 text-xs font-semibold text-[#8ca39d] sm:flex">
                 <span>Safe Space</span>
                 <span>/</span>
-                <span className="text-[#204a43]">{isOfficerMode ? `Officer Console (${officerRoleView})` : activeTab}</span>
+                <span className="text-[#204a43]">
+                  {isOfficerMode ? `Officer Console (${officerRoleView})` : activeTab}
+                </span>
               </div>
             </div>
 
             {/* Top Right Action Items */}
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* 1. Helpline 14566 Button */}
+              {/* Profile Button */}
+              <button
+                type="button"
+                onClick={() => setProfileModalOpen(true)}
+                className="flex items-center gap-2 rounded-xl border border-[#cfe2db] bg-[#f7fbf9] px-3 py-1.5 text-xs font-bold text-[#163a34] hover:bg-[#eef7f3] transition shadow-xs"
+              >
+                <User size={14} className="text-[#1d8272]" />
+                <span className="hidden sm:inline">{t('profile', selectedLanguage)}</span>
+              </button>
+
+              {/* Helpline 14566 Button */}
               <a
                 href="tel:14566"
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#eaf6f2] text-[#1d8272] text-xs font-bold hover:bg-[#d8efe8] transition"
@@ -704,7 +741,7 @@ export default function Home() {
                 <span>Helpline 14566</span>
               </a>
 
-              {/* 2. Notification Button */}
+              {/* Notification Button */}
               <button
                 onClick={() => setNotificationsOpen(!notificationsOpen)}
                 className="relative flex size-9 items-center justify-center rounded-xl border border-[#dbe6e2] text-[#5e7771] hover:bg-[#f2f7f5] transition cursor-pointer"
@@ -714,7 +751,7 @@ export default function Home() {
                 <span className="absolute right-2 top-2 size-2 rounded-full bg-[#e67863] animate-pulse" />
               </button>
 
-              {/* 3. SOS Emergency Button */}
+              {/* SOS Emergency Button */}
               <button
                 type="button"
                 onClick={() => setSosModalOpen(true)}
@@ -725,33 +762,6 @@ export default function Home() {
                 <span className="hidden xs:inline sm:inline">SOS Emergency</span>
               </button>
 
-              {/* 4. Calming Audio Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  setWellbeingModalTab('soundscape')
-                  setWellbeingModalOpen(true)
-                }}
-                className="flex items-center gap-1.5 rounded-xl border border-[#cfe3dc] bg-[#eef8f4] hover:bg-[#dff1ea] text-[#185a4f] px-3 py-1.5 text-xs font-semibold shadow-xs transition cursor-pointer"
-                title="Calming Audio Therapy"
-              >
-                <Headphones size={14} className="text-[#1d8272]" />
-                <span className="hidden md:inline">Calming Audio</span>
-              </button>
-
-              {/* 5. Switch to Officer Console Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  const nextMode = !isOfficerMode
-                  setIsOfficerMode(nextMode)
-                  setActiveTab('My space')
-                }}
-                className="text-xs font-bold px-3 py-1.5 rounded-xl border border-[#d6e3df] text-[#1e584f] bg-[#fbfdfc] hover:bg-[#eef5f2] transition flex items-center gap-1.5 shadow-xs cursor-pointer"
-              >
-                {isOfficerMode ? <UserRound size={14} /> : <ShieldCheck size={14} />}
-                <span>{isOfficerMode ? 'Victim Space' : 'Officer Console'}</span>
-              </button>
             </div>
           </header>
 
@@ -791,7 +801,7 @@ export default function Home() {
                     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                       <div>
                         <p className="text-xs font-bold text-[#1d8272] uppercase tracking-wider">
-                          NHAA Safe Space · Tuesday, 25 August 2026
+                          NHAA Safe Space &bull; Active Jurisdiction: {currentUser.district || 'Pune'}, {currentUser.state || 'Maharashtra'}
                         </p>
                         <h1 className="mt-1 text-3xl font-bold tracking-tight text-[#173a34] sm:text-4xl">
                           Welcome, {currentUser.full_name}
@@ -939,9 +949,11 @@ export default function Home() {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h2 className="text-xl font-bold tracking-tight text-[#173a34]">Share Your Story</h2>
+                          <h2 className="text-xl font-bold tracking-tight text-[#173a34]">
+                            {t('share_story_title', selectedLanguage)}
+                          </h2>
                           <p className="text-xs text-[#6e8a83]">
-                            Write or speak openly. Our speech analytics and trauma evaluation engine operates in zero-knowledge mode.
+                            {t('share_story_subtitle', selectedLanguage)}
                           </p>
                         </div>
                         <button
@@ -954,7 +966,12 @@ export default function Home() {
                         </button>
                       </div>
 
-                      <StoryInputCard onStorySubmitted={handleStorySubmitted} />
+                      <StoryInputCard
+                        currentUser={currentUser}
+                        officersList={officersList}
+                        currentLanguage={selectedLanguage}
+                        onStorySubmitted={handleStorySubmitted}
+                      />
                     </div>
 
                     {/* Section: Mood Tracker & Recent Activity Grid */}
@@ -1088,13 +1105,11 @@ export default function Home() {
                     <div className="flex items-center gap-2">
                       <span className="flex size-2 rounded-full bg-[#10b981]" />
                       <h1 className="text-xl font-bold text-[#163c35]">
-                        NHAA Triage Console · {officerRoleView === 'psychiatrist' ? 'Psychiatrist Queue' : 'Police Escort Dispatch'}
+                        NHAA Triage Console &bull; {officerRoleView === 'psychiatrist' ? 'Psychiatrist Queue' : 'Police Escort Dispatch'}
                       </h1>
                     </div>
                     <p className="text-xs text-[#708d86] mt-0.5">
-                      {officerRoleView === 'psychiatrist'
-                        ? 'Department: Psychological Triage & Crisis Response · Badge: NHAA-DL-8092'
-                        : 'Department: Law Enforcement & Atrocities Protection Liaison · Badge: NHAA-MH-4421'}
+                      {currentOfficer ? `${currentOfficer.department} · Badge: ${currentOfficer.officer_badge_id} · Station: ${currentOfficer.station_name || currentOfficer.assigned_district}` : 'Live Authority Console'}
                     </p>
                   </div>
 
@@ -1136,11 +1151,13 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Render Selected Officer View */}
+                {/* Render Selected Officer View with real officer & proximity */}
                 {officerRoleView === 'psychiatrist' ? (
                   <PsychiatristDashboard
                     cases={casesList}
                     scheduledAppointments={scheduledAppointments}
+                    currentOfficer={currentOfficer}
+                    currentLanguage={selectedLanguage}
                     onSelectCase={(c) => {
                       setSelectedCase(c)
                       setSelectedCaseModalOpen(true)
@@ -1153,6 +1170,8 @@ export default function Home() {
                 ) : (
                   <PoliceDashboard
                     cases={casesList}
+                    currentOfficer={currentOfficer}
+                    currentLanguage={selectedLanguage}
                     onSelectCase={(c) => {
                       setSelectedCase(c)
                       setSelectedCaseModalOpen(true)
@@ -1173,20 +1192,25 @@ export default function Home() {
       {/* 4. MODALS & POPUPS */}
       {/* ========================================================================= */}
 
+      {/* User Profile View & Edit Modal */}
+      <ProfileModal
+        isOpen={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        user={currentUser}
+        officer={currentOfficer}
+        currentLanguage={selectedLanguage}
+        onProfileUpdated={handleProfileUpdated}
+      />
+
       {/* User Details Onboarding Modal */}
       <UserDetailsModal
         user={currentUser}
         isOpen={detailsModalOpen}
         onClose={() => setDetailsModalOpen(false)}
-        onSaved={handleProfileSaved}
+        onSaved={(u) => handleProfileUpdated(u, null)}
         isMandatory={false}
       />
 
-      {/* Supabase Realtime Status Modal */}
-      <SupabaseStatusModal
-        isOpen={supabaseModalOpen}
-        onClose={() => setSupabaseModalOpen(false)}
-      />
 
       {/* Voice Recorder Modal */}
       <VoiceRecorderModal
@@ -1194,7 +1218,6 @@ export default function Home() {
         onClose={() => setVoiceModalOpen(false)}
         onComplete={(metrics: VoiceAnalysisMetrics) => {
           setVoiceModalOpen(false)
-          // Add as story
           const story: UserStory = {
             id: `STORY-${Date.now()}`,
             title: 'Audio Testimony Recording',
