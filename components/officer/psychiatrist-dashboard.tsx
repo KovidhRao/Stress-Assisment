@@ -14,14 +14,19 @@ import {
   Check,
   FileText,
   Activity,
-  Sparkles
+  Sparkles,
+  MapPin,
+  BadgeAlert
 } from 'lucide-react'
-import { CaseRecord, RiskLevel, AppointmentRecord } from '@/types'
+import { CaseRecord, RiskLevel, AppointmentRecord, OfficerProfile } from '@/types'
 import { TeleCallModal } from '@/components/victim/tele-call-modal'
+import { t } from '@/lib/i18n'
 
 interface PsychiatristDashboardProps {
   cases: CaseRecord[]
   scheduledAppointments: AppointmentRecord[]
+  currentOfficer?: OfficerProfile | null
+  currentLanguage?: string
   onSelectCase: (caseRecord: CaseRecord) => void
   onOpenCaseModal: (caseRecord: CaseRecord) => void
   onUpdateStatus?: (caseId: string, newStatus: string) => void
@@ -37,6 +42,8 @@ const levelStyles: Record<RiskLevel, string> = {
 export function PsychiatristDashboard({
   cases,
   scheduledAppointments,
+  currentOfficer,
+  currentLanguage = 'en',
   onSelectCase,
   onOpenCaseModal
 }: PsychiatristDashboardProps) {
@@ -47,15 +54,27 @@ export function PsychiatristDashboard({
   const [teleModalOpen, setTeleModalOpen] = useState(false)
   const [teleRecipient, setTeleRecipient] = useState({ name: '', role: '', phone: '' })
 
-  // Psychiatrist sees Moderate, High, and Critical cases
+  const officerDistrict = (currentOfficer?.assigned_district || '').toLowerCase()
+  const officerState = (currentOfficer?.assigned_state || '').toLowerCase()
+
+  // Psychiatrist sees Moderate, High, and Critical cases routed to their region
   const psychCases = cases.filter(c => {
     const isPsychTier = c.stress_assessment.risk_level === 'Moderate' || c.stress_assessment.risk_level === 'High' || c.stress_assessment.risk_level === 'Critical'
     const matchesFilter = filterRisk === 'All' || c.stress_assessment.risk_level === filterRisk
+
+    const isAssigned = c.assigned_officer_id === currentOfficer?.id ||
+      (currentOfficer?.full_name && c.assigned_counsellor?.toLowerCase().includes(currentOfficer.full_name.toLowerCase()))
+    const isLocalDistrict = officerDistrict && c.incident_location.district.toLowerCase().includes(officerDistrict)
+    const isLocalState = officerState && c.incident_location.state.toLowerCase().includes(officerState)
+
+    const matchesProximity = !currentOfficer || isAssigned || isLocalDistrict || isLocalState || currentOfficer.role === 'admin'
+
     const matchesSearch = !searchTerm ||
       c.victim_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.incident_location.district.toLowerCase().includes(searchTerm.toLowerCase())
-    return isPsychTier && matchesFilter && matchesSearch
+
+    return isPsychTier && matchesFilter && matchesProximity && matchesSearch
   })
 
   const handleCallComplainant = (caseItem: CaseRecord) => {
@@ -69,10 +88,40 @@ export function PsychiatristDashboard({
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
+      {/* Officer Header */}
+      {currentOfficer && (
+        <div className="rounded-3xl border border-[#cfe3dc] bg-gradient-to-r from-[#eef8f5] via-white to-[#f0fbf7] p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-[#1d8272] text-white shadow-md">
+              <Brain size={24} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-bold text-[#163a34]">
+                  {currentOfficer.full_name}
+                </h2>
+                <span className="font-mono text-[10px] font-extrabold bg-white border border-[#cfe3dc] text-[#1d8272] px-2 py-0.5 rounded-md">
+                  {currentOfficer.officer_badge_id}
+                </span>
+              </div>
+              <p className="text-xs text-[#285e54] mt-0.5 flex items-center gap-1 font-medium">
+                <MapPin size={13} />
+                <span>Specialized Triage Cell &bull; {currentOfficer.assigned_district}, {currentOfficer.assigned_state}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 rounded-2xl bg-white border border-[#cfe3dc] px-4 py-2 text-xs font-bold text-[#1d8272] shadow-xs">
+            <Sparkles size={14} />
+            <span>Clinical Proximity Triage Active</span>
+          </div>
+        </div>
+      )}
+
       {/* Psychiatrist Stats Row */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div className="rounded-2xl border border-[#dcebe5] bg-white p-4.5 shadow-xs">
-          <p className="text-xs text-[#698881] font-semibold">Active Clinical Cases</p>
+          <p className="text-xs text-[#698881] font-semibold">{t('active_cases', currentLanguage)}</p>
           <p className="mt-2 text-2xl font-bold text-[#173a34]">{psychCases.length}</p>
           <p className="mt-1 text-[11px] font-semibold text-[#1d8272]">Moderate &amp; High Triage</p>
         </div>
@@ -128,7 +177,7 @@ export function PsychiatristDashboard({
               <button
                 type="button"
                 onClick={() => setTeleModalOpen(true)}
-                className="mt-3 w-full flex items-center justify-center gap-1.5 rounded-xl bg-[#1d8272] text-white py-1.5 text-xs font-bold hover:bg-[#186f60] transition"
+                className="mt-3 w-full flex items-center justify-center gap-1.5 rounded-xl bg-[#1d8272] text-white py-1.5 text-xs font-bold hover:bg-[#186f60] transition cursor-pointer"
               >
                 <PhoneCall size={12} />
                 <span>Launch Tele-Session</span>
@@ -149,7 +198,7 @@ export function PsychiatristDashboard({
             <button
               type="button"
               onClick={() => setTeleModalOpen(true)}
-              className="mt-3 w-full flex items-center justify-center gap-1.5 rounded-xl bg-[#1e40af] text-white py-1.5 text-xs font-bold hover:bg-[#1d3557] transition"
+              className="mt-3 w-full flex items-center justify-center gap-1.5 rounded-xl bg-[#1e40af] text-white py-1.5 text-xs font-bold hover:bg-[#1d3557] transition cursor-pointer"
             >
               <PhoneCall size={12} />
               <span>Launch Tele-Session</span>
@@ -158,104 +207,127 @@ export function PsychiatristDashboard({
         </div>
       </div>
 
-      {/* Case Management Table */}
-      <div className="rounded-3xl border border-[#dcebe5] bg-white p-6 shadow-xs space-y-4">
+      {/* Main Clinical Triage Case Queue */}
+      <div className="rounded-3xl border border-[#dcebe5] bg-white p-6 shadow-xs space-y-5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-base font-bold text-[#183e38]">Assigned Psychological Care Queue</h2>
+            <h2 className="text-lg font-bold text-[#1a3d36]">Psychological &amp; Crisis Triage Queue</h2>
             <p className="text-xs text-[#6d8a83]">
-              Review vulnerability indicators and initiate clinical tele-intervention.
+              Review citizen voice analyses, trauma markers, and initiate clinical tele-consultations.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="flex items-center gap-2 rounded-xl border border-[#d6e3df] bg-[#fbfdfc] px-3 py-1.5 text-xs text-[#204540]">
-              <Search size={14} className="text-[#718d86]" />
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            {/* Risk filter */}
+            <div className="flex items-center rounded-xl bg-[#f0f6f4] p-1 text-xs">
+              {(['All', 'High', 'Moderate'] as const).map(risk => (
+                <button
+                  key={risk}
+                  type="button"
+                  onClick={() => setFilterRisk(risk)}
+                  className={`rounded-lg px-3 py-1 font-semibold transition cursor-pointer ${
+                    filterRisk === risk
+                      ? 'bg-white text-[#1d8272] shadow-xs'
+                      : 'text-[#698881] hover:text-[#163a34]'
+                  }`}
+                >
+                  {risk}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative w-full sm:w-60">
+              <Search size={15} className="absolute left-3.5 top-2.5 text-[#8ca8a0]" />
               <input
                 type="text"
+                placeholder="Search victim, case..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search patient, ID..."
-                className="bg-transparent outline-none text-xs w-32 sm:w-44"
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full rounded-xl border border-[#d8e8e2] bg-[#fbfdfc] pl-9 pr-4 py-2 text-xs text-[#1a3d36] placeholder-[#8ca8a0] outline-none focus:border-[#1d8272] focus:bg-white"
               />
             </div>
           </div>
         </div>
 
-        {/* Risk Filter Buttons */}
-        <div className="flex gap-2">
-          {(['All', 'High', 'Moderate'] as const).map((r) => (
-            <button
-              key={r}
-              onClick={() => setFilterRisk(r)}
-              className={`px-3 py-1 rounded-xl text-xs font-semibold transition ${
-                filterRisk === r
-                  ? 'bg-[#1d8272] text-white shadow-xs'
-                  : 'bg-[#f0f6f3] text-[#627f78] hover:bg-[#e4eee9]'
-              }`}
-            >
-              {r === 'All' ? 'All Triage' : `${r} Risk`}
-            </button>
-          ))}
-        </div>
+        {/* Case Cards */}
+        <div className="space-y-4 pt-1">
+          {psychCases.length > 0 ? (
+            psychCases.map(c => {
+              return (
+                <div
+                  key={c.id}
+                  className="rounded-2xl border border-[#dcebe5] bg-white p-5 transition hover:border-[#b8dad0] hover:shadow-xs space-y-3"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#edf4f1] pb-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-[#1d8272] bg-[#eef7f4] px-2 py-0.5 rounded-md border border-[#cfe3dc]">
+                          {c.id}
+                        </span>
+                        <h3 className="font-bold text-sm text-[#163a34]">{c.victim_name}</h3>
+                        <span className={`rounded-xl px-2.5 py-0.5 text-[10px] font-bold ${levelStyles[c.stress_assessment.risk_level]}`}>
+                          SVI {c.stress_assessment.svi_score} · {c.stress_assessment.risk_level}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#6d8a83] mt-1 flex items-center gap-1">
+                        <MapPin size={12} className="text-[#1d8272]" />
+                        <span>{c.incident_location.village_town_city}, {c.incident_location.district}, {c.incident_location.state}</span>
+                      </p>
+                    </div>
 
-        {/* Case Cards List */}
-        <div className="space-y-3 pt-2">
-          {psychCases.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => onSelectCase(item)}
-              className="p-4 rounded-2xl border border-[#e2ede8] bg-[#fbfdfc] hover:bg-[#f0f8f5] transition cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4"
-            >
-              <div className="flex items-start gap-3">
-                <div className="flex size-10 items-center justify-center rounded-2xl bg-[#e4f3ee] text-xs font-bold text-[#1d8272] shrink-0 mt-0.5">
-                  {item.initials}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-bold text-xs text-[#1a3f39]">{item.victim_name}</p>
-                    <span className="font-mono text-[10px] text-[#718d86]">{item.id}</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleCallComplainant(c)}
+                        className="flex items-center gap-1.5 rounded-xl border border-[#cfe3dc] bg-white px-3 py-1.5 text-xs font-bold text-[#1d8272] hover:bg-[#edf7f3] transition cursor-pointer"
+                      >
+                        <PhoneCall size={13} />
+                        <span>Initiate Tele-Call</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => onOpenCaseModal(c)}
+                        className="flex items-center gap-1 rounded-xl bg-[#1d8272] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#166558] transition shadow-xs cursor-pointer"
+                      >
+                        <span>{t('review_case', currentLanguage)}</span>
+                        <ArrowRight size={13} />
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-[11px] text-[#6d8a83] mt-0.5 line-clamp-1">
-                    {item.incident_category} · {item.incident_location.district}, {item.incident_location.state}
+
+                  <p className="text-xs text-[#2a4d46] leading-relaxed line-clamp-2">
+                    &ldquo;{c.narrative_text}&rdquo;
                   </p>
-                  <p className="text-[11px] text-[#4d7068] mt-1 italic line-clamp-1">
-                    &ldquo;{item.narrative_text}&rdquo;
-                  </p>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[#73928a] font-medium">Psych Markers:</span>
+                      {c.stress_assessment.key_trauma_triggers.slice(0, 3).map((trig, idx) => (
+                        <span key={idx} className="rounded-md bg-[#edf7f3] text-[#1d8272] px-2 py-0.5 text-[10px] font-semibold">
+                          {trig}
+                        </span>
+                      ))}
+                    </div>
+
+                    {c.voice_analysis && (
+                      <span className="text-[#1d8272] font-semibold bg-[#eaf5f1] px-2 py-0.5 rounded-md text-[10px]">
+                        🎙️ Voice Distress: {c.voice_analysis.acoustic_distress_score}/100
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-3 shrink-0 self-end md:self-center">
-                <span className={`rounded-xl px-2.5 py-1 text-[10px] font-bold ${levelStyles[item.stress_assessment.risk_level]}`}>
-                  SVI {item.stress_assessment.svi_score} · {item.stress_assessment.risk_level}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleCallComplainant(item)
-                  }}
-                  className="flex items-center gap-1.5 rounded-xl bg-[#1d8272] hover:bg-[#186f60] text-white px-3 py-1.5 text-xs font-bold transition shadow-xs"
-                >
-                  <PhoneCall size={12} />
-                  <span>Call</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onOpenCaseModal(item)
-                  }}
-                  className="flex items-center gap-1 rounded-xl border border-[#d2e4de] bg-white hover:bg-[#eaf4f0] px-3 py-1.5 text-xs font-semibold text-[#1c4b42] transition"
-                >
-                  <span>View Case</span>
-                  <ArrowRight size={12} />
-                </button>
-              </div>
+              )
+            })
+          ) : (
+            <div className="rounded-2xl border border-dashed border-[#dcebe5] p-8 text-center bg-[#fafdfc]">
+              <CheckCircle2 size={32} className="mx-auto text-[#10b981]" />
+              <h4 className="mt-2 text-xs font-bold text-[#163a34]">All Triage Cases Clear in Your District</h4>
+              <p className="mt-1 text-[11px] text-[#6d8a83]">
+                No pending moderate or high trauma cases requiring immediate psychiatric triage.
+              </p>
             </div>
-          ))}
+          )}
         </div>
       </div>
 

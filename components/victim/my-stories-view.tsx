@@ -92,7 +92,7 @@ export function MyStoriesView({
         <button
           type="button"
           onClick={onShareAnotherStory}
-          className="flex items-center justify-center gap-2 rounded-2xl bg-[#1d8272] hover:bg-[#186f60] text-white px-5 py-3 text-xs font-bold shadow-md shadow-[#1d8272]/20 transition active:scale-95 shrink-0"
+          className="flex items-center justify-center gap-2 rounded-2xl bg-[#1d8272] hover:bg-[#186f60] text-white px-5 py-3 text-xs font-bold shadow-md shadow-[#1d8272]/20 transition active:scale-95 shrink-0 cursor-pointer"
         >
           <Plus size={16} />
           <span>+ Share Another Story</span>
@@ -120,12 +120,25 @@ export function MyStoriesView({
                       #{stories.length - index}
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-[#183d37]">{story.title || 'Personal Experience Statement'}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-sm text-[#183d37]">{story.title || 'Personal Experience Statement'}</h3>
+                        {story.case_id && (
+                          <span className="font-mono text-[10px] font-bold bg-[#edf7f3] text-[#1d8272] px-2 py-0.5 rounded-md border border-[#cfe6dc]">
+                            {story.case_id}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 text-[11px] text-[#6d8a83] mt-0.5">
                         <Clock size={12} />
                         <span>{story.formatted_time}</span>
                         <span>•</span>
                         <span>{story.language || 'English'}</span>
+                        {story.assigned_officer_name && (
+                          <>
+                            <span>•</span>
+                            <span className="text-[#1d8272] font-medium">Nearest Officer: {story.assigned_officer_name}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -152,7 +165,7 @@ export function MyStoriesView({
                       <button
                         type="button"
                         onClick={() => toggleExpand(story.id)}
-                        className="mt-2.5 flex items-center gap-1 text-xs font-bold text-[#1d8272] hover:underline"
+                        className="mt-2.5 flex items-center gap-1 text-xs font-bold text-[#1d8272] hover:underline cursor-pointer"
                       >
                         {isExpanded ? (
                           <>
@@ -176,7 +189,7 @@ export function MyStoriesView({
                         <button
                           type="button"
                           onClick={() => togglePlayAudio(story.id, totalDur)}
-                          className="flex size-11 items-center justify-center rounded-2xl bg-[#1d8272] text-white shadow-md hover:bg-[#186f60] transition active:scale-95 shrink-0"
+                          className="flex size-11 items-center justify-center rounded-2xl bg-[#1d8272] text-white shadow-md hover:bg-[#186f60] transition active:scale-95 shrink-0 cursor-pointer"
                           title={isPlaying ? 'Pause' : 'Play Audio Recording'}
                         >
                           {isPlaying ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
@@ -236,7 +249,7 @@ export function MyStoriesView({
                         <button
                           type="button"
                           onClick={() => onViewSupportPlan(story.risk_level)}
-                          className="flex items-center gap-1.5 rounded-xl bg-[#e4f3ee] hover:bg-[#d5ece4] px-3 py-1.5 text-xs font-bold text-[#1a6e60] transition"
+                          className="flex items-center gap-1.5 rounded-xl bg-[#e4f3ee] hover:bg-[#d5ece4] px-3 py-1.5 text-xs font-bold text-[#1a6e60] transition cursor-pointer"
                         >
                           <span>View Support Plan</span>
                           <ArrowRight size={13} />
@@ -258,7 +271,7 @@ export function MyStoriesView({
             <button
               type="button"
               onClick={onShareAnotherStory}
-              className="mt-5 rounded-2xl bg-[#1d8272] text-white px-5 py-2.5 text-xs font-bold shadow-md hover:bg-[#186f60] transition"
+              className="mt-5 rounded-2xl bg-[#1d8272] text-white px-5 py-2.5 text-xs font-bold shadow-md hover:bg-[#186f60] transition cursor-pointer"
             >
               Share Your First Story
             </button>

@@ -13,13 +13,18 @@ import {
   Check,
   Building,
   Car,
-  FileCheck
+  FileCheck,
+  BadgeAlert,
+  Sparkles
 } from 'lucide-react'
-import { CaseRecord, RiskLevel } from '@/types'
+import { CaseRecord, OfficerProfile, RiskLevel } from '@/types'
 import { TeleCallModal } from '@/components/victim/tele-call-modal'
+import { t } from '@/lib/i18n'
 
 interface PoliceDashboardProps {
   cases: CaseRecord[]
+  currentOfficer?: OfficerProfile | null
+  currentLanguage?: string
   onSelectCase: (caseRecord: CaseRecord) => void
   onOpenCaseModal: (caseRecord: CaseRecord) => void
 }
@@ -31,6 +36,8 @@ const priorityStyles: Record<string, string> = {
 
 export function PoliceDashboard({
   cases,
+  currentOfficer,
+  currentLanguage = 'en',
   onSelectCase,
   onOpenCaseModal
 }: PoliceDashboardProps) {
@@ -41,14 +48,28 @@ export function PoliceDashboard({
   const [teleModalOpen, setTeleModalOpen] = useState(false)
   const [teleRecipient, setTeleRecipient] = useState({ name: '', role: '', phone: '' })
 
-  // Police ONLY see High and Critical risk cases
+  // Proximity & Severity filtering:
+  // Shows high/critical cases routed to this officer or in this officer's district / state
+  const officerDistrict = (currentOfficer?.assigned_district || '').toLowerCase()
+  const officerState = (currentOfficer?.assigned_state || '').toLowerCase()
+
   const policeCases = cases.filter(c => {
     const isHighOrCritical = c.stress_assessment.risk_level === 'High' || c.stress_assessment.risk_level === 'Critical'
+    
+    // Proximity check
+    const isAssigned = c.assigned_officer_id === currentOfficer?.id ||
+      (currentOfficer?.full_name && c.assigned_officer?.toLowerCase().includes(currentOfficer.full_name.toLowerCase()))
+    const isLocalDistrict = officerDistrict && c.incident_location.district.toLowerCase().includes(officerDistrict)
+    const isLocalState = officerState && c.incident_location.state.toLowerCase().includes(officerState)
+
+    const matchesProximity = !currentOfficer || isAssigned || isLocalDistrict || isLocalState || currentOfficer.role === 'admin'
+
     const matchesSearch = !searchTerm ||
       c.victim_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.incident_location.district.toLowerCase().includes(searchTerm.toLowerCase())
-    return isHighOrCritical && matchesSearch
+
+    return isHighOrCritical && matchesProximity && matchesSearch
   })
 
   const handleDispatchEscort = (caseId: string) => {
@@ -66,10 +87,40 @@ export function PoliceDashboard({
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
+      {/* Officer Station & Jurisdiction Banner */}
+      {currentOfficer && (
+        <div className="rounded-3xl border border-[#c7d2fe] bg-gradient-to-r from-[#eef2ff] via-white to-[#f5f3ff] p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-[#4338ca] text-white shadow-md">
+              <BadgeAlert size={24} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-bold text-[#1e1b4b]">
+                  {currentOfficer.full_name}
+                </h2>
+                <span className="font-mono text-[10px] font-extrabold bg-white border border-[#c7d2fe] text-[#4338ca] px-2 py-0.5 rounded-md">
+                  {currentOfficer.officer_badge_id}
+                </span>
+              </div>
+              <p className="text-xs text-[#4f46e5] mt-0.5 flex items-center gap-1 font-medium">
+                <MapPin size={13} />
+                <span>Station: {currentOfficer.station_name || currentOfficer.assigned_district} &bull; {currentOfficer.assigned_district}, {currentOfficer.assigned_state}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 rounded-2xl bg-white border border-[#c7d2fe] px-4 py-2 text-xs font-bold text-[#4338ca] shadow-xs">
+            <Radio size={14} className="animate-pulse text-[#ef4444]" />
+            <span>Proximity Radar Active &bull; {policeCases.length} Local Priority Queue</span>
+          </div>
+        </div>
+      )}
+
       {/* Police Escalation KPI Banner */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div className="rounded-2xl border border-[#fca5a5] bg-[#fffbfb] p-4.5 shadow-xs">
-          <p className="text-xs text-[#991b1b] font-semibold">Critical Threat Queue</p>
+          <p className="text-xs text-[#991b1b] font-semibold">{t('high_svi_alert', currentLanguage)}</p>
           <p className="mt-2 text-2xl font-bold text-[#991b1b]">{policeCases.length}</p>
           <p className="mt-1 text-[11px] text-[#dc2626] font-semibold">Priority Tier 1 &amp; 2</p>
         </div>
@@ -77,7 +128,7 @@ export function PoliceDashboard({
         <div className="rounded-2xl border border-[#dcebe5] bg-white p-4.5 shadow-xs">
           <p className="text-xs text-[#698881] font-semibold">Patrol Units Active</p>
           <p className="mt-2 text-2xl font-bold text-[#173a34]">14</p>
-          <p className="mt-1 text-[11px] text-[#1d8272] font-semibold">Across Nodal Districts</p>
+          <p className="mt-1 text-[11px] text-[#1d8272] font-semibold">Across {currentOfficer?.assigned_district || 'District'}</p>
         </div>
 
         <div className="rounded-2xl border border-[#dcebe5] bg-white p-4.5 shadow-xs">
@@ -101,111 +152,117 @@ export function PoliceDashboard({
               <ShieldAlert size={18} />
             </span>
             <div>
-              <h2 className="text-base font-bold text-[#991b1b]">Law Enforcement &amp; Emergency Escort Queue</h2>
-              <p className="text-xs text-[#7f1d1d]">
-                Restricted to High and Critical SVI threats requiring immediate physical protection.
+              <h2 className="text-lg font-bold text-[#1a3d36]">{t('officer_console_title', currentLanguage)}</h2>
+              <p className="text-xs text-[#6d8a83]">
+                {t('active_cases', currentLanguage)}: {currentOfficer?.assigned_district || 'All Jurisdictions'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="flex items-center gap-2 rounded-xl border border-[#d6e3df] bg-[#fbfdfc] px-3 py-1.5 text-xs text-[#204540]">
-              <Search size={14} className="text-[#718d86]" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search case, district..."
-                className="bg-transparent outline-none text-xs w-36 sm:w-48"
-              />
-            </div>
+          <div className="relative w-full sm:w-64">
+            <Search size={15} className="absolute left-3.5 top-2.5 text-[#8ca8a0]" />
+            <input
+              type="text"
+              placeholder="Search victim, case ID, city..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full rounded-xl border border-[#d8e8e2] bg-[#fbfdfc] pl-9 pr-4 py-2 text-xs text-[#1a3d36] placeholder-[#8ca8a0] outline-none focus:border-[#1d8272] focus:bg-white"
+            />
           </div>
         </div>
 
-        {/* Priority Case Cards */}
-        <div className="space-y-3 pt-2">
-          {policeCases.map((item) => {
-            const isDispatched = dispatchedIds.includes(item.id)
-            return (
-              <div
-                key={item.id}
-                onClick={() => onSelectCase(item)}
-                className="p-5 rounded-2xl border border-[#fee2e2] bg-[#fffbfb] hover:bg-[#fff5f5] transition cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4"
-              >
-                <div className="flex items-start gap-3.5">
-                  <div className="flex size-11 items-center justify-center rounded-2xl bg-[#fee2e2] text-sm font-bold text-[#991b1b] shrink-0 mt-0.5">
-                    {item.initials}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-xs sm:text-sm text-[#991b1b]">{item.victim_name}</p>
-                      <span className="font-mono text-[10px] text-[#7f1d1d] bg-white px-2 py-0.5 rounded border border-[#fca5a5]">
-                        {item.id}
-                      </span>
+        {/* Case Cards Table / List */}
+        <div className="space-y-4 pt-2">
+          {policeCases.length > 0 ? (
+            policeCases.map(c => {
+              const isDispatched = dispatchedIds.includes(c.id)
+
+              return (
+                <div
+                  key={c.id}
+                  className="rounded-2xl border border-[#fed7aa] bg-[#fffaf5] p-5 transition hover:border-[#f97316] hover:shadow-xs space-y-3"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#feebd7] pb-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-extrabold text-[#c2410c] bg-white px-2 py-0.5 rounded-md border border-[#fed7aa]">
+                          {c.id}
+                        </span>
+                        <h3 className="font-bold text-sm text-[#1e293b]">{c.victim_name}</h3>
+                        <span className={`rounded-xl px-2.5 py-0.5 text-[10px] font-bold ${priorityStyles[c.stress_assessment.risk_level] || 'bg-red-50 text-red-700'}`}>
+                          SVI {c.stress_assessment.svi_score} · {c.stress_assessment.risk_level}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#78716c] mt-1 flex items-center gap-1 font-medium">
+                        <MapPin size={12} className="text-[#ea580c]" />
+                        <span>{c.incident_location.village_town_city}, {c.incident_location.district}, {c.incident_location.state} {c.incident_location.pincode ? `(${c.incident_location.pincode})` : ''}</span>
+                        {c.proximity_routing && (
+                          <span className="ml-1 text-[10px] text-[#c2410c] font-semibold bg-white px-1.5 py-0.5 rounded border border-[#fed7aa]">
+                            Matched via: {c.proximity_routing.routing_reason}
+                          </span>
+                        )}
+                      </p>
                     </div>
-                    <p className="text-xs text-[#7f1d1d] mt-1 font-medium flex items-center gap-1.5">
-                      <MapPin size={13} className="text-[#dc2626]" />
-                      <span>{item.incident_location.village_town_city}, {item.incident_location.district} ({item.incident_location.state})</span>
-                      <span>•</span>
-                      <span>Reported {item.reported_at}</span>
-                    </p>
-                    <p className="text-[11px] text-[#556964] mt-1 line-clamp-1 italic">
-                      &ldquo;{item.narrative_text}&rdquo;
-                    </p>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleCallComplainant(c)}
+                        className="flex items-center gap-1.5 rounded-xl border border-[#fed7aa] bg-white px-3 py-1.5 text-xs font-bold text-[#c2410c] hover:bg-[#fff7ed] transition cursor-pointer"
+                      >
+                        <PhoneCall size={13} />
+                        <span>Call Complainant</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDispatchEscort(c.id)}
+                        disabled={isDispatched}
+                        className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold text-white transition cursor-pointer ${
+                          isDispatched
+                            ? 'bg-[#10b981] cursor-default'
+                            : 'bg-[#ea580c] hover:bg-[#c2410c] shadow-xs'
+                        }`}
+                      >
+                        {isDispatched ? <Check size={13} /> : <Car size={13} />}
+                        <span>{isDispatched ? 'Escort Dispatched' : t('dispatch_action', currentLanguage)}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => onOpenCaseModal(c)}
+                        className="flex items-center gap-1 rounded-xl bg-[#1d8272] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#166558] transition cursor-pointer"
+                      >
+                        <span>{t('review_case', currentLanguage)}</span>
+                        <ArrowRight size={13} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-[#44403c] leading-relaxed line-clamp-2">
+                    &ldquo;{c.narrative_text}&rdquo;
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[10px] font-semibold text-[#a8a29e]">Key Flags:</span>
+                    {c.stress_assessment.key_trauma_triggers.slice(0, 4).map((trig, idx) => (
+                      <span key={idx} className="rounded-md bg-[#fee2e2] text-[#991b1b] px-2 py-0.5 text-[10px] font-semibold">
+                        {trig}
+                      </span>
+                    ))}
                   </div>
                 </div>
-
-                <div className="flex items-center gap-3 shrink-0 self-end md:self-center">
-                  <span className={`rounded-xl px-3 py-1 text-[11px] font-bold ${priorityStyles[item.stress_assessment.risk_level] || priorityStyles['High']}`}>
-                    Tier {item.priority_tier} · SVI {item.stress_assessment.svi_score}
-                  </span>
-
-                  {isDispatched ? (
-                    <span className="flex items-center gap-1 text-xs font-bold text-[#059669] bg-[#ecfdf5] border border-[#a7f3d0] px-3 py-1.5 rounded-xl">
-                      <CheckCircle2 size={13} />
-                      <span>Patrol Dispatched</span>
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDispatchEscort(item.id)
-                      }}
-                      className="flex items-center gap-1.5 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] text-white px-3.5 py-1.5 text-xs font-bold transition shadow-xs"
-                    >
-                      <Car size={13} />
-                      <span>Dispatch Patrol</span>
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleCallComplainant(item)
-                    }}
-                    className="flex items-center gap-1.5 rounded-xl border border-[#d2e4de] bg-white hover:bg-[#f0f8f5] px-3 py-1.5 text-xs font-semibold text-[#1c4b42] transition"
-                  >
-                    <PhoneCall size={12} />
-                    <span>Call</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onOpenCaseModal(item)
-                    }}
-                    className="flex items-center gap-1 rounded-xl bg-[#1d8272] hover:bg-[#186f60] text-white px-3 py-1.5 text-xs font-bold transition"
-                  >
-                    <span>Dossier</span>
-                    <ArrowRight size={12} />
-                  </button>
-                </div>
-              </div>
-            )
-          })}
+              )
+            })
+          ) : (
+            <div className="rounded-2xl border border-dashed border-[#fed7aa] p-8 text-center bg-[#fffaf5]">
+              <CheckCircle2 size={32} className="mx-auto text-[#10b981]" />
+              <h4 className="mt-2 text-xs font-bold text-[#1c1917]">No Critical Escalations in Your Station Queue</h4>
+              <p className="mt-1 text-[11px] text-[#78716c]">
+                All high-priority cases in {currentOfficer?.assigned_district || 'your jurisdiction'} have been dispatched or reviewed.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

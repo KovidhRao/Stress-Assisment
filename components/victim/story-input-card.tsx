@@ -16,16 +16,38 @@ import {
   Activity,
   Heart,
   X,
-  FileText
+  FileText,
+  Copy,
+  Check,
+  Building,
+  MapPin,
+  AlertTriangle
 } from 'lucide-react'
-import { UserStory, VoiceAnalysisMetrics } from '@/types'
+import { CaseRecord, OfficerProfile, UserProfile, UserStory, VoiceAnalysisMetrics } from '@/types'
+import { computeSVI, findNearestOfficer } from '@/lib/svi-engine'
+import { DEFAULT_OFFICERS } from '@/lib/mock-data'
+import { t } from '@/lib/i18n'
 
 interface StoryInputCardProps {
-  onStorySubmitted: (story: UserStory, metrics?: VoiceAnalysisMetrics) => void
+  currentUser?: UserProfile
+  officersList?: OfficerProfile[]
+  currentLanguage?: string
+  onStorySubmitted: (story: UserStory, metrics?: VoiceAnalysisMetrics, generatedCase?: CaseRecord) => void
   onOpenVoiceModal?: () => void
 }
 
-export function StoryInputCard({ onStorySubmitted }: StoryInputCardProps) {
+export function StoryInputCard({
+  currentUser = {
+    id: 'usr-default',
+    full_name: 'Citizen User',
+    role: 'victim',
+    created_at: new Date().toISOString()
+  },
+  officersList = DEFAULT_OFFICERS,
+  currentLanguage = 'en',
+  onStorySubmitted,
+  onOpenVoiceModal
+}: StoryInputCardProps) {
   const [narrativeText, setNarrativeText] = useState('')
   const [isRecording, setIsRecording] = useState(false)
   const [recordingSeconds, setRecordingSeconds] = useState(0)
@@ -36,8 +58,18 @@ export function StoryInputCard({ onStorySubmitted }: StoryInputCardProps) {
   } | null>(null)
   const [isPlayingAudio, setIsPlayingAudio] = useState(false)
   const [audioPlaybackSeconds, setAudioPlaybackSeconds] = useState(0)
-  const [submitSuccess, setSubmitSuccess] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // Last submitted case info for user confirmation banner
+  const [lastSubmittedCase, setLastSubmittedCase] = useState<{
+    caseId: string
+    sessionId: string
+    officerName: string
+    stationName: string
+    sviScore: number
+    riskLevel: string
+    copied: boolean
+  } | null>(null)
 
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -100,9 +132,9 @@ export function StoryInputCard({ onStorySubmitted }: StoryInputCardProps) {
 
     const finalDuration = Math.max(recordingSeconds, 6)
     const simulatedTranscripts = [
-      "I have been feeling very anxious and unsafe recently since the incident at my hostel. They constantly pass remarks and I cannot focus or sleep.",
-      "The local leaders threatened our family again yesterday and warned us against approaching the authorities. We fear they might come to our house.",
-      "We are facing severe isolation and denial of community access. I need someone to help guide us through the legal and safety process."
+      "I have been feeling very anxious and unsafe recently since the incident at my village. They constantly pass slurs and threatened our family with social boycott.",
+      "The local leaders threatened our family again yesterday and warned us against approaching the authorities. We fear they might come to our house tonight.",
+      "We are facing severe caste discrimination and denial of drinking water access from public handpump. I need someone to help guide us through the legal and protection process."
     ]
     const chosenTranscript = simulatedTranscripts[Math.floor(Math.random() * simulatedTranscripts.length)]
 
@@ -111,7 +143,6 @@ export function StoryInputCard({ onStorySubmitted }: StoryInputCardProps) {
       transcript: chosenTranscript
     })
 
-    // If text area is empty, populate with transcript
     if (!narrativeText.trim()) {
       setNarrativeText(chosenTranscript)
     }
@@ -159,66 +190,129 @@ export function StoryInputCard({ onStorySubmitted }: StoryInputCardProps) {
     setIsSubmitting(true)
 
     setTimeout(() => {
-      // Determine simulated risk level and SVI score from text patterns
-      const lower = content.toLowerCase()
-      let riskLevel: 'Low' | 'Moderate' | 'High' = 'Moderate'
-      let svi = 58
-      const triggers: string[] = []
+      // 1. Acoustic / Voice metrics if audio was recorded
+      const metrics: VoiceAnalysisMetrics | undefined = recordedAudio ? {
+        duration_seconds: recordedAudio.duration,
+        transcript: recordedAudio.transcript,
+        language: currentLanguage || 'en',
+        speech_rate_wpm: 88,
+        average_pitch_hz: 218,
+        pitch_variation_hz: 42,
+        energy_level: 38,
+        pause_duration_ratio: 0.36,
+        acoustic_distress_score: 76,
+        mfcc_indicators: ['vocal_hesitation', 'distress_harmonics', 'respiratory_irregularity']
+      } : undefined
 
-      if (lower.includes('kill') || lower.includes('threat') || lower.includes('attack') || lower.includes('unsafe') || lower.includes('danger') || lower.includes('fear') || lower.includes('panic') || lower.includes('severe')) {
-        riskLevel = 'High'
-        svi = Math.floor(Math.random() * 15 + 75)
-        triggers.push('immediate safety concern', 'acute distress signal')
-      } else if (lower.includes('calm') || lower.includes('peace') || lower.includes('fine') || lower.includes('good') || lower.includes('better') || lower.includes('stable')) {
-        riskLevel = 'Low'
-        svi = Math.floor(Math.random() * 15 + 20)
-        triggers.push('emotional stability', 'routine check-in')
-      } else {
-        riskLevel = 'Moderate'
-        svi = Math.floor(Math.random() * 15 + 48)
-        triggers.push('counselling recommendation', 'stress signals')
+      // 2. Dynamic SVI NLP Computation
+      const assessment = computeSVI(content, metrics)
+
+      // 3. Proximity Officer Matching based on Victim's Location
+      const victimLocation = {
+        state: currentUser.state || 'Maharashtra',
+        district: currentUser.district || 'Pune',
+        village_town_city: currentUser.village_town_city || 'Shivajinagar',
+        pincode: currentUser.pincode || '411001'
       }
+
+      const { officer: nearestOfficer, routingReason } = findNearestOfficer(
+        officersList,
+        victimLocation
+      )
+
+      // 4. Generate Unique Trackable Case ID & Session ID
+      const generatedCaseId = `NHAA-2026-${Math.floor(1000 + Math.random() * 9000)}`
+      const generatedSessionId = `SESS-${Date.now().toString().slice(-6)}`
 
       const newStory: UserStory = {
         id: `STORY-${Date.now().toString().slice(-4)}`,
-        title: content.slice(0, 48) + (content.length > 48 ? '...' : ''),
+        session_id: generatedSessionId,
+        case_id: generatedCaseId,
+        title: content.slice(0, 52) + (content.length > 52 ? '...' : ''),
         narrative_text: content,
         audio_url: recordedAudio ? 'simulated_audio.webm' : null,
         audio_duration_seconds: recordedAudio ? recordedAudio.duration : undefined,
         transcript: recordedAudio ? recordedAudio.transcript : undefined,
-        language: 'English / Hindi',
+        language: currentLanguage,
         created_at: new Date().toISOString(),
         formatted_time: 'Just now',
-        status: riskLevel === 'High' ? 'Support Plan Available' : riskLevel === 'Moderate' ? 'Under Review' : 'Shared',
-        risk_level: riskLevel,
-        svi_score: svi,
-        key_triggers: triggers
+        status: assessment.risk_level === 'Critical' || assessment.risk_level === 'High' ? 'Support Plan Available' : 'Under Review',
+        risk_level: assessment.risk_level,
+        svi_score: assessment.svi_score,
+        key_triggers: assessment.key_trauma_triggers,
+        assigned_officer_name: nearestOfficer.full_name,
+        assigned_officer_id: nearestOfficer.id,
+        nearest_station: nearestOfficer.station_name || `${nearestOfficer.assigned_district} Special Cell`
       }
 
-      const metrics: VoiceAnalysisMetrics | undefined = recordedAudio ? {
-        duration_seconds: recordedAudio.duration,
-        transcript: recordedAudio.transcript,
-        language: 'English',
-        speech_rate_wpm: 92,
-        average_pitch_hz: 218,
-        pitch_variation_hz: 38,
-        energy_level: 40,
-        pause_duration_ratio: 0.32,
-        acoustic_distress_score: svi,
-        mfcc_indicators: ['vocal_hesitation', 'distress_harmonics']
-      } : undefined
+      const newCaseRecord: CaseRecord = {
+        id: generatedCaseId,
+        session_id: generatedSessionId,
+        user_id: currentUser.id,
+        victim_name: currentUser.full_name || 'Citizen User',
+        initials: currentUser.avatar_initials || 'CU',
+        is_anonymous: !!currentUser.anonymous,
+        contact_number: currentUser.phone || '+91 97551 12345',
+        incident_category: 'Social Boycott & Ostracization',
+        incident_location: victimLocation,
+        channel: metrics ? 'mobile_app' : 'integrated_portal',
+        language: currentLanguage,
+        reported_at: 'Just now',
+        narrative_text: content,
+        voice_analysis: metrics,
+        stress_assessment: {
+          ...assessment,
+          case_id: generatedCaseId
+        },
+        status: assessment.risk_level === 'Critical' || assessment.risk_level === 'High' ? 'New Intake' : 'Under Triage',
+        assigned_officer: nearestOfficer.full_name,
+        assigned_officer_id: nearestOfficer.id,
+        assigned_counsellor: 'Dr. Ramesh Chandra',
+        assigned_counsellor_id: 'OFF-01',
+        proximity_routing: {
+          nearest_station: nearestOfficer.station_name || `${nearestOfficer.assigned_district} Unit`,
+          district: nearestOfficer.assigned_district,
+          state: nearestOfficer.assigned_state,
+          routing_reason: routingReason,
+          assigned_at: new Date().toISOString()
+        },
+        priority_tier: assessment.risk_level === 'Critical' ? 1 : assessment.risk_level === 'High' ? 2 : 3,
+        notes: [
+          {
+            id: `N-${Date.now()}`,
+            author: 'AI SVI & Proximity Engine',
+            role: 'Automated Redressal Triage',
+            timestamp: 'Just now',
+            text: `High SVI (${assessment.svi_score}) classified. Case routed to nearest officer ${nearestOfficer.full_name} (${nearestOfficer.assigned_district}) via ${routingReason}.`
+          }
+        ],
+        dispatched_actions: []
+      }
 
-      onStorySubmitted(newStory, metrics)
+      onStorySubmitted(newStory, metrics, newCaseRecord)
 
       setIsSubmitting(false)
-      setSubmitSuccess(true)
+      setLastSubmittedCase({
+        caseId: generatedCaseId,
+        sessionId: generatedSessionId,
+        officerName: nearestOfficer.full_name,
+        stationName: nearestOfficer.station_name || nearestOfficer.assigned_district,
+        sviScore: assessment.svi_score,
+        riskLevel: assessment.risk_level,
+        copied: false
+      })
       setNarrativeText('')
       setRecordedAudio(null)
-
-      setTimeout(() => {
-        setSubmitSuccess(false)
-      }, 4500)
     }, 800)
+  }
+
+  const copyCaseId = () => {
+    if (!lastSubmittedCase) return
+    navigator.clipboard.writeText(lastSubmittedCase.caseId)
+    setLastSubmittedCase(prev => prev ? { ...prev, copied: true } : null)
+    setTimeout(() => {
+      setLastSubmittedCase(prev => prev ? { ...prev, copied: false } : null)
+    }, 2500)
   }
 
   return (
@@ -230,129 +324,86 @@ export function StoryInputCard({ onStorySubmitted }: StoryInputCardProps) {
             <span className="flex size-7 items-center justify-center rounded-xl bg-[#e4f4ef] text-[#1d8272]">
               <Sparkles size={16} />
             </span>
-            <h2 className="text-xl font-bold text-[#163a34]">Share Your Story</h2>
+            <h2 className="text-xl font-bold text-[#163a34]">{t('share_story_title', currentLanguage)}</h2>
           </div>
           <p className="mt-1 text-xs leading-relaxed text-[#68857e]">
-            You can share what happened in your own words. Type your experience or record your voice. You can take your time.
+            {t('share_story_subtitle', currentLanguage)}
           </p>
         </div>
 
         <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-[#edf7f3] border border-[#cfe6dc] px-3 py-1 text-[11px] font-semibold text-[#1d8272]">
           <ShieldCheck size={13} />
-          <span>100% Private &amp; Protected</span>
+          <span>{t('share_story_private', currentLanguage)}</span>
         </div>
       </div>
 
-      {/* Success Notification Banner */}
-      {submitSuccess && (
-        <div className="mt-4 flex items-center justify-between rounded-2xl bg-[#ecfdf5] border border-[#a7f3d0] p-4 text-[#065f46] animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="flex items-center gap-3">
-            <div className="flex size-8 items-center justify-center rounded-full bg-[#10b981] text-white">
-              <CheckCircle2 size={18} />
-            </div>
-            <div>
-              <p className="text-xs font-bold">Your story has been added safely.</p>
-              <p className="text-[11px] text-[#047857] mt-0.5">
-                Saved to your private story space. Your vulnerability snapshot and support journey have been updated.
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => setSubmitSuccess(false)}
-            className="text-[#059669] hover:text-[#065f46] p-1 rounded-lg"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
-
-      {/* Live Voice Recording UI Box */}
-      {isRecording && (
-        <div className="mt-5 rounded-2xl border-2 border-[#1d8272]/30 bg-[#f0f9f6] p-5 animate-in fade-in zoom-in-98 duration-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="size-3 rounded-full bg-[#ef4444] animate-ping" />
-              <span className="text-xs font-bold text-[#185a4f]">Recording Voice Statement...</span>
-            </div>
-            <span className="font-mono text-sm font-bold text-[#185a4f] bg-white/80 px-2.5 py-0.5 rounded-lg border border-[#cce6dc]">
-              00:{recordingSeconds.toString().padStart(2, '0')}
-            </span>
-          </div>
-
-          {/* Sound Waveform Visualization */}
-          <div className="mt-4 rounded-xl bg-[#173f39] p-3 shadow-inner">
-            <canvas ref={canvasRef} width={420} height={56} className="w-full h-14 block" />
-          </div>
-
-          <div className="mt-4 flex items-center justify-between pt-1">
-            <button
-              type="button"
-              onClick={handleCancelRecording}
-              className="px-3.5 py-1.5 text-xs font-semibold text-[#668780] hover:text-[#dc2626] transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleStopRecording}
-              className="flex items-center gap-2 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] text-white px-5 py-2 text-xs font-bold shadow-md transition active:scale-95 animate-pulse"
-            >
-              <Square size={14} />
-              <span>Stop &amp; Review Audio</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Post-Recording Audio Card */}
-      {!isRecording && recordedAudio && (
-        <div className="mt-4 rounded-2xl border border-[#b8ded4] bg-[#eef8f4] p-4.5 animate-in fade-in duration-200">
-          <div className="flex items-center justify-between">
+      {/* Generated Case & Session ID Confirmation Alert */}
+      {lastSubmittedCase && (
+        <div className="mt-5 rounded-2xl bg-[#ecfdf5] border-2 border-[#10b981]/40 p-4 sm:p-5 text-[#065f46] animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#a7f3d0] pb-3.5">
             <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={togglePlayAudio}
-                className="flex size-11 items-center justify-center rounded-2xl bg-[#1d8272] text-white shadow-md hover:bg-[#186f60] transition active:scale-95"
-                title={isPlayingAudio ? 'Pause' : 'Play Voice Recording'}
-              >
-                {isPlayingAudio ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
-              </button>
+              <div className="flex size-9 items-center justify-center rounded-full bg-[#10b981] text-white">
+                <CheckCircle2 size={20} />
+              </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-xs font-bold text-[#184840]">Voice Recording Captured</p>
-                  <span className="rounded-md bg-[#d8efe8] px-1.5 py-0.5 text-[10px] font-mono text-[#185a4f]">
-                    {isPlayingAudio ? `00:${audioPlaybackSeconds.toString().padStart(2, '0')}` : `00:${recordedAudio.duration.toString().padStart(2, '0')}`}
+                <h4 className="text-xs font-bold uppercase tracking-wide text-[#047857]">
+                  {t('story_submitted_success', currentLanguage)}
+                </h4>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-base sm:text-lg font-mono font-extrabold text-[#064e3b]">
+                    {lastSubmittedCase.caseId}
                   </span>
+                  <button
+                    type="button"
+                    onClick={copyCaseId}
+                    className="flex items-center gap-1 rounded-lg bg-white border border-[#a7f3d0] px-2.5 py-1 text-[11px] font-bold text-[#065f46] shadow-sm hover:bg-[#f0fdf4] cursor-pointer"
+                  >
+                    {lastSubmittedCase.copied ? <Check size={12} className="text-[#10b981]" /> : <Copy size={12} />}
+                    <span>{lastSubmittedCase.copied ? t('copied', currentLanguage) : t('copy_case_id', currentLanguage)}</span>
+                  </button>
                 </div>
-                <p className="text-[11px] text-[#63877f] mt-0.5 line-clamp-1 italic">
-                  &ldquo;{recordedAudio.transcript}&rdquo;
-                </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleDeleteAudio}
-                className="p-2 text-[#7f9992] hover:text-[#dc2626] hover:bg-white rounded-xl transition"
-                title="Discard Audio"
-              >
-                <Trash2 size={16} />
-              </button>
+              <span className={`rounded-xl px-3 py-1 text-xs font-extrabold ${
+                lastSubmittedCase.riskLevel === 'Critical' || lastSubmittedCase.riskLevel === 'High'
+                  ? 'bg-[#fee2e2] text-[#b91c1c] border border-[#fca5a5]'
+                  : 'bg-[#e0f2fe] text-[#0369a1] border border-[#bae6fd]'
+              }`}>
+                SVI {lastSubmittedCase.sviScore} &bull; {lastSubmittedCase.riskLevel}
+              </span>
             </div>
+          </div>
+
+          {/* Nearest Officer Proximity Routing Info */}
+          <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 text-xs text-[#065f46]">
+            <div className="flex items-center gap-1.5 font-medium">
+              <MapPin size={15} className="text-[#10b981]" />
+              <span>{t('case_assigned_officer', currentLanguage)}</span>
+              <strong className="text-[#064e3b] font-bold">{lastSubmittedCase.officerName}</strong>
+              <span className="text-[11px] text-[#047857]">({lastSubmittedCase.stationName})</span>
+            </div>
+            <button
+              onClick={() => setLastSubmittedCase(null)}
+              className="text-[11px] text-[#059669] hover:underline font-semibold cursor-pointer"
+            >
+              Dismiss
+            </button>
           </div>
         </div>
       )}
 
-      {/* Primary Text Area & Action Bar */}
-      <div className="mt-4">
-        <div className="relative rounded-2xl border border-[#d2e4de] bg-[#fbfdfc] p-3 sm:p-4 transition-all duration-200 focus-within:border-[#1d8272] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#1d8272]/15">
+      {/* Input / Voice Box */}
+      <div className="mt-5 space-y-4">
+        {/* Narrative Text Area */}
+        <div className="relative">
           <textarea
             value={narrativeText}
-            onChange={(e) => setNarrativeText(e.target.value)}
+            onChange={e => setNarrativeText(e.target.value)}
+            placeholder={t('story_placeholder', currentLanguage)}
             rows={4}
-            placeholder="Tell us what's on your mind or what happened... Type freely, you are completely safe here."
-            className="w-full resize-none bg-transparent text-sm leading-relaxed text-[#1b3d37] placeholder:text-[#9db6af] outline-none"
+            className="w-full rounded-2xl border border-[#d3e5df] bg-[#f9fbfa] p-4 text-xs sm:text-sm leading-relaxed text-[#163a34] placeholder-[#8ea8a1] outline-none transition focus:border-[#1d8272] focus:bg-white focus:ring-2 focus:ring-[#1d8272]/20"
           />
 
           {/* Quick Prompts */}
@@ -367,7 +418,7 @@ export function StoryInputCard({ onStorySubmitted }: StoryInputCardProps) {
                 key={i}
                 type="button"
                 onClick={() => setNarrativeText(prev => prev ? `${prev} ${starter}` : starter)}
-                className="rounded-lg bg-[#eef6f3] px-2.5 py-1 text-[#22574e] hover:bg-[#dfeee8] transition"
+                className="rounded-lg bg-[#eef6f3] px-2.5 py-1 text-[#22574e] hover:bg-[#dfeee8] transition cursor-pointer"
               >
                 {starter.slice(0, 32)}...
               </button>
@@ -375,35 +426,101 @@ export function StoryInputCard({ onStorySubmitted }: StoryInputCardProps) {
           </div>
         </div>
 
-        {/* Action Controls Bar */}
-        <div className="mt-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            {/* Microphone Recording Button */}
-            {!isRecording && (
+        {/* Audio Recording Section */}
+        {isRecording && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl bg-[#f0fdf4] border border-[#bbf7d0] p-4 animate-in fade-in duration-200">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <span className="relative flex size-3">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex size-3 rounded-full bg-red-500"></span>
+              </span>
+              <span className="text-xs font-bold text-[#166534]">
+                Recording audio... ({recordingSeconds}s)
+              </span>
+            </div>
+
+            <canvas ref={canvasRef} width={180} height={32} className="w-44 h-8 rounded" />
+
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={handleStartRecording}
-                className="flex flex-1 sm:flex-initial items-center justify-center gap-2 rounded-2xl border border-[#cbe3db] bg-white hover:bg-[#eef8f4] px-4 py-2.5 text-xs font-bold text-[#1d8272] shadow-xs transition active:scale-95"
+                onClick={handleStopRecording}
+                className="flex items-center gap-1.5 rounded-xl bg-[#dc2626] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#b91c1c] cursor-pointer"
               >
-                <Mic size={16} />
-                <span>{recordedAudio ? 'Record Voice Again' : 'Record Voice Statement'}</span>
+                <Square size={13} fill="white" />
+                <span>{t('stop_recording', currentLanguage)}</span>
               </button>
-            )}
+              <button
+                type="button"
+                onClick={handleCancelRecording}
+                className="rounded-xl border border-[#cbd5e1] bg-white px-3 py-1.5 text-xs font-medium text-[#64748b] hover:bg-[#f1f5f9] cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
+        )}
 
-          <div className="flex items-center justify-end gap-3 w-full sm:w-auto">
-            <span className="text-[11px] text-[#7d9992]">
-              {narrativeText.length} characters
-            </span>
+        {/* Recorded Audio Preview */}
+        {recordedAudio && !isRecording && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] p-3.5">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={togglePlayAudio}
+                className="flex size-9 items-center justify-center rounded-xl bg-[#1d8272] text-white shadow-sm transition hover:bg-[#166558] cursor-pointer"
+              >
+                {isPlayingAudio ? <Pause size={15} /> : <Play size={15} className="ml-0.5" />}
+              </button>
+              <div>
+                <p className="text-xs font-bold text-[#1e293b]">{t('audio_ready', currentLanguage)}</p>
+                <p className="text-[11px] text-[#64748b]">
+                  {recordedAudio.duration}s recorded &bull; Speech distress analysis ready
+                </p>
+              </div>
+            </div>
 
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleDeleteAudio}
+                className="flex items-center gap-1 rounded-lg border border-[#fecaca] bg-[#fff1f2] px-2.5 py-1 text-[11px] font-semibold text-[#e11d48] hover:bg-[#ffe4e6] cursor-pointer"
+              >
+                <Trash2 size={12} />
+                <span>Discard</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Action Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          {!isRecording && (
+            <button
+              type="button"
+              onClick={handleStartRecording}
+              className="flex items-center gap-2 rounded-xl border border-[#cfe3dc] bg-white px-4 py-2 text-xs font-semibold text-[#1d8272] transition hover:bg-[#edf7f3] cursor-pointer"
+            >
+              <Mic size={15} />
+              <span>{t('start_recording', currentLanguage)}</span>
+            </button>
+          )}
+
+          <div className="flex-1 flex justify-end">
             <button
               type="button"
               onClick={() => handleSubmit()}
               disabled={isSubmitting || (!narrativeText.trim() && !recordedAudio)}
-              className="flex flex-1 sm:flex-initial items-center justify-center gap-2 rounded-2xl bg-[#1d8272] hover:bg-[#186f60] disabled:bg-[#a9ccc4] text-white px-6 py-2.5 text-xs font-bold shadow-md shadow-[#1d8272]/20 transition active:scale-95 cursor-pointer disabled:cursor-not-allowed"
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#1d8272] to-[#166558] px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-[#1d8272]/15 transition hover:from-[#176d5f] hover:to-[#125247] disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
             >
-              <Send size={14} />
-              <span>{isSubmitting ? 'Safely Saving...' : 'Submit Story'}</span>
+              {isSubmitting ? (
+                <span>{t('submitting', currentLanguage)}</span>
+              ) : (
+                <>
+                  <span>{t('submit_story_btn', currentLanguage)}</span>
+                  <Send size={14} />
+                </>
+              )}
             </button>
           </div>
         </div>
