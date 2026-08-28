@@ -32,7 +32,10 @@ import {
   Zap,
   Waves,
   User,
-  Settings
+  Settings,
+  Globe2,
+  Layers,
+  MapPin
 } from 'lucide-react'
 
 import {
@@ -42,10 +45,10 @@ import {
   INITIAL_CONTACTS,
   INITIAL_ACTIVITIES
 } from '@/lib/mock-data'
-import { computeSVI } from '@/lib/svi-engine'
 import {
   CaseRecord,
   OfficerProfile,
+  PsychiatristProfile,
   RiskLevel,
   UserProfile,
   VoiceAnalysisMetrics,
@@ -58,15 +61,14 @@ import {
 import { supabase } from '@/lib/supabase'
 import {
   fetchUserProfile,
-  fetchCasesFromDb,
   fetchOfficersFromDb,
-  createCaseInDb,
-  updateCaseInDb,
-  saveAssessmentInDb,
+  fetchPsychiatristsFromDb,
+  saveUserProfile,
   subscribeToRealtimeCases,
-  saveUserProfile
+  CaseService,
+  AppointmentService
 } from '@/lib/supabase-service'
-import { t } from '@/lib/i18n'
+import { SUPPORTED_LANGUAGES, t, normalizeLangCode, translateActivity } from '@/lib/i18n'
 
 import { LoginView } from '@/components/auth/login-view'
 import { UserDetailsModal } from '@/components/auth/user-details-modal'
@@ -85,53 +87,48 @@ import { ConsentModal } from '@/components/victim/consent-modal'
 import { CaseDetailModal } from '@/components/officer/case-detail-modal'
 import { IntakeModal } from '@/components/officer/intake-modal'
 
-const levelStyles: Record<RiskLevel, string> = {
-  Critical: 'bg-[#fff0ef] text-[#c94b48] border border-[#fca5a5]',
-  High: 'bg-[#fff5e5] text-[#b87817] border border-[#fde68a]',
-  Moderate: 'bg-[#eef5ff] text-[#4f76bb] border border-[#bfdbfe]',
-  Low: 'bg-[#edf8f2] text-[#4f9674] border border-[#a7f3d0]'
-}
-
 export default function Home() {
-  // Global Auth & User States
+  // ─── Global Auth & Role State ───────────────────────────────────────────────
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [currentUser, setCurrentUser] = useState<UserProfile>({
     id: 'usr-default',
-    email: 'ananya.s@example.com',
-    full_name: 'Ananya S.',
+    email: 'manashvitha@gmail.com',
+    full_name: 'MANASHVITHA P',
     role: 'victim',
-    preferred_language: 'en',
-    district: 'Pune',
-    state: 'Maharashtra',
-    avatar_initials: 'AS',
+    preferred_language: 'te',
+    district: 'Guntur',
+    state: 'Andhra Pradesh',
+    village_town_city: 'Guntur City',
+    pincode: '522001',
+    avatar_initials: 'MP',
     created_at: new Date().toISOString()
   })
 
-  // Real officers list from DB
+  // Connected professionals
   const [officersList, setOfficersList] = useState<OfficerProfile[]>([])
+  const [psychiatristsList, setPsychiatristsList] = useState<PsychiatristProfile[]>([])
   const [currentOfficer, setCurrentOfficer] = useState<OfficerProfile | null>(null)
-  const [isOfficerMode, setIsOfficerMode] = useState(false)
-  const [officerRoleView, setOfficerRoleView] = useState<'psychiatrist' | 'police'>('psychiatrist')
+  const [currentPsychiatrist, setCurrentPsychiatrist] = useState<PsychiatristProfile | null>(null)
+
+  // Navigation & Language
   const [activeTab, setActiveTab] = useState<'My space' | 'My story & Audio' | 'Wellbeing journey' | 'Support circle'>('My space')
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [selectedLanguage, setSelectedLanguage] = useState('en')
+  const [selectedLanguage, setSelectedLanguage] = useState('te')
 
-  // Prototype Simulated Condition State (Normal / Moderate / High)
-  const [simulatedCondition, setSimulatedCondition] = useState<RiskLevel>('Moderate')
-  const [selectedMood, setSelectedMood] = useState<'Calm' | 'Okay' | 'Stressed' | 'Anxious' | 'Overwhelmed' | null>('Stressed')
-
-  // Interactive Stories State
+  // ─── Data Collections ───────────────────────────────────────────────────────
+  const [casesList, setCasesList] = useState<CaseRecord[]>(INITIAL_CASES)
   const [storiesList, setStoriesList] = useState<UserStory[]>(INITIAL_STORIES)
+  const [activeCaseId, setActiveCaseId] = useState<string>(INITIAL_CASES[0]?.id || 'NHAA-2026-9041')
   const [contactsList, setContactsList] = useState<TrustedContact[]>(INITIAL_CONTACTS)
   const [scheduledAppointments, setScheduledAppointments] = useState<AppointmentRecord[]>([])
   const [activitiesList, setActivitiesList] = useState<UserActivity[]>(INITIAL_ACTIVITIES)
+  const [selectedMood, setSelectedMood] = useState<'Calm' | 'Okay' | 'Stressed' | 'Anxious' | 'Overwhelmed' | null>('Stressed')
 
-  // Cases State for Officer Console
-  const [casesList, setCasesList] = useState<CaseRecord[]>(INITIAL_CASES)
-  const [selectedCase, setSelectedCase] = useState<CaseRecord>(INITIAL_CASES[0])
+  // Selected case for officer review modal
+  const [selectedCaseForModal, setSelectedCaseForModal] = useState<CaseRecord>(INITIAL_CASES[0])
   const [selectedCaseModalOpen, setSelectedCaseModalOpen] = useState(false)
 
-  // Modals State
+  // ─── Modals State ───────────────────────────────────────────────────────────
   const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [voiceModalOpen, setVoiceModalOpen] = useState(false)
@@ -143,21 +140,22 @@ export default function Home() {
   const [intakeModalOpen, setIntakeModalOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
 
-  // Quick Panic Exit (Redirects immediately for safety)
+  // Quick Panic Exit (Redirects immediately)
   const handleQuickExit = () => {
     window.location.href = 'https://www.google.com/search?q=weather+forecast+india'
   }
 
-  // Load Real Officers from Database
+  // ─── Load Officers & Psychiatrists on Mount ─────────────────────────────────
   useEffect(() => {
     fetchOfficersFromDb().then(officers => {
-      if (officers && officers.length > 0) {
-        setOfficersList(officers)
-      }
+      if (officers && officers.length > 0) setOfficersList(officers)
+    })
+    fetchPsychiatristsFromDb().then(psychs => {
+      if (psychs && psychs.length > 0) setPsychiatristsList(psychs)
     })
   }, [])
 
-  // 1. Supabase Session Check on OAuth Redirect & Real-time Listeners
+  // ─── Supabase Session Check on OAuth Redirect & Real-time Listeners ────────
   useEffect(() => {
     let isMounted = true
 
@@ -173,9 +171,7 @@ export default function Home() {
             const profile = await fetchUserProfile(session.user.id, session.user.email)
             if (profile) {
               setCurrentUser(profile)
-              if (profile.preferred_language) setSelectedLanguage(profile.preferred_language)
-              const isOff = profile.role === 'officer' || profile.role === 'counsellor' || profile.role === 'admin'
-              setIsOfficerMode(isOff)
+              if (profile.preferred_language) setSelectedLanguage(normalizeLangCode(profile.preferred_language))
               setActiveTab('My space')
               if (!profile.is_profile_complete) {
                 setDetailsModalOpen(true)
@@ -214,9 +210,7 @@ export default function Home() {
         const profile = await fetchUserProfile(session.user.id, session.user.email)
         if (profile) {
           setCurrentUser(profile)
-          if (profile.preferred_language) setSelectedLanguage(profile.preferred_language)
-          const isOff = profile.role === 'officer' || profile.role === 'counsellor' || profile.role === 'admin'
-          setIsOfficerMode(isOff)
+          if (profile.preferred_language) setSelectedLanguage(normalizeLangCode(profile.preferred_language))
           setActiveTab('My space')
           setIsLoggedIn(true)
           if (!profile.is_profile_complete && !profile.anonymous) {
@@ -225,7 +219,8 @@ export default function Home() {
         }
       } else if (event === 'SIGNED_OUT' && isMounted) {
         setIsLoggedIn(false)
-        setIsOfficerMode(false)
+        setCurrentOfficer(null)
+        setCurrentPsychiatrist(null)
       }
     })
 
@@ -235,17 +230,41 @@ export default function Home() {
     }
   }, [])
 
-  // 2. Fetch Cases & Subscribe to Real-time Updates when Logged In
+  // ─── Fetch Cases & Realtime Subscription ───────────────────────────────────
   useEffect(() => {
     if (isLoggedIn) {
-      const loadCases = async () => {
-        const dbCases = await fetchCasesFromDb()
-        if (dbCases && dbCases.length > 0) {
-          setCasesList(dbCases)
-          setSelectedCase(dbCases[0])
+      const loadData = async () => {
+        if (currentUser.role === 'officer') {
+          const offCases = await CaseService.fetchOfficerCases(
+            currentOfficer?.id,
+            currentUser.district || currentOfficer?.assigned_district,
+            currentUser.state || currentOfficer?.assigned_state
+          )
+          if (offCases.length > 0) setCasesList(offCases)
+        } else if (currentUser.role === 'psychiatrist') {
+          const psychCases = await CaseService.fetchPsychiatristCases(
+            currentPsychiatrist?.id,
+            currentUser.district
+          )
+          if (psychCases.length > 0) setCasesList(psychCases)
+        } else {
+          // Victim: load user's submitted cases
+          const userCases = await CaseService.fetchVictimCases(currentUser.id)
+          if (userCases && userCases.length > 0) {
+            setCasesList(userCases)
+            setActiveCaseId(userCases[0].id)
+          }
         }
+
+        // Fetch appointments
+        const apts = await AppointmentService.fetchAppointments({
+          userId: currentUser.role === 'victim' ? currentUser.id : undefined,
+          psychiatristId: currentUser.role === 'psychiatrist' ? currentPsychiatrist?.id : undefined
+        })
+        if (apts && apts.length > 0) setScheduledAppointments(apts)
       }
-      loadCases()
+
+      loadData()
 
       const unsubscribe = subscribeToRealtimeCases(
         (newCase) => {
@@ -253,7 +272,6 @@ export default function Home() {
         },
         (updatedCase) => {
           setCasesList(prev => prev.map(c => c.id === updatedCase.id ? updatedCase : c))
-          setSelectedCase(prev => prev.id === updatedCase.id ? updatedCase : prev)
         }
       )
 
@@ -261,25 +279,65 @@ export default function Home() {
         unsubscribe()
       }
     }
-  }, [isLoggedIn])
+  }, [isLoggedIn, currentUser.role, currentOfficer?.id, currentPsychiatrist?.id, currentUser.id, currentUser.district, currentUser.state, currentOfficer?.assigned_district, currentOfficer?.assigned_state])
 
-  // Handle Login
-  const handleLoginSuccess = (user: UserProfile, officer?: OfficerProfile | null) => {
-    setCurrentUser(user)
-    if (user.preferred_language) {
-      setSelectedLanguage(user.preferred_language)
-    }
-    if (officer) {
-      setCurrentOfficer(officer)
-      setIsOfficerMode(true)
-    } else {
-      const isOff = user.role === 'officer' || user.role === 'counsellor' || user.role === 'admin'
-      setIsOfficerMode(isOff)
-      if (isOff) {
-        const matchedOfficer = officersList.find(o => o.id === user.id || o.email === user.email) || officersList[0]
-        setCurrentOfficer(matchedOfficer)
+  // ─── Active Case Computation (Dynamic SVI Snapshot & Dynamic Journey) ──────
+  const activeCaseRecord = useMemo<CaseRecord | null>(() => {
+    return casesList.find(c => c.id === activeCaseId) || casesList[0] || null
+  }, [casesList, activeCaseId])
+
+  const activeRiskLevel = useMemo<RiskLevel>(() => {
+    return activeCaseRecord?.stress_assessment?.risk_level || 'Low'
+  }, [activeCaseRecord])
+
+  const activeSviScore = useMemo<number>(() => {
+    return activeCaseRecord?.stress_assessment?.svi_score ?? 24
+  }, [activeCaseRecord])
+
+  // Dynamic SVI snapshot keys for i18n
+  const dynamicSnapshotKeys = useMemo(() => {
+    if (activeRiskLevel === 'Critical' || activeRiskLevel === 'High') {
+      return {
+        titleKey: 'snapshot_critical_title',
+        descKey: 'snapshot_critical_desc',
+        badgeKey: 'badge_critical',
+        actionKey: 'action_critical'
       }
     }
+    if (activeRiskLevel === 'Moderate') {
+      return {
+        titleKey: 'snapshot_moderate_title',
+        descKey: 'snapshot_moderate_desc',
+        badgeKey: 'badge_moderate',
+        actionKey: 'action_moderate'
+      }
+    }
+    return {
+      titleKey: 'snapshot_normal_title',
+      descKey: 'snapshot_normal_desc',
+      badgeKey: 'badge_normal',
+      actionKey: 'action_normal'
+    }
+  }, [activeRiskLevel])
+
+  // ─── Handlers ───────────────────────────────────────────────────────────────
+
+  const handleLoginSuccess = (
+    user: UserProfile,
+    officer?: OfficerProfile | null,
+    psychiatrist?: PsychiatristProfile | null
+  ) => {
+    setCurrentUser(user)
+    if (user.preferred_language) {
+      setSelectedLanguage(normalizeLangCode(user.preferred_language))
+    }
+
+    if (officer) {
+      setCurrentOfficer(officer)
+    } else if (psychiatrist) {
+      setCurrentPsychiatrist(psychiatrist)
+    }
+
     setActiveTab('My space')
     setIsLoggedIn(true)
 
@@ -291,7 +349,7 @@ export default function Home() {
   const handleProfileUpdated = (updatedUser: UserProfile, updatedOfficer?: OfficerProfile | null) => {
     setCurrentUser(updatedUser)
     if (updatedUser.preferred_language) {
-      setSelectedLanguage(updatedUser.preferred_language)
+      setSelectedLanguage(normalizeLangCode(updatedUser.preferred_language))
     }
     if (updatedOfficer) {
       setCurrentOfficer(updatedOfficer)
@@ -300,175 +358,63 @@ export default function Home() {
   }
 
   const handleLanguageChange = async (newLang: string) => {
-    setSelectedLanguage(newLang)
+    const norm = normalizeLangCode(newLang)
+    setSelectedLanguage(norm)
     if (currentUser && currentUser.id) {
-      const updatedUser = { ...currentUser, preferred_language: newLang }
+      const updatedUser = { ...currentUser, preferred_language: norm }
       setCurrentUser(updatedUser)
-      await saveUserProfile({ id: currentUser.id, preferred_language: newLang })
+      await saveUserProfile({ id: currentUser.id, preferred_language: norm })
     }
   }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     setIsLoggedIn(false)
-    setIsOfficerMode(false)
     setCurrentOfficer(null)
+    setCurrentPsychiatrist(null)
   }
 
-  // Dynamic SVI snapshot scores based on selected prototype condition
-  const currentSnapshot = useMemo(() => {
-    switch (simulatedCondition) {
-      case 'Low':
-        return {
-          svi_score: 24,
-          risk_level: 'Low' as RiskLevel,
-          title: 'You appear to be in a relatively stable emotional state.',
-          message: 'Your baseline stress indicators are within calm parameters. Continue gentle wellness practices to maintain resilience.',
-          badge: 'Calm & Stable',
-          actionText: 'Continue to Wellbeing Journey'
-        }
-      case 'Moderate':
-        return {
-          svi_score: 58,
-          risk_level: 'Moderate' as RiskLevel,
-          title: 'You may be experiencing moderate levels of stress or distress.',
-          message: 'Elevated anxiety patterns detected. A dedicated clinical psychologist has been assigned to assist your emotional wellbeing.',
-          badge: 'Moderate Risk',
-          actionText: 'View Support Plan'
-        }
-      case 'High':
-      case 'Critical':
-      default:
-        return {
-          svi_score: 84,
-          risk_level: 'High' as RiskLevel,
-          title: 'You may be experiencing significant emotional distress.',
-          message: 'We detected acute distress signals. Both clinical psychological care and rapid emergency protection support have been activated.',
-          badge: 'High Risk Alert',
-          actionText: 'View Immediate Support Plan'
-        }
-    }
-  }, [simulatedCondition])
-
-  // Handle Story Submission (Syncs with Supabase in real-time)
+  // 1 User -> Many Cases: New Story Submission
   const handleStorySubmitted = async (
     newStory: UserStory,
     metrics?: VoiceAnalysisMetrics,
     generatedCase?: CaseRecord
   ) => {
     setStoriesList(prev => [newStory, ...prev])
-    setSimulatedCondition(newStory.risk_level)
 
-    // Add activity
+    if (generatedCase) {
+      setCasesList(prev => [generatedCase, ...prev.filter(c => c.id !== generatedCase.id)])
+      setActiveCaseId(generatedCase.id)
+    }
+
+    // Log Activity
     const newAct: UserActivity = {
       id: `ACT-${Date.now()}`,
-      title: `Story #${newStory.case_id || newStory.id} analyzed`,
-      description: `"${newStory.title}" safely stored with SVI ${newStory.svi_score}.`,
+      title: `Story #${newStory.case_id || newStory.id} Submitted`,
+      description: `Classified as ${newStory.risk_level} (SVI ${newStory.svi_score}).`,
       timestamp: 'Just now',
       type: 'story'
     }
     setActivitiesList(prev => [newAct, ...prev])
-
-    // Generate or use created CaseRecord
-    const targetCase: CaseRecord = generatedCase || {
-      id: `NHAA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-      session_id: newStory.session_id,
-      user_id: currentUser.id,
-      victim_name: currentUser.full_name,
-      initials: currentUser.avatar_initials || 'AS',
-      is_anonymous: !!currentUser.anonymous,
-      contact_number: currentUser.phone || '+91 97551 12345',
-      incident_category: 'Social Boycott & Ostracization',
-      incident_location: {
-        village_town_city: currentUser.village_town_city || currentUser.district || 'Pune',
-        district: currentUser.district || 'Pune',
-        state: currentUser.state || 'Maharashtra',
-        pincode: currentUser.pincode || '411001'
-      },
-      channel: metrics ? 'mobile_app' : 'integrated_portal',
-      language: selectedLanguage,
-      reported_at: 'Just now',
-      narrative_text: newStory.narrative_text,
-      voice_analysis: metrics,
-      stress_assessment: {
-        id: `SA-${Date.now()}`,
-        case_id: newStory.case_id || '',
-        svi_score: newStory.svi_score,
-        risk_level: newStory.risk_level,
-        trauma_score: newStory.risk_level === 'High' || newStory.risk_level === 'Critical' ? 82 : 55,
-        fear_score: newStory.risk_level === 'High' || newStory.risk_level === 'Critical' ? 78 : 50,
-        anxiety_score: newStory.risk_level === 'High' || newStory.risk_level === 'Critical' ? 85 : 62,
-        depression_indicator: true,
-        suicidal_ideation_flag: false,
-        intimidation_flag: true,
-        social_isolation_flag: true,
-        speech_stress_detected: !!metrics,
-        key_trauma_triggers: newStory.key_triggers || ['intimidation', 'isolation'],
-        recommended_actions: [
-          'Immediate Clinical Tele-Consultation',
-          'District Anti-Discrimination Protection Notice'
-        ],
-        assessed_at: new Date().toISOString()
-      },
-      status: newStory.risk_level === 'High' || newStory.risk_level === 'Critical' ? 'New Intake' : 'Under Triage',
-      assigned_officer: newStory.assigned_officer_name || currentOfficer?.full_name || 'Insp. Vikram Pratap Singh',
-      assigned_officer_id: newStory.assigned_officer_id || currentOfficer?.id || 'OFF-02',
-      assigned_counsellor: 'Dr. Ramesh Chandra',
-      assigned_counsellor_id: 'OFF-01',
-      priority_tier: newStory.risk_level === 'Critical' ? 1 : newStory.risk_level === 'High' ? 2 : 3,
-      notes: [
-        {
-          id: `N-${Date.now()}`,
-          author: 'AI SVI Engine',
-          role: 'Automated Assessment',
-          timestamp: 'Just now',
-          text: `Newly submitted story classified as ${newStory.risk_level} SVI (${newStory.svi_score}).`
-        }
-      ],
-      dispatched_actions: []
-    }
-
-    setCasesList(prev => [targetCase, ...prev])
-
-    // Save to Supabase
-    await createCaseInDb(targetCase, currentUser.id)
-    await saveAssessmentInDb({
-      userId: currentUser.id,
-      caseId: targetCase.id,
-      narrativeText: newStory.narrative_text,
-      sviScore: newStory.svi_score,
-      riskLevel: newStory.risk_level,
-      fearScore: newStory.risk_level === 'High' ? 78 : 50,
-      traumaScore: newStory.risk_level === 'High' ? 82 : 55,
-      anxietyScore: newStory.risk_level === 'High' ? 85 : 62,
-      voiceMetrics: metrics,
-      indicators: newStory.key_triggers,
-      recommendations: [
-        'Immediate Clinical Tele-Consultation',
-        'District Anti-Discrimination Protection Notice'
-      ]
-    })
   }
 
-  // Handle Mood Selection
   const handleMoodSelect = (mood: 'Calm' | 'Okay' | 'Stressed' | 'Anxious' | 'Overwhelmed') => {
     setSelectedMood(mood)
     const newAct: UserActivity = {
       id: `ACT-${Date.now()}`,
-      title: `Daily mood recorded: ${mood}`,
-      description: mood === 'Calm' || mood === 'Okay' ? 'Relaxed state noted in your daily log.' : 'Grounding suggestions prioritized.',
+      title: `Daily mood: ${mood}`,
+      description: mood === 'Calm' || mood === 'Okay' ? 'Relaxed state noted.' : 'Grounding suggestions prioritized.',
       timestamp: 'Just now',
       type: 'mood'
     }
     setActivitiesList(prev => [newAct, ...prev])
   }
 
-  // Handle Appointment Scheduling
   const handleScheduleAppointment = (newApt: AppointmentRecord) => {
     setScheduledAppointments(prev => [newApt, ...prev])
     const newAct: UserActivity = {
       id: `ACT-${Date.now()}`,
-      title: `Consultation confirmed with ${newApt.doctor_name}`,
+      title: `Consultation Booked with ${newApt.doctor_name}`,
       description: `${newApt.date} at ${newApt.slot_time} (${newApt.meeting_mode}).`,
       timestamp: 'Just now',
       type: 'appointment'
@@ -476,34 +422,30 @@ export default function Home() {
     setActivitiesList(prev => [newAct, ...prev])
   }
 
-  // Handle Adding Trusted Contact
   const handleAddContact = (newContact: TrustedContact) => {
     setContactsList(prev => [...prev, newContact])
     const newAct: UserActivity = {
       id: `ACT-${Date.now()}`,
       title: `Added ${newContact.name} to Support Circle`,
-      description: `Relationship: ${newContact.relationship} (${newContact.category}).`,
+      description: `Relationship: ${newContact.relationship}.`,
       timestamp: 'Just now',
       type: 'support'
     }
     setActivitiesList(prev => [newAct, ...prev])
   }
 
-  // Handle Case Update from Officer Dossier
   const handleUpdateCase = (updated: CaseRecord) => {
     setCasesList(prev => prev.map(c => c.id === updated.id ? updated : c))
-    setSelectedCase(updated)
-    updateCaseInDb(updated.id, updated)
+    setSelectedCaseForModal(updated)
+    CaseService.updateCase(updated.id, updated)
   }
 
-  // Handle Adding New Intake
   const handleAddIntake = (newCase: CaseRecord) => {
     setCasesList(prev => [newCase, ...prev])
-    setSelectedCase(newCase)
-    createCaseInDb(newCase)
+    setSelectedCaseForModal(newCase)
   }
 
-  // If user is not logged in, render Login View
+  // ─── If not logged in, render Login View ────────────────────────────────────
   if (!isLoggedIn) {
     return (
       <LoginView
@@ -516,11 +458,14 @@ export default function Home() {
 
   // Victim Navigation items with dynamic translations
   const victimNavItems = [
-    { label: 'My space' as const, key: 'tab_my_space', icon: LayoutDashboard, desc: 'Dashboard & Stories' },
-    { label: 'My story & Audio' as const, key: 'tab_my_story', icon: FileText, desc: 'Your Private Submissions' },
+    { label: 'My space' as const, key: 'tab_my_space', icon: LayoutDashboard, desc: 'Dashboard & SVI' },
+    { label: 'My story & Audio' as const, key: 'tab_my_story', icon: FileText, desc: 'Your Case Dossier' },
     { label: 'Wellbeing journey' as const, key: 'tab_wellbeing', icon: HeartHandshake, desc: 'Calming & Care Pathways' },
     { label: 'Support circle' as const, key: 'tab_support_circle', icon: Users, desc: 'Professional & Trusted Allies' }
   ]
+
+  const isOfficer = currentUser.role === 'officer'
+  const isPsychiatrist = currentUser.role === 'psychiatrist' || currentUser.role === 'counsellor'
 
   return (
     <div className="min-h-screen bg-[#f7faf8] text-[#24433d] font-sans antialiased">
@@ -529,11 +474,11 @@ export default function Home() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 font-bold tracking-tight">
             <span className="flex size-2 rounded-full bg-[#34d399] animate-ping" />
-            <span className="text-[#a7e8db]">NATIONAL HELPLINE 14566</span>
+            <span className="text-[#a7e8db]">{t('helpline_top_banner', selectedLanguage)}</span>
           </div>
           <span className="hidden text-white/50 md:inline">|</span>
           <span className="hidden text-white/80 text-[11px] md:inline">
-            Toll-Free Grievance &amp; Psychological Trauma Redressal for SC/ST Communities
+            {t('helpline_top_desc', selectedLanguage)}
           </span>
         </div>
 
@@ -545,7 +490,7 @@ export default function Home() {
             title="Quickly close this page and redirect to Google search"
           >
             <ShieldAlert size={13} />
-            <span>Quick Panic Exit</span>
+            <span>{t('quick_panic_exit', selectedLanguage)}</span>
           </button>
         </div>
       </header>
@@ -580,29 +525,26 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Role Badge in Sidebar — toggleable for preview or fixed by login role */}
-          <div className="mt-7 rounded-2xl bg-[#eef6f3] p-2 border border-[#dcebe5]">
-            <button
-              onClick={() => {
-                const nextMode = !isOfficerMode
-                setIsOfficerMode(nextMode)
-                setActiveTab('My space')
-              }}
-              className="flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-left text-xs font-semibold text-[#285750] hover:bg-white transition shadow-xs cursor-pointer"
-            >
-              <span className="flex items-center gap-2">
-                <span className="flex size-6 items-center justify-center rounded-lg bg-white text-[#258b79] shadow-xs">
-                  {isOfficerMode ? <ShieldCheck size={14} /> : <UserRound size={14} />}
-                </span>
-                <span>{isOfficerMode ? t('portal_officer', selectedLanguage) : t('portal_citizen', selectedLanguage)}</span>
-              </span>
-              <ChevronDown size={13} className="text-[#64847d]" />
-            </button>
+          {/* Role Status Badge in Sidebar */}
+          <div className="mt-7 rounded-2xl bg-[#eef6f3] p-2.5 border border-[#dcebe5] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex size-7 items-center justify-center rounded-lg bg-white text-[#258b79] shadow-xs">
+                {isOfficer ? <ShieldAlert size={15} /> : isPsychiatrist ? <Brain size={15} /> : <UserRound size={15} />}
+              </div>
+              <div>
+                <p className="text-xs font-bold text-[#163a34] capitalize">
+                  {isOfficer ? t('portal_officer', selectedLanguage) : isPsychiatrist ? t('portal_psychiatrist', selectedLanguage) : t('portal_citizen', selectedLanguage)}
+                </p>
+                <p className="text-[10px] text-[#5c8077]">
+                  {isOfficer ? (currentOfficer?.assigned_district || 'District Police') : isPsychiatrist ? 'NIMHANS Triage' : t('role_victim', selectedLanguage)}
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Navigation Items */}
+          {/* Navigation Items (Role Determined) */}
           <nav className="mt-6 flex flex-col gap-1.5 flex-1">
-            {!isOfficerMode ? (
+            {!isOfficer && !isPsychiatrist ? (
               victimNavItems.map(({ label, key, icon: Icon }) => {
                 const isActive = activeTab === label
                 return (
@@ -623,31 +565,21 @@ export default function Home() {
                   </button>
                 )
               })
-            ) : (
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold text-[#718f88] uppercase px-2">Operational Consoles</p>
-                <button
-                  onClick={() => setOfficerRoleView('psychiatrist')}
-                  className={`w-full flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-xs font-bold transition cursor-pointer ${
-                    officerRoleView === 'psychiatrist'
-                      ? 'bg-[#e4f1ed] text-[#177967] shadow-xs border border-[#cfe2db]'
-                      : 'text-[#647c76] hover:bg-[#f0f5f2]'
-                  }`}
-                >
-                  <Brain size={16} />
-                  <span>Psychiatrist Triage</span>
-                </button>
-                <button
-                  onClick={() => setOfficerRoleView('police')}
-                  className={`w-full flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-xs font-bold transition cursor-pointer ${
-                    officerRoleView === 'police'
-                      ? 'bg-[#fee2e2] text-[#991b1b] shadow-xs border border-[#fca5a5]'
-                      : 'text-[#647c76] hover:bg-[#f0f5f2]'
-                  }`}
-                >
+            ) : isOfficer ? (
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-bold text-[#718f88] uppercase px-2">{t('portal_officer', selectedLanguage)}</p>
+                <div className="p-3 rounded-2xl bg-[#fef2f2] border border-[#fecaca] text-xs font-bold text-[#991b1b] flex items-center gap-2">
                   <ShieldAlert size={16} />
                   <span>Police Escort Dispatch</span>
-                </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-bold text-[#718f88] uppercase px-2">{t('portal_psychiatrist', selectedLanguage)}</p>
+                <div className="p-3 rounded-2xl bg-[#eff6ff] border border-[#bfdbfe] text-xs font-bold text-[#1d4ed8] flex items-center gap-2">
+                  <Brain size={16} />
+                  <span>{t('portal_psychiatrist', selectedLanguage)}</span>
+                </div>
               </div>
             )}
           </nav>
@@ -674,15 +606,15 @@ export default function Home() {
             <div className="mb-2.5 flex size-8 items-center justify-center rounded-lg bg-[#eaf5f2] text-[#238c7b]">
               <Lock size={15} />
             </div>
-            <p className="text-xs font-bold text-[#244b44]">SC/ST PoA Ethical Shield</p>
+            <p className="text-xs font-bold text-[#244b44]">{t('ethical_shield_title', selectedLanguage)}</p>
             <p className="mt-1 text-[11px] leading-relaxed text-[#738e88]">
-              Zero-knowledge encrypted biometrics and trauma screening protocols.
+              {t('ethical_shield_desc', selectedLanguage)}
             </p>
             <button
               onClick={() => setConsentModalOpen(true)}
               className="mt-2.5 flex items-center gap-1 text-[11px] font-semibold text-[#1c8877] hover:underline cursor-pointer"
             >
-              Review Consent Badges <ArrowRight size={12} />
+              {t('review_consent_badges', selectedLanguage)} <ArrowRight size={12} />
             </button>
           </div>
 
@@ -690,18 +622,18 @@ export default function Home() {
           <div className="mt-4 pt-3 border-t border-[#e6eee9] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="size-8 rounded-full bg-[#1d8272] text-white font-bold text-xs flex items-center justify-center">
-                {currentUser.avatar_initials || 'AS'}
+                {currentUser.avatar_initials || 'CU'}
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold text-[#1f423d] truncate">{currentUser.full_name}</p>
-                <p className="text-[10px] text-[#718b85] capitalize">{isOfficerMode ? 'Nodal Officer' : 'Protected Citizen'}</p>
+                <p className="text-[10px] text-[#718b85] capitalize">{t(`role_${currentUser.role}`, selectedLanguage) || currentUser.role}</p>
               </div>
             </div>
 
             <button
               onClick={handleLogout}
               className="p-1.5 rounded-lg text-[#718b85] hover:text-[#991b1b] hover:bg-[#fee2e2] transition cursor-pointer"
-              title="Sign Out"
+              title={t('logout', selectedLanguage)}
             >
               <LogOut size={16} />
             </button>
@@ -725,13 +657,29 @@ export default function Home() {
                 <span>Safe Space</span>
                 <span>/</span>
                 <span className="text-[#204a43]">
-                  {isOfficerMode ? `Officer Console (${officerRoleView})` : activeTab}
+                  {isOfficer ? t('portal_officer', selectedLanguage) : isPsychiatrist ? t('portal_psychiatrist', selectedLanguage) : t(`tab_${activeTab.toLowerCase().replace(/ & /g, '_').replace(/ /g, '_')}`, selectedLanguage) || activeTab}
                 </span>
               </div>
             </div>
 
             {/* Top Right Action Items */}
             <div className="flex items-center gap-2 sm:gap-3">
+              {/* Language Selector */}
+              <div className="flex items-center gap-1.5 rounded-xl bg-white border border-[#cfe3dc] px-2.5 py-1 text-xs shadow-xs">
+                <Globe2 size={14} className="text-[#1d8272]" />
+                <select
+                  value={selectedLanguage}
+                  onChange={e => handleLanguageChange(e.target.value)}
+                  className="bg-transparent text-xs font-semibold text-[#163a34] outline-none cursor-pointer"
+                >
+                  {SUPPORTED_LANGUAGES.map(lang => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.nativeName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Profile Button */}
               <button
                 type="button"
@@ -748,18 +696,8 @@ export default function Home() {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#eaf6f2] text-[#1d8272] text-xs font-bold hover:bg-[#d8efe8] transition"
               >
                 <PhoneCall size={13} />
-                <span>Helpline 14566</span>
+                <span>{t('helpline_btn', selectedLanguage)}</span>
               </a>
-
-              {/* Notification Button */}
-              <button
-                onClick={() => setNotificationsOpen(!notificationsOpen)}
-                className="relative flex size-9 items-center justify-center rounded-xl border border-[#dbe6e2] text-[#5e7771] hover:bg-[#f2f7f5] transition cursor-pointer"
-                title="Triage Notifications"
-              >
-                <Bell size={16} />
-                <span className="absolute right-2 top-2 size-2 rounded-full bg-[#e67863] animate-pulse" />
-              </button>
 
               {/* Calming Audio Button */}
               <button
@@ -769,10 +707,10 @@ export default function Home() {
                   setWellbeingModalOpen(true)
                 }}
                 className="flex items-center gap-1.5 rounded-xl border border-[#cfe3dc] bg-[#eef8f4] hover:bg-[#dff1ea] text-[#185a4f] px-3 py-1.5 text-xs font-semibold shadow-xs transition cursor-pointer"
-                title="Calming Audio Therapy"
+                title={t('calming_audio', selectedLanguage)}
               >
                 <Headphones size={14} className="text-[#1d8272]" />
-                <span className="hidden md:inline">Calming Audio</span>
+                <span className="hidden md:inline">{t('calming_audio', selectedLanguage)}</span>
               </button>
 
               {/* SOS Emergency Button */}
@@ -780,42 +718,20 @@ export default function Home() {
                 type="button"
                 onClick={() => setSosModalOpen(true)}
                 className="flex items-center gap-1.5 rounded-xl bg-[#fee2e2] hover:bg-[#fecaca] text-[#991b1b] border border-[#fca5a5] px-3 py-1.5 text-xs font-bold transition shadow-xs animate-pulse cursor-pointer"
-                title="Emergency SOS Dispatch"
+                title={t('emergency_sos_btn', selectedLanguage)}
               >
                 <AlertTriangle size={14} className="text-[#dc2626]" />
-                <span className="hidden xs:inline sm:inline">SOS Emergency</span>
+                <span className="hidden xs:inline sm:inline">{t('emergency_sos_btn', selectedLanguage)}</span>
               </button>
             </div>
           </header>
 
           {/* MAIN SCROLLABLE CONTENT BODY */}
           <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
-            {/* Notification Dropdown Panel */}
-            {notificationsOpen && (
-              <div className="mb-6 mx-auto max-w-[1160px] rounded-2xl border border-[#d6e3df] bg-white p-4 shadow-lg animate-in fade-in slide-from-top-2">
-                <div className="flex items-center justify-between border-b border-[#e9f0ec] pb-2.5">
-                  <span className="text-xs font-bold text-[#1f4740] flex items-center gap-2">
-                    <Bell size={14} className="text-[#1d8272]" /> Live Triage Updates
-                  </span>
-                  <button onClick={() => setNotificationsOpen(false)} className="text-[#718b85] hover:text-[#1f4740] cursor-pointer">
-                    <X size={15} />
-                  </button>
-                </div>
-                <div className="space-y-2 mt-3 text-xs">
-                  <div className="p-2.5 rounded-xl bg-[#ecfdf5] border border-[#a7f3d0] text-[#065f46]">
-                    <strong>Psychological Triage:</strong> Dr. Ramesh Chandra is on duty for tele-consultation support.
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-[#fff2f0] border border-[#fecaca] text-[#991b1b]">
-                    <strong>District Patrol:</strong> Special Atrocities Cell nodal desk active in your region.
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* ===================================================================== */}
             {/* A. VICTIM VIEWS (MY SPACE, MY STORY, WELLBEING JOURNEY, SUPPORT CIRCLE) */}
             {/* ===================================================================== */}
-            {!isOfficerMode && (
+            {!isOfficer && !isPsychiatrist && (
               <>
                 {/* 1. MY SPACE TAB (MAIN DASHBOARD) */}
                 {activeTab === 'My space' && (
@@ -824,41 +740,34 @@ export default function Home() {
                     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                       <div>
                         <p className="text-xs font-bold text-[#1d8272] uppercase tracking-wider">
-                          NHAA Safe Space &bull; Active Jurisdiction: {currentUser.district || 'Pune'}, {currentUser.state || 'Maharashtra'}
+                          NHAA Safe Space &bull; {t('active_jurisdiction', selectedLanguage)} {currentUser.district || 'Pune'}, {currentUser.state || 'Maharashtra'}
                         </p>
                         <h1 className="mt-1 text-3xl font-bold tracking-tight text-[#173a34] sm:text-4xl">
-                          Welcome, {currentUser.full_name}
+                          {t('welcome_user', selectedLanguage)}, {currentUser.full_name}
                         </h1>
                         <p className="mt-1.5 text-xs text-[#718d86]">
-                          You are in a safe, confidential environment. We are here to listen and help protect you.
+                          {t('safe_space_subtitle', selectedLanguage)}
                         </p>
                       </div>
 
-                      {/* PROTOTYPE CONDITION SWITCHER (Normal / Moderate / High) */}
-                      <div className="rounded-2xl border border-[#cfe2db] bg-[#edf6f2] p-1.5 shadow-xs flex items-center gap-1">
-                        <span className="text-[10px] font-bold text-[#456c64] px-2 uppercase">Demo State:</span>
-                        {(['Low', 'Moderate', 'High'] as const).map((lvl) => {
-                          const isSelected = simulatedCondition === lvl
-                          return (
-                            <button
-                              key={lvl}
-                              type="button"
-                              onClick={() => setSimulatedCondition(lvl)}
-                              className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
-                                isSelected
-                                  ? lvl === 'Low'
-                                    ? 'bg-[#1d8272] text-white shadow-xs'
-                                    : lvl === 'Moderate'
-                                    ? 'bg-[#f59e0b] text-white shadow-xs'
-                                    : 'bg-[#dc2626] text-white shadow-xs'
-                                  : 'text-[#50766d] hover:bg-white'
-                              }`}
-                            >
-                              {lvl === 'Low' ? '🟢 Normal' : lvl === 'Moderate' ? '🟡 Moderate' : '🔴 High'}
-                            </button>
-                          )
-                        })}
-                      </div>
+                      {/* Active Case Selector (if multiple cases exist) */}
+                      {casesList.length > 1 && (
+                        <div className="rounded-2xl border border-[#cfe2db] bg-white p-2 shadow-xs flex items-center gap-2">
+                          <Layers size={15} className="text-[#1d8272]" />
+                          <span className="text-xs font-bold text-[#163a34]">{t('viewing_case', selectedLanguage)}</span>
+                          <select
+                            value={activeCaseId}
+                            onChange={e => setActiveCaseId(e.target.value)}
+                            className="bg-[#f0f9f6] text-xs font-mono font-bold text-[#1d8272] px-2.5 py-1 rounded-xl outline-none border border-[#cfe2db] cursor-pointer"
+                          >
+                            {casesList.map(c => (
+                              <option key={c.id} value={c.id}>
+                                {c.id} ({c.stress_assessment.risk_level} Risk)
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </div>
 
                     {/* SVI Snapshot Card & Wellbeing Journey Quick Card */}
@@ -868,28 +777,28 @@ export default function Home() {
                         <div>
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-bold tracking-wider text-[#a7e8db] uppercase flex items-center gap-1.5">
-                              <Sparkles size={14} /> AI Stress Vulnerability Snapshot
+                              <Sparkles size={14} /> {t('svi_snapshot_title', selectedLanguage)}
                             </span>
                             <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/20">
-                              {currentSnapshot.badge}
+                              {t(dynamicSnapshotKeys.badgeKey, selectedLanguage)}
                             </span>
                           </div>
 
                           <h2 className="mt-4 text-2xl sm:text-3xl font-bold leading-tight">
-                            {currentSnapshot.title}
+                            {t(dynamicSnapshotKeys.titleKey, selectedLanguage)}
                           </h2>
                           <p className="mt-2 text-xs leading-relaxed text-[#d0ede7] max-w-lg">
-                            {currentSnapshot.message}
+                            {t(dynamicSnapshotKeys.descKey, selectedLanguage)}
                           </p>
                         </div>
 
                         <div className="mt-8 pt-5 border-t border-white/20 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                           <div>
                             <p className="text-[11px] font-semibold text-[#a7e8db] uppercase tracking-wider">
-                              Stress Vulnerability Index (SVI)
+                              {t('svi_score_full', selectedLanguage)}
                             </p>
                             <div className="flex items-baseline gap-2 mt-1">
-                              <span className="text-4xl font-extrabold">{currentSnapshot.svi_score}</span>
+                              <span className="text-4xl font-extrabold">{activeSviScore}</span>
                               <span className="text-sm text-[#a7e8db]">/ 100</span>
                             </div>
                           </div>
@@ -899,7 +808,7 @@ export default function Home() {
                             onClick={() => setActiveTab('Wellbeing journey')}
                             className="flex items-center justify-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-[#185a4f] hover:bg-[#eef8f4] transition shadow-xs cursor-pointer"
                           >
-                            <span>{currentSnapshot.actionText}</span>
+                            <span>{t(dynamicSnapshotKeys.actionKey, selectedLanguage)}</span>
                             <ArrowRight size={14} />
                           </button>
                         </div>
@@ -911,16 +820,16 @@ export default function Home() {
                       <div className="rounded-3xl border border-[#dcebe5] bg-white p-6 shadow-xs flex flex-col justify-between">
                         <div>
                           <div className="flex items-center justify-between">
-                            <p className="text-xs font-bold tracking-wider text-[#698881] uppercase">YOUR HEALING JOURNEY</p>
-                            <span className="text-xs font-bold text-[#1d8272]">Step 2 of 4 active</span>
+                            <p className="text-xs font-bold tracking-wider text-[#698881] uppercase">{t('healing_journey_card_title', selectedLanguage)}</p>
+                            <span className="text-xs font-bold text-[#1d8272]">Case #{activeCaseRecord?.id || 'Active'}</span>
                           </div>
 
                           <p className="mt-3 text-xs leading-relaxed text-[#6d8a83]">
-                            This is your space. Share only what you&apos;re comfortable sharing. Your healing and protection journey can be taken one gentle step at a time.
+                            {t('healing_journey_card_desc', selectedLanguage)}
                           </p>
 
                           <div className="mt-5 space-y-2">
-                            <p className="text-[11px] font-bold text-[#325851] uppercase">Quick Wellness Tools</p>
+                            <p className="text-[11px] font-bold text-[#325851] uppercase">{t('quick_wellness_tools', selectedLanguage)}</p>
                             <div className="grid grid-cols-2 gap-2">
                               <button
                                 type="button"
@@ -932,8 +841,8 @@ export default function Home() {
                               >
                                 <Wind size={16} className="text-[#1d8272] shrink-0" />
                                 <div>
-                                  <span className="block font-bold">2-Min Breathing</span>
-                                  <span className="text-[10px] text-[#60857c]">Box rhythm reset</span>
+                                  <span className="block font-bold">{t('tool_box_breathing', selectedLanguage)}</span>
+                                  <span className="text-[10px] text-[#60857c]">{t('tool_box_desc', selectedLanguage)}</span>
                                 </div>
                               </button>
 
@@ -947,8 +856,8 @@ export default function Home() {
                               >
                                 <Compass size={16} className="text-[#3b82f6] shrink-0" />
                                 <div>
-                                  <span className="block font-bold">5-4-3-2-1 Sense</span>
-                                  <span className="text-[10px] text-[#6b8299]">Grounding guide</span>
+                                  <span className="block font-bold">{t('tool_grounding', selectedLanguage)}</span>
+                                  <span className="text-[10px] text-[#6b8299]">{t('tool_grounding_desc', selectedLanguage)}</span>
                                 </div>
                               </button>
                             </div>
@@ -962,7 +871,7 @@ export default function Home() {
                             className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1d8272] hover:bg-[#186f60] text-white py-2.5 text-xs font-bold transition shadow-xs cursor-pointer"
                           >
                             <Sparkles size={14} />
-                            <span>Take Full 2-Minute Stress Assessment</span>
+                            <span>{t('take_full_assessment', selectedLanguage)}</span>
                           </button>
                         </div>
                       </div>
@@ -984,7 +893,7 @@ export default function Home() {
                           onClick={() => setActiveTab('My story & Audio')}
                           className="text-xs font-bold text-[#1d8272] hover:underline flex items-center gap-1 cursor-pointer"
                         >
-                          <span>View all stories ({storiesList.length})</span>
+                          <span>{t('tab_my_story', selectedLanguage)} ({storiesList.length})</span>
                           <ArrowRight size={13} />
                         </button>
                       </div>
@@ -992,6 +901,7 @@ export default function Home() {
                       <StoryInputCard
                         currentUser={currentUser}
                         officersList={officersList}
+                        psychiatristsList={psychiatristsList}
                         currentLanguage={selectedLanguage}
                         onStorySubmitted={handleStorySubmitted}
                         onOpenVoiceModal={() => setVoiceModalOpen(true)}
@@ -1003,21 +913,21 @@ export default function Home() {
                       {/* Left: How are you feeling right now */}
                       <div className="rounded-3xl border border-[#dcebe5] bg-white p-6 shadow-xs flex flex-col justify-between">
                         <div>
-                          <h3 className="text-base font-bold text-[#1a3f39]">How are you feeling right now?</h3>
+                          <h3 className="text-base font-bold text-[#1a3f39]">{t('mood_question', selectedLanguage)}</h3>
                           <p className="mt-1 text-xs text-[#6f8c85]">
-                            Select a mood to tune your personalized calming suggestions.
+                            {t('mood_subtitle', selectedLanguage)}
                           </p>
 
                           <div className="mt-5 grid grid-cols-5 gap-2">
                             {(
                               [
-                                { label: 'Calm', icon: Smile, color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
-                                { label: 'Okay', icon: Smile, color: 'text-teal-600 bg-teal-50 border-teal-200' },
-                                { label: 'Stressed', icon: Meh, color: 'text-amber-600 bg-amber-50 border-amber-200' },
-                                { label: 'Anxious', icon: Frown, color: 'text-orange-600 bg-orange-50 border-orange-200' },
-                                { label: 'Overwhelmed', icon: Zap, color: 'text-rose-600 bg-rose-50 border-rose-200' }
+                                { label: 'Calm', key: 'mood_calm', icon: Smile, color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
+                                { label: 'Okay', key: 'mood_okay', icon: Smile, color: 'text-teal-600 bg-teal-50 border-teal-200' },
+                                { label: 'Stressed', key: 'mood_stressed', icon: Meh, color: 'text-amber-600 bg-amber-50 border-amber-200' },
+                                { label: 'Anxious', key: 'mood_anxious', icon: Frown, color: 'text-orange-600 bg-orange-50 border-orange-200' },
+                                { label: 'Overwhelmed', key: 'mood_overwhelmed', icon: Zap, color: 'text-rose-600 bg-rose-50 border-rose-200' }
                               ] as const
-                            ).map(({ label, icon: MoodIcon, color }) => {
+                            ).map(({ label, key, icon: MoodIcon, color }) => {
                               const isSelected = selectedMood === label
                               return (
                                 <button
@@ -1031,7 +941,7 @@ export default function Home() {
                                   }`}
                                 >
                                   <MoodIcon size={22} />
-                                  <span className="text-[11px]">{label}</span>
+                                  <span className="text-[11px]">{t(key, selectedLanguage)}</span>
                                 </button>
                               )
                             })}
@@ -1042,35 +952,38 @@ export default function Home() {
                           <CheckCircle2 size={16} className="text-[#1d8272] shrink-0" />
                           <span>
                             {selectedMood === 'Calm' || selectedMood === 'Okay'
-                              ? 'Your nervous system is in a regulated state. Keep breathing gently.'
-                              : 'We recommend trying the 2-minute box breathing or listening to 432 Hz soundscapes.'}
+                              ? t('mood_msg_calm', selectedLanguage)
+                              : t('mood_msg_stressed', selectedLanguage)}
                           </span>
                         </div>
                       </div>
 
                       {/* Right: Recent Timeline / Activity */}
                       <div className="rounded-3xl border border-[#dcebe5] bg-white p-6 shadow-xs">
-                        <h3 className="text-base font-bold text-[#1a3f39]">Recent Activity</h3>
-                        <p className="mt-1 text-xs text-[#6f8c85]">Your private journey logs and milestones.</p>
+                        <h3 className="text-base font-bold text-[#1a3f39]">{t('recent_activity', selectedLanguage)}</h3>
+                        <p className="mt-1 text-xs text-[#6f8c85]">{t('recent_activity_desc', selectedLanguage)}</p>
 
                         <div className="mt-4 space-y-3">
-                          {activitiesList.slice(0, 3).map((act) => (
-                            <div
-                              key={act.id}
-                              className="flex items-start gap-3 p-3 rounded-2xl bg-[#f8fbfa] border border-[#e4eee9]"
-                            >
-                              <div className="flex size-7 items-center justify-center rounded-xl bg-[#e3f2ed] text-[#1d8272] text-xs font-bold shrink-0 mt-0.5">
-                                ✓
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between">
-                                  <p className="text-xs font-bold text-[#1f4740]">{act.title}</p>
-                                  <span className="text-[10px] text-[#7d9992]">{act.timestamp}</span>
+                          {activitiesList.slice(0, 3).map((rawAct) => {
+                            const act = translateActivity(rawAct, selectedLanguage)
+                            return (
+                              <div
+                                key={rawAct.id}
+                                className="flex items-start gap-3 p-3 rounded-2xl bg-[#f8fbfa] border border-[#e4eee9]"
+                              >
+                                <div className="flex size-7 items-center justify-center rounded-xl bg-[#e3f2ed] text-[#1d8272] text-xs font-bold shrink-0 mt-0.5">
+                                  ✓
                                 </div>
-                                <p className="text-[11px] text-[#69857e] mt-0.5">{act.description}</p>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-xs font-bold text-[#1f4740]">{act.title}</p>
+                                    <span className="text-[10px] text-[#7d9992]">{act.timestamp}</span>
+                                  </div>
+                                  <p className="text-[11px] text-[#69857e] mt-0.5">{act.description}</p>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       </div>
                     </div>
@@ -1082,9 +995,17 @@ export default function Home() {
                   <div className="mx-auto max-w-[1160px] animate-in fade-in duration-200">
                     <MyStoriesView
                       stories={storiesList}
+                      activeStoryId={activeCaseRecord ? `STORY-${activeCaseRecord.id}` : undefined}
+                      currentLanguage={selectedLanguage}
+                      onSelectActiveStory={(story) => {
+                        if (story.case_id) setActiveCaseId(story.case_id)
+                      }}
                       onShareAnotherStory={() => setActiveTab('My space')}
                       onDeleteStory={(id) => setStoriesList(prev => prev.filter(s => s.id !== id))}
-                      onViewSupportPlan={() => setActiveTab('Wellbeing journey')}
+                      onViewSupportPlan={(risk, caseId) => {
+                        if (caseId) setActiveCaseId(caseId)
+                        setActiveTab('Wellbeing journey')
+                      }}
                     />
                   </div>
                 )}
@@ -1093,7 +1014,10 @@ export default function Home() {
                 {activeTab === 'Wellbeing journey' && (
                   <div className="mx-auto max-w-[1160px] animate-in fade-in duration-200">
                     <WellbeingJourneyView
-                      currentRiskLevel={simulatedCondition}
+                      currentRiskLevel={activeRiskLevel}
+                      activeCase={activeCaseRecord}
+                      currentUser={currentUser}
+                      currentLanguage={selectedLanguage}
                       scheduledAppointments={scheduledAppointments}
                       onScheduleAppointment={handleScheduleAppointment}
                       onTriggerSOS={() => setSosModalOpen(true)}
@@ -1110,6 +1034,7 @@ export default function Home() {
                   <div className="mx-auto max-w-[1160px] animate-in fade-in duration-200">
                     <SupportCircleView
                       contacts={contactsList}
+                      currentLanguage={selectedLanguage}
                       onAddContact={handleAddContact}
                       onTriggerSOS={() => setSosModalOpen(true)}
                     />
@@ -1119,93 +1044,45 @@ export default function Home() {
             )}
 
             {/* ===================================================================== */}
-            {/* B. OFFICER CONSOLE VIEWS (PSYCHIATRIST & POLICE VIEWS) */}
+            {/* B. POLICE OFFICER PORTAL */}
             {/* ===================================================================== */}
-            {isOfficerMode && (
+            {isOfficer && (
               <div className="mx-auto max-w-[1280px] space-y-6 animate-in fade-in duration-200">
-                {/* Officer View Switcher Bar */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-[#dcebe5] shadow-xs">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="flex size-2 rounded-full bg-[#10b981]" />
-                      <h1 className="text-xl font-bold text-[#163c35]">
-                        NHAA Triage Console &bull; {officerRoleView === 'psychiatrist' ? 'Psychiatrist Queue' : 'Police Escort Dispatch'}
-                      </h1>
-                    </div>
-                    <p className="text-xs text-[#708d86] mt-0.5">
-                      {currentOfficer ? `${currentOfficer.department} · Badge: ${currentOfficer.officer_badge_id} · Station: ${currentOfficer.station_name || currentOfficer.assigned_district}` : 'Live Authority Console'}
-                    </p>
-                  </div>
+                <PoliceDashboard
+                  cases={casesList}
+                  currentOfficer={currentOfficer}
+                  currentLanguage={selectedLanguage}
+                  onSelectCase={(c) => {
+                    setSelectedCaseForModal(c)
+                    setSelectedCaseModalOpen(true)
+                  }}
+                  onOpenCaseModal={(c) => {
+                    setSelectedCaseForModal(c)
+                    setSelectedCaseModalOpen(true)
+                  }}
+                />
+              </div>
+            )}
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setOfficerRoleView('psychiatrist')}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold transition cursor-pointer ${
-                        officerRoleView === 'psychiatrist'
-                          ? 'bg-[#1d8272] text-white shadow-xs'
-                          : 'bg-[#f0f6f3] text-[#456b63] hover:bg-[#e4efe9]'
-                      }`}
-                    >
-                      <Brain size={15} />
-                      <span>Psychiatrist View</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setOfficerRoleView('police')}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold transition cursor-pointer ${
-                        officerRoleView === 'police'
-                          ? 'bg-[#dc2626] text-white shadow-xs'
-                          : 'bg-[#f0f6f3] text-[#456b63] hover:bg-[#e4efe9]'
-                      }`}
-                    >
-                      <ShieldAlert size={15} />
-                      <span>Police Escort View</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setIntakeModalOpen(true)}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-[#0f766e] text-white text-xs font-bold shadow-xs hover:bg-[#115e59] transition cursor-pointer ml-2"
-                    >
-                      <Plus size={15} />
-                      <span>New Intake</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Render Selected Officer View with real officer & proximity */}
-                {officerRoleView === 'psychiatrist' ? (
-                  <PsychiatristDashboard
-                    cases={casesList}
-                    scheduledAppointments={scheduledAppointments}
-                    currentOfficer={currentOfficer}
-                    currentLanguage={selectedLanguage}
-                    onSelectCase={(c) => {
-                      setSelectedCase(c)
-                      setSelectedCaseModalOpen(true)
-                    }}
-                    onOpenCaseModal={(c) => {
-                      setSelectedCase(c)
-                      setSelectedCaseModalOpen(true)
-                    }}
-                  />
-                ) : (
-                  <PoliceDashboard
-                    cases={casesList}
-                    currentOfficer={currentOfficer}
-                    currentLanguage={selectedLanguage}
-                    onSelectCase={(c) => {
-                      setSelectedCase(c)
-                      setSelectedCaseModalOpen(true)
-                    }}
-                    onOpenCaseModal={(c) => {
-                      setSelectedCase(c)
-                      setSelectedCaseModalOpen(true)
-                    }}
-                  />
-                )}
+            {/* ===================================================================== */}
+            {/* C. PSYCHIATRIST PORTAL */}
+            {/* ===================================================================== */}
+            {isPsychiatrist && (
+              <div className="mx-auto max-w-[1280px] space-y-6 animate-in fade-in duration-200">
+                <PsychiatristDashboard
+                  cases={casesList}
+                  scheduledAppointments={scheduledAppointments}
+                  currentOfficer={currentOfficer}
+                  currentLanguage={selectedLanguage}
+                  onSelectCase={(c) => {
+                    setSelectedCaseForModal(c)
+                    setSelectedCaseModalOpen(true)
+                  }}
+                  onOpenCaseModal={(c) => {
+                    setSelectedCaseForModal(c)
+                    setSelectedCaseModalOpen(true)
+                  }}
+                />
               </div>
             )}
           </main>
@@ -1280,8 +1157,18 @@ export default function Home() {
         onClose={() => setScreeningModalOpen(false)}
         onComplete={(score) => {
           setScreeningModalOpen(false)
-          const lvl: RiskLevel = score > 75 ? 'High' : score > 45 ? 'Moderate' : 'Low'
-          setSimulatedCondition(lvl)
+          if (activeCaseRecord) {
+            const updatedRisk: RiskLevel = score > 75 ? 'High' : score > 45 ? 'Moderate' : 'Low'
+            const updatedCase: CaseRecord = {
+              ...activeCaseRecord,
+              stress_assessment: {
+                ...activeCaseRecord.stress_assessment,
+                svi_score: score,
+                risk_level: updatedRisk
+              }
+            }
+            handleUpdateCase(updatedCase)
+          }
         }}
       />
 
@@ -1294,7 +1181,7 @@ export default function Home() {
 
       {/* Officer Case Detail Modal */}
       <CaseDetailModal
-        caseRecord={selectedCase}
+        caseRecord={selectedCaseForModal}
         isOpen={selectedCaseModalOpen}
         onClose={() => setSelectedCaseModalOpen(false)}
         onUpdateCase={handleUpdateCase}

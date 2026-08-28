@@ -27,7 +27,7 @@ export interface UserProfile {
   email?: string
   full_name: string
   phone?: string
-  role: 'victim' | 'officer' | 'counsellor' | 'admin'
+  role: 'victim' | 'officer' | 'counsellor' | 'psychiatrist' | 'admin'
   preferred_language?: string
   address_line1?: string
   address_line2?: string
@@ -45,10 +45,11 @@ export interface UserProfile {
 
 export interface OfficerProfile {
   id: string
+  user_id?: string
   officer_badge_id: string
   full_name: string
-  department: 'Psychological Triage' | 'Law Enforcement Liaison' | 'Legal Aid Cell (NALSA)' | 'District Nodal Redressal' | 'Medical & Emergency'
-  role: 'officer' | 'counsellor' | 'admin'
+  department: 'Psychological Triage' | 'Law Enforcement Liaison' | 'Legal Aid Cell (NALSA)' | 'District Nodal Redressal' | 'Medical & Emergency' | string
+  role: 'officer' | 'counsellor' | 'psychiatrist' | 'admin'
   assigned_state: string
   assigned_district: string
   station_name?: string
@@ -58,6 +59,22 @@ export interface OfficerProfile {
   phone: string
   is_available?: boolean
   avatar_url?: string
+}
+
+export interface PsychiatristProfile {
+  id: string
+  user_id?: string
+  full_name: string
+  title: string
+  specialization: string
+  hospital_clinic?: string
+  assigned_state: string
+  assigned_district: string
+  email: string
+  phone: string
+  is_available: boolean
+  avatar_url?: string
+  active_patients_count?: number
 }
 
 export interface ConsentRecord {
@@ -104,7 +121,7 @@ export interface StressAssessment {
 }
 
 export interface CaseRecord {
-  id: string // e.g. NHAA-2026-8891
+  id: string // e.g. NHAA-2026-8891 or CASE-2026-0001
   session_id?: string
   user_id?: string
   victim_name: string
@@ -122,6 +139,7 @@ export interface CaseRecord {
   language: string
   reported_at: string
   narrative_text: string
+  submission_type?: 'text' | 'audio'
   voice_analysis?: VoiceAnalysisMetrics
   stress_assessment: StressAssessment
   status: 'New Intake' | 'Under Triage' | 'Action Dispatched' | 'Counselling Active' | 'Resolved'
@@ -135,7 +153,7 @@ export interface CaseRecord {
     state: string
     routing_reason: string
     assigned_at: string
-  }
+  } | string
   priority_tier: 1 | 2 | 3 | 4 // 1 is highest / critical
   notes: Array<{
     id: string
@@ -151,12 +169,15 @@ export interface CaseRecord {
     dispatched_at: string
     reference_id?: string
   }>
+  created_at?: string
+  updated_at?: string
 }
 
 export interface UserStory {
   id: string
   session_id?: string
   case_id?: string
+  user_id?: string
   title?: string
   narrative_text: string
   audio_url?: string | null
@@ -171,24 +192,71 @@ export interface UserStory {
   key_triggers?: string[]
   assigned_officer_name?: string
   assigned_officer_id?: string
+  assigned_psychiatrist_name?: string
+  assigned_psychiatrist_id?: string
   nearest_station?: string
+}
+
+export interface CaseStory {
+  id: string
+  case_id: string
+  user_id?: string
+  story_text: string
+  submission_type: 'text' | 'audio'
+  audio_url?: string | null
+  audio_duration_seconds?: number
+  transcript?: string
+  language?: string
+  created_at: string
+}
+
+export interface CaseAnalysisResult {
+  analysis_id?: string
+  case_id?: string
+  svi_score: number
+  risk_level: RiskLevel
+  detected_conditions: string[]
+  confidence: number
+  fear_score?: number
+  trauma_score?: number
+  anxiety_score?: number
+  key_triggers: string[]
+  recommendations: string[]
+  model_version?: string
+  analyzed_at: string
+}
+
+export interface CaseAssignment {
+  id: string
+  case_id: string
+  assigned_user_id: string
+  assigned_role: 'officer' | 'psychiatrist'
+  assigned_name: string
+  assignment_type: 'proximity_officer' | 'clinical_psychiatrist'
+  routing_reason?: string
+  status: 'Pending' | 'Active' | 'Acknowledged' | 'Completed'
+  assigned_at: string
 }
 
 export interface AppointmentRecord {
   id: string
   case_id?: string
+  victim_user_id?: string
+  psychiatrist_id?: string
   doctor_name: string
   doctor_title: string
   doctor_specialization: string
   slot_time: string
   date: string
-  status: 'Confirmed' | 'Completed' | 'Pending'
+  status: 'Confirmed' | 'Completed' | 'Pending' | 'Cancelled'
   meeting_mode: 'Secure Video Call' | 'Telephonic Audio' | 'In-Person Safe Clinic'
   notes?: string
+  created_at?: string
 }
 
 export interface TrustedContact {
   id: string
+  user_id?: string
   name: string
   relationship: string
   phone: string
@@ -201,8 +269,11 @@ export interface TrustedContact {
 
 export interface UserActivity {
   id: string
+  case_id?: string
+  user_id?: string
   title: string
   description: string
   timestamp: string
-  type: 'story' | 'mood' | 'exercise' | 'appointment' | 'support'
+  type: 'story' | 'mood' | 'exercise' | 'appointment' | 'support' | 'triage'
+  created_at?: string
 }

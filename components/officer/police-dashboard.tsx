@@ -198,7 +198,7 @@ export function PoliceDashboard({
                         <span>{c.incident_location.village_town_city}, {c.incident_location.district}, {c.incident_location.state} {c.incident_location.pincode ? `(${c.incident_location.pincode})` : ''}</span>
                         {c.proximity_routing && (
                           <span className="ml-1 text-[10px] text-[#c2410c] font-semibold bg-white px-1.5 py-0.5 rounded border border-[#fed7aa]">
-                            Matched via: {c.proximity_routing.routing_reason}
+                            Matched via: {typeof c.proximity_routing === 'object' ? c.proximity_routing.routing_reason : c.proximity_routing}
                           </span>
                         )}
                       </p>

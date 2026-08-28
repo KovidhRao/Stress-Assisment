@@ -11,26 +11,21 @@ import {
   Sparkles,
   ShieldCheck,
   CheckCircle2,
-  Volume2,
-  RotateCcw,
-  Activity,
-  Heart,
-  X,
-  FileText,
   Copy,
   Check,
-  Building,
   MapPin,
-  AlertTriangle
+  Brain,
+  ArrowRight
 } from 'lucide-react'
-import { CaseRecord, OfficerProfile, UserProfile, UserStory, VoiceAnalysisMetrics } from '@/types'
-import { computeSVI, findNearestOfficer } from '@/lib/svi-engine'
+import { CaseRecord, OfficerProfile, PsychiatristProfile, UserProfile, UserStory, VoiceAnalysisMetrics } from '@/types'
+import { CaseService } from '@/lib/services/case-service'
 import { DEFAULT_OFFICERS } from '@/lib/mock-data'
 import { t } from '@/lib/i18n'
 
 interface StoryInputCardProps {
   currentUser?: UserProfile
   officersList?: OfficerProfile[]
+  psychiatristsList?: PsychiatristProfile[]
   currentLanguage?: string
   onStorySubmitted: (story: UserStory, metrics?: VoiceAnalysisMetrics, generatedCase?: CaseRecord) => void
   onOpenVoiceModal?: () => void
@@ -44,6 +39,7 @@ export function StoryInputCard({
     created_at: new Date().toISOString()
   },
   officersList = DEFAULT_OFFICERS,
+  psychiatristsList = [],
   currentLanguage = 'en',
   onStorySubmitted,
   onOpenVoiceModal
@@ -64,8 +60,9 @@ export function StoryInputCard({
   const [lastSubmittedCase, setLastSubmittedCase] = useState<{
     caseId: string
     sessionId: string
-    officerName: string
-    stationName: string
+    officerName?: string
+    psychiatristName?: string
+    stationName?: string
     sviScore: number
     riskLevel: string
     copied: boolean
@@ -182,128 +179,63 @@ export function StoryInputCard({
     }
   }
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  // Submit Story -> Create New Session & Case in Database
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     const content = narrativeText.trim() || recordedAudio?.transcript || ''
     if (!content && !recordedAudio) return
 
     setIsSubmitting(true)
 
-    setTimeout(() => {
-      // 1. Acoustic / Voice metrics if audio was recorded
-      const metrics: VoiceAnalysisMetrics | undefined = recordedAudio ? {
-        duration_seconds: recordedAudio.duration,
-        transcript: recordedAudio.transcript,
-        language: currentLanguage || 'en',
-        speech_rate_wpm: 88,
-        average_pitch_hz: 218,
-        pitch_variation_hz: 42,
-        energy_level: 38,
-        pause_duration_ratio: 0.36,
-        acoustic_distress_score: 76,
-        mfcc_indicators: ['vocal_hesitation', 'distress_harmonics', 'respiratory_irregularity']
-      } : undefined
+    // Voice Analysis Metrics if audio was recorded
+    const metrics: VoiceAnalysisMetrics | undefined = recordedAudio ? {
+      duration_seconds: recordedAudio.duration,
+      transcript: recordedAudio.transcript,
+      language: currentLanguage || 'en',
+      speech_rate_wpm: 88,
+      average_pitch_hz: 218,
+      pitch_variation_hz: 42,
+      energy_level: 38,
+      pause_duration_ratio: 0.36,
+      acoustic_distress_score: 76,
+      mfcc_indicators: ['vocal_hesitation', 'distress_harmonics', 'respiratory_irregularity']
+    } : undefined
 
-      // 2. Dynamic SVI NLP Computation
-      const assessment = computeSVI(content, metrics)
-
-      // 3. Proximity Officer Matching based on Victim's Location
-      const victimLocation = {
-        state: currentUser.state || 'Maharashtra',
-        district: currentUser.district || 'Pune',
-        village_town_city: currentUser.village_town_city || 'Shivajinagar',
-        pincode: currentUser.pincode || '411001'
-      }
-
-      const { officer: nearestOfficer, routingReason } = findNearestOfficer(
-        officersList,
-        victimLocation
-      )
-
-      // 4. Generate Unique Trackable Case ID & Session ID
-      const generatedCaseId = `NHAA-2026-${Math.floor(1000 + Math.random() * 9000)}`
-      const generatedSessionId = `SESS-${Date.now().toString().slice(-6)}`
-
-      const newStory: UserStory = {
-        id: `STORY-${Date.now().toString().slice(-4)}`,
-        session_id: generatedSessionId,
-        case_id: generatedCaseId,
-        title: content.slice(0, 52) + (content.length > 52 ? '...' : ''),
-        narrative_text: content,
-        audio_url: recordedAudio ? 'simulated_audio.webm' : null,
-        audio_duration_seconds: recordedAudio ? recordedAudio.duration : undefined,
-        transcript: recordedAudio ? recordedAudio.transcript : undefined,
+    try {
+      const { caseRecord, story } = await CaseService.createCaseFromStory({
+        user: currentUser,
+        storyText: content,
+        audioUrl: recordedAudio ? 'simulated_audio.webm' : null,
+        audioDuration: recordedAudio?.duration,
+        transcript: recordedAudio?.transcript,
         language: currentLanguage,
-        created_at: new Date().toISOString(),
-        formatted_time: 'Just now',
-        status: assessment.risk_level === 'Critical' || assessment.risk_level === 'High' ? 'Support Plan Available' : 'Under Review',
-        risk_level: assessment.risk_level,
-        svi_score: assessment.svi_score,
-        key_triggers: assessment.key_trauma_triggers,
-        assigned_officer_name: nearestOfficer.full_name,
-        assigned_officer_id: nearestOfficer.id,
-        nearest_station: nearestOfficer.station_name || `${nearestOfficer.assigned_district} Special Cell`
-      }
+        voiceMetrics: metrics,
+        allOfficers: officersList,
+        allPsychiatrists: psychiatristsList
+      })
 
-      const newCaseRecord: CaseRecord = {
-        id: generatedCaseId,
-        session_id: generatedSessionId,
-        user_id: currentUser.id,
-        victim_name: currentUser.full_name || 'Citizen User',
-        initials: currentUser.avatar_initials || 'CU',
-        is_anonymous: !!currentUser.anonymous,
-        contact_number: currentUser.phone || '+91 97551 12345',
-        incident_category: 'Social Boycott & Ostracization',
-        incident_location: victimLocation,
-        channel: metrics ? 'mobile_app' : 'integrated_portal',
-        language: currentLanguage,
-        reported_at: 'Just now',
-        narrative_text: content,
-        voice_analysis: metrics,
-        stress_assessment: {
-          ...assessment,
-          case_id: generatedCaseId
-        },
-        status: assessment.risk_level === 'Critical' || assessment.risk_level === 'High' ? 'New Intake' : 'Under Triage',
-        assigned_officer: nearestOfficer.full_name,
-        assigned_officer_id: nearestOfficer.id,
-        assigned_counsellor: 'Dr. Ramesh Chandra',
-        assigned_counsellor_id: 'OFF-01',
-        proximity_routing: {
-          nearest_station: nearestOfficer.station_name || `${nearestOfficer.assigned_district} Unit`,
-          district: nearestOfficer.assigned_district,
-          state: nearestOfficer.assigned_state,
-          routing_reason: routingReason,
-          assigned_at: new Date().toISOString()
-        },
-        priority_tier: assessment.risk_level === 'Critical' ? 1 : assessment.risk_level === 'High' ? 2 : 3,
-        notes: [
-          {
-            id: `N-${Date.now()}`,
-            author: 'AI SVI & Proximity Engine',
-            role: 'Automated Redressal Triage',
-            timestamp: 'Just now',
-            text: `High SVI (${assessment.svi_score}) classified. Case routed to nearest officer ${nearestOfficer.full_name} (${nearestOfficer.assigned_district}) via ${routingReason}.`
-          }
-        ],
-        dispatched_actions: []
-      }
+      onStorySubmitted(story, metrics, caseRecord)
 
-      onStorySubmitted(newStory, metrics, newCaseRecord)
-
-      setIsSubmitting(false)
       setLastSubmittedCase({
-        caseId: generatedCaseId,
-        sessionId: generatedSessionId,
-        officerName: nearestOfficer.full_name,
-        stationName: nearestOfficer.station_name || nearestOfficer.assigned_district,
-        sviScore: assessment.svi_score,
-        riskLevel: assessment.risk_level,
+        caseId: caseRecord.id,
+        sessionId: caseRecord.session_id || '',
+        officerName: caseRecord.assigned_officer,
+        psychiatristName: caseRecord.assigned_counsellor,
+        stationName: typeof caseRecord.proximity_routing === 'object'
+          ? caseRecord.proximity_routing?.nearest_station
+          : caseRecord.incident_location.district,
+        sviScore: caseRecord.stress_assessment.svi_score,
+        riskLevel: caseRecord.stress_assessment.risk_level,
         copied: false
       })
+
       setNarrativeText('')
       setRecordedAudio(null)
-    }, 800)
+    } catch (err) {
+      console.error('Failed to submit story to database:', err)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const copyCaseId = () => {
@@ -376,13 +308,23 @@ export function StoryInputCard({
             </div>
           </div>
 
-          {/* Nearest Officer Proximity Routing Info */}
+          {/* Dynamic Professional Routing Info */}
           <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 text-xs text-[#065f46]">
-            <div className="flex items-center gap-1.5 font-medium">
-              <MapPin size={15} className="text-[#10b981]" />
-              <span>{t('case_assigned_officer', currentLanguage)}</span>
-              <strong className="text-[#064e3b] font-bold">{lastSubmittedCase.officerName}</strong>
-              <span className="text-[11px] text-[#047857]">({lastSubmittedCase.stationName})</span>
+            <div className="flex flex-wrap items-center gap-3 font-medium">
+              {lastSubmittedCase.officerName && (
+                <div className="flex items-center gap-1.5">
+                  <MapPin size={14} className="text-[#10b981]" />
+                  <span>Nearest Officer:</span>
+                  <strong className="text-[#064e3b] font-bold">{lastSubmittedCase.officerName}</strong>
+                </div>
+              )}
+              {lastSubmittedCase.psychiatristName && (
+                <div className="flex items-center gap-1.5">
+                  <Brain size={14} className="text-[#0284c7]" />
+                  <span>Assigned Psychiatrist:</span>
+                  <strong className="text-[#064e3b] font-bold">{lastSubmittedCase.psychiatristName}</strong>
+                </div>
+              )}
             </div>
             <button
               onClick={() => setLastSubmittedCase(null)}
@@ -509,7 +451,7 @@ export function StoryInputCard({
           <div className="flex-1 flex justify-end">
             <button
               type="button"
-              onClick={() => handleSubmit()}
+              onClick={handleSubmit}
               disabled={isSubmitting || (!narrativeText.trim() && !recordedAudio)}
               className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#1d8272] to-[#166558] px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-[#1d8272]/15 transition hover:from-[#176d5f] hover:to-[#125247] disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
             >
