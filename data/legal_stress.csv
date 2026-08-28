@@ -1,0 +1,201 @@
+id,text,language,indicator,present,risk_level
+1,I am afraid to go to court,en,FEAR_OF_COURT,1,MODERATE
+2,The thought of going to court makes me very anxious,en,FEAR_OF_COURT,1,MODERATE
+3,I don't know what will happen when I go to court,en,FEAR_OF_COURT,1,MODERATE
+4,I am scared about appearing before the court,en,FEAR_OF_COURT,1,MODERATE
+5,I don't understand what will happen with my case,en,LEGAL_UNCERTAINTY,1,MODERATE
+6,I am uncertain about the legal process,en,LEGAL_UNCERTAINTY,1,MODERATE
+7,I don't know what my legal options are,en,LEGAL_UNCERTAINTY,1,HIGH
+8,I have no idea how long my case will take,en,LEGAL_UNCERTAINTY,1,MODERATE
+9,I am frustrated with how my case is being handled,en,FRUSTRATION_WITH_PROCEEDINGS,1,MODERATE
+10,The legal proceedings are exhausting me,en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+11,I am frustrated because nothing seems to move forward,en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+12,The process has become extremely difficult for me,en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+13,I am exhausted from reporting the same thing repeatedly,en,REPEATED_REPORTING_FATIGUE,1,HIGH
+14,I have had to explain what happened again and again,en,REPEATED_REPORTING_FATIGUE,1,HIGH
+15,I am tired of repeatedly reporting the incident,en,REPEATED_REPORTING_FATIGUE,1,HIGH
+16,I don't have the energy to keep reporting this,en,REPEATED_REPORTING_FATIGUE,1,HIGH
+17,I don't trust the authorities,en,DISTRUST_OF_AUTHORITIES,1,HIGH
+18,I don't believe the authorities will help me,en,DISTRUST_OF_AUTHORITIES,1,HIGH
+19,I feel like the authorities are ignoring my situation,en,DISTRUST_OF_AUTHORITIES,1,HIGH
+20,I am afraid that the authorities will not take me seriously,en,DISTRUST_OF_AUTHORITIES,1,HIGH
+21,I am afraid of going to the police,en,FEAR_OF_POLICE,1,HIGH
+22,I am scared that the police will not protect me,en,FEAR_OF_POLICE,1,HIGH
+23,I don't feel safe speaking to the police,en,FEAR_OF_POLICE,1,HIGH
+24,I am worried about what will happen if I approach the police,en,FEAR_OF_POLICE,1,HIGH
+25,I am afraid they will retaliate after I complain,en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+26,I fear that reporting this will make things worse,en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,HIGH
+27,I am scared they will come after my family because I complained,en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+28,I worry that the person I reported will retaliate,en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+29,My case has been delayed for a long time,en,PERCEIVED_DELAYS,1,MODERATE
+30,Nothing seems to happen with my complaint,en,PERCEIVED_DELAYS,1,HIGH
+31,I have been waiting for a long time for action,en,PERCEIVED_DELAYS,1,HIGH
+32,The delay in my case is causing me a lot of stress,en,PERCEIVED_DELAYS,1,HIGH
+33,I feel like nobody is listening to me,en,FEELING_IGNORED_UNHEARD,1,HIGH
+34,I feel ignored whenever I ask for help,en,FEELING_IGNORED_UNHEARD,1,HIGH
+35,Nobody seems to hear what I am saying,en,FEELING_IGNORED_UNHEARD,1,HIGH
+36,I feel like my complaint does not matter to anyone,en,FEELING_IGNORED_UNHEARD,1,HIGH
+37,I am losing trust in the legal system,en,DISTRUST_OF_AUTHORITIES,1,HIGH
+38,I don't know who I can approach for legal help,en,LEGAL_UNCERTAINTY,1,HIGH
+39,I am tired of waiting for my complaint to be addressed,en,PERCEIVED_DELAYS,1,HIGH
+40,I feel unheard throughout the legal process,en,FEELING_IGNORED_UNHEARD,1,HIGH
+41,I keep feeling that I worry that my family may face retaliation,en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+42,I have been waiting for a long time for action and I am becoming increasingly worried.,en,PERCEIVED_DELAYS,1,HIGH
+43,"For the past few days, I worry that my family may face retaliation",en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+44,"For the past few days, I fear that reporting this will make things worse and I don't know what to do.",en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+45,I don't feel confident approaching the authorities lately.,en,DISTRUST_OF_AUTHORITIES,1,HIGH
+46,I feel that I am scared that the police will not protect me and I am becoming increasingly worried.,en,FEAR_OF_POLICE,1,HIGH
+47,"Right now, I don't trust the authorities to help me and this is affecting my daily life.",en,DISTRUST_OF_AUTHORITIES,1,HIGH
+48,"Right now, I am tired of answering the same questions repeatedly and I am becoming increasingly worried.",en,REPEATED_REPORTING_FATIGUE,1,HIGH
+49,I have noticed that I feel that my requests for help are being ignored and the situation is getting worse.,en,FEELING_IGNORED_UNHEARD,1,HIGH
+50,I keep feeling that The delay in my case is causing me a lot of stress and I am becoming increasingly worried.,en,PERCEIVED_DELAYS,1,HIGH
+51,"Recently, I am afraid they will come after me because I complained lately.",en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+52,Nobody seems to hear what I am saying and the situation is getting worse.,en,FEELING_IGNORED_UNHEARD,1,HIGH
+53,"Recently, I am scared that the person I reported will retaliate and I am becoming increasingly worried.",en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+54,I am afraid of what they might do after my complaint and I need help.,en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+55,"Right now, I am afraid they will retaliate after I complain and I need help.",en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+56,"These days, I am worried about approaching the police lately.",en,FEAR_OF_POLICE,1,HIGH
+57,"For the past few days, I no longer believe that the authorities will help because of the situation.",en,DISTRUST_OF_AUTHORITIES,1,HIGH
+58,I keep feeling that I am afraid to go to court these days.,en,FEAR_OF_COURT,1,MODERATE
+59,"Lately, I am worried about what will happen during the hearing",en,FEAR_OF_COURT,1,MODERATE
+60,I am afraid to go to court because of the situation.,en,FEAR_OF_COURT,1,MODERATE
+61,I feel that I am afraid to go to court and I don't know what to do.,en,FEAR_OF_COURT,1,MODERATE
+62,"At the moment, I feel ignored whenever I ask for help and the situation is getting worse.",en,FEELING_IGNORED_UNHEARD,1,HIGH
+63,"These days, I am exhausted from reporting the same thing repeatedly and I don't know what to do.",en,REPEATED_REPORTING_FATIGUE,1,HIGH
+64,I keep feeling that I feel frustrated by the way my case is progressing and I am becoming increasingly worried.,en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+65,"These days, I fear consequences because I reported the incident these days.",en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+66,"Recently, I don't feel safe speaking to the police and the situation is getting worse.",en,FEAR_OF_POLICE,1,HIGH
+67,I have noticed that I have no idea how long my case will take and this is affecting my daily life.,en,LEGAL_UNCERTAINTY,1,MODERATE
+68,"At the moment, I have been waiting for months without progress and this is affecting my daily life.",en,PERCEIVED_DELAYS,1,HIGH
+69,I have noticed that I am frustrated with how my case is being handled and I need help.,en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+70,"Recently, I am afraid of what might happen if I contact the police these days.",en,FEAR_OF_POLICE,1,HIGH
+71,"Right now, I am tired of answering the same questions repeatedly and it is becoming difficult to cope.",en,REPEATED_REPORTING_FATIGUE,1,HIGH
+72,"These days, I have had to explain what happened again and again lately.",en,REPEATED_REPORTING_FATIGUE,1,HIGH
+73,"These days, Nothing seems to happen with my complaint and the situation is getting worse.",en,PERCEIVED_DELAYS,1,HIGH
+74,I feel that I don't have the energy to keep reporting this and this is affecting my daily life.,en,REPEATED_REPORTING_FATIGUE,1,HIGH
+75,"Recently, I feel frightened about the court proceedings",en,FEAR_OF_COURT,1,MODERATE
+76,I keep feeling that I feel that nobody in authority is listening to me and the situation is getting worse.,en,DISTRUST_OF_AUTHORITIES,1,HIGH
+77,"Lately, I am scared that the police will not protect me and the situation is getting worse.",en,FEAR_OF_POLICE,1,HIGH
+78,I am exhausted from reporting the same thing repeatedly lately.,en,REPEATED_REPORTING_FATIGUE,1,HIGH
+79,"Right now, I am frustrated with how my case is being handled and the situation is getting worse.",en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+80,"At the moment, I don't know what step I should take next and the situation is getting worse.",en,LEGAL_UNCERTAINTY,1,MODERATE
+81,"Recently, I feel frustrated by the way my case is progressing",en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+82,I feel that I feel that the authorities are ignoring my situation and I am becoming increasingly worried.,en,DISTRUST_OF_AUTHORITIES,1,HIGH
+83,I feel that I feel invisible when I try to explain my situation because of the situation.,en,FEELING_IGNORED_UNHEARD,1,HIGH
+84,"Right now, I am afraid they will retaliate after I complain and I am becoming increasingly worried.",en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+85,I don't want to keep repeating what happened because of the situation.,en,REPEATED_REPORTING_FATIGUE,1,HIGH
+86,I keep feeling that I am uncertain about the legal process these days.,en,LEGAL_UNCERTAINTY,1,MODERATE
+87,I have noticed that I am worried about approaching the police and I don't know what to do.,en,FEAR_OF_POLICE,1,HIGH
+88,"At the moment, I feel ignored whenever I ask for help these days.",en,FEELING_IGNORED_UNHEARD,1,HIGH
+89,I am afraid they will come after me because I complained and I am becoming increasingly worried.,en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+90,I have noticed that I am still waiting for someone to respond to my complaint these days.,en,PERCEIVED_DELAYS,1,HIGH
+91,I have noticed that I am worried about what will happen during the hearing and it is becoming difficult to cope.,en,FEAR_OF_COURT,1,MODERATE
+92,I have noticed that I don't understand what will happen with my case and I need help.,en,LEGAL_UNCERTAINTY,1,MODERATE
+93,I am worried about what will happen during the hearing these days.,en,FEAR_OF_COURT,1,MODERATE
+94,I keep feeling that I am afraid of going to the police and I don't know what to do.,en,FEAR_OF_POLICE,1,HIGH
+95,"Right now, I am afraid that the authorities will not take me seriously and it is becoming difficult to cope.",en,DISTRUST_OF_AUTHORITIES,1,HIGH
+96,"For the past few days, I am frustrated with how my case is being handled and the situation is getting worse.",en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+97,I have noticed that I don't understand what the authorities will do next because of the situation.,en,LEGAL_UNCERTAINTY,1,MODERATE
+98,"Recently, The proceedings are causing me a lot of stress and I need help.",en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+99,"Lately, I feel that my requests for help are being ignored and this is affecting my daily life.",en,FEELING_IGNORED_UNHEARD,1,HIGH
+100,"Lately, I no longer believe that the authorities will help lately.",en,DISTRUST_OF_AUTHORITIES,1,HIGH
+101,"For the past few days, I am afraid to go to court and I don't know what to do.",en,FEAR_OF_COURT,1,MODERATE
+102,I feel that I am still waiting for someone to respond to my complaint and I don't know what to do.,en,PERCEIVED_DELAYS,1,HIGH
+103,I keep feeling that I am worried that speaking up will put me at greater risk and it is becoming difficult to cope.,en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+104,I have noticed that I don't have the energy to keep reporting this and I don't know what to do.,en,REPEATED_REPORTING_FATIGUE,1,HIGH
+105,I feel like my complaint does not matter these days.,en,FEELING_IGNORED_UNHEARD,1,HIGH
+106,"Right now, I don't know what step I should take next and I need help.",en,LEGAL_UNCERTAINTY,1,MODERATE
+107,"These days, I don't understand what the authorities will do next lately.",en,LEGAL_UNCERTAINTY,1,MODERATE
+108,"Right now, I feel that the authorities are ignoring my situation and the situation is getting worse.",en,DISTRUST_OF_AUTHORITIES,1,HIGH
+109,"Recently, I feel that the authorities are ignoring my situation and I need help.",en,DISTRUST_OF_AUTHORITIES,1,HIGH
+110,I am afraid they will come after me because I complained and this is affecting my daily life.,en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+111,I am frustrated because nothing seems to move forward and I am becoming increasingly worried.,en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+112,"Recently, I am worried that speaking up will put me at greater risk and this is affecting my daily life.",en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+113,"These days, I don't know what will happen when I go to court because of the situation.",en,FEAR_OF_COURT,1,MODERATE
+114,I don't feel comfortable asking the police for help these days.,en,FEAR_OF_POLICE,1,HIGH
+115,I feel that Having to explain everything again is overwhelming lately.,en,REPEATED_REPORTING_FATIGUE,1,HIGH
+116,I don't know what my legal options are lately.,en,LEGAL_UNCERTAINTY,1,MODERATE
+117,"These days, I feel like my complaint does not matter and this is affecting my daily life.",en,FEELING_IGNORED_UNHEARD,1,HIGH
+118,"Lately, I am uncertain about the legal process and I am becoming increasingly worried.",en,LEGAL_UNCERTAINTY,1,MODERATE
+119,"Lately, I feel unheard throughout the legal process and I don't know what to do.",en,FEELING_IGNORED_UNHEARD,1,HIGH
+120,"Right now, I am afraid of going to the police and I am becoming increasingly worried.",en,FEAR_OF_POLICE,1,HIGH
+121,"Lately, I feel that the authorities are ignoring my situation and I don't know what to do.",en,DISTRUST_OF_AUTHORITIES,1,HIGH
+122,"Recently, I am afraid of what they might do after my complaint",en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+123,"Right now, I feel nervous about reporting this to the police and I am becoming increasingly worried.",en,FEAR_OF_POLICE,1,HIGH
+124,"These days, I am tired of answering the same questions repeatedly because of the situation.",en,REPEATED_REPORTING_FATIGUE,1,HIGH
+125,"Recently, I am tired of answering the same questions repeatedly and the situation is getting worse.",en,REPEATED_REPORTING_FATIGUE,1,HIGH
+126,I feel that I have been waiting for a long time for action and this is affecting my daily life.,en,PERCEIVED_DELAYS,1,HIGH
+127,"At the moment, I am still waiting for someone to respond to my complaint these days.",en,PERCEIVED_DELAYS,1,HIGH
+128,"Right now, I have had to explain what happened again and again and I don't know what to do.",en,REPEATED_REPORTING_FATIGUE,1,HIGH
+129,I feel that the authorities are ignoring my situation these days.,en,DISTRUST_OF_AUTHORITIES,1,HIGH
+130,"Right now, I have no idea how long my case will take and it is becoming difficult to cope.",en,LEGAL_UNCERTAINTY,1,MODERATE
+131,"Recently, I am exhausted from reporting the same thing repeatedly these days.",en,REPEATED_REPORTING_FATIGUE,1,HIGH
+132,"Right now, I fear consequences because I reported the incident and I need help.",en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+133,"Lately, I am afraid of going to the police and it is becoming difficult to cope.",en,FEAR_OF_POLICE,1,HIGH
+134,"At the moment, I don't understand what will happen with my case and I don't know what to do.",en,LEGAL_UNCERTAINTY,1,MODERATE
+135,I have noticed that My case seems to be moving extremely slowly and the situation is getting worse.,en,PERCEIVED_DELAYS,1,HIGH
+136,I feel that I feel that nobody in authority is listening to me and it is becoming difficult to cope.,en,DISTRUST_OF_AUTHORITIES,1,HIGH
+137,"For the past few days, I feel invisible when I try to explain my situation and the situation is getting worse.",en,FEELING_IGNORED_UNHEARD,1,HIGH
+138,I keep feeling that Nobody seems to hear what I am saying and I don't know what to do.,en,FEELING_IGNORED_UNHEARD,1,HIGH
+139,I have noticed that I no longer believe that the authorities will help because of the situation.,en,DISTRUST_OF_AUTHORITIES,1,HIGH
+140,"These days, I feel nervous about reporting this to the police",en,FEAR_OF_POLICE,1,HIGH
+141,I am worried about what will happen during the hearing and I don't know what to do.,en,FEAR_OF_COURT,1,MODERATE
+142,I feel that The thought of going to court makes me very anxious lately.,en,FEAR_OF_COURT,1,MODERATE
+143,I have noticed that Having to explain everything again is overwhelming and this is affecting my daily life.,en,REPEATED_REPORTING_FATIGUE,1,HIGH
+144,"Lately, I fear that reporting this will make things worse and this is affecting my daily life.",en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+145,"Recently, I am frustrated with how my case is being handled because of the situation.",en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+146,"These days, I don't have the energy to keep reporting this these days.",en,REPEATED_REPORTING_FATIGUE,1,HIGH
+147,I have noticed that The proceedings are causing me a lot of stress and it is becoming difficult to cope.,en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+148,"Lately, My case seems to be moving extremely slowly and this is affecting my daily life.",en,PERCEIVED_DELAYS,1,HIGH
+149,I keep feeling that I have been waiting for a long time for action and I need help.,en,PERCEIVED_DELAYS,1,HIGH
+150,I keep feeling that I am exhausted from reporting the same thing repeatedly lately.,en,REPEATED_REPORTING_FATIGUE,1,HIGH
+151,"For the past few days, I am scared about appearing before the court and the situation is getting worse.",en,FEAR_OF_COURT,1,MODERATE
+152,I am frustrated with how my case is being handled and this is affecting my daily life.,en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+153,"At the moment, I feel frightened about the court proceedings because of the situation.",en,FEAR_OF_COURT,1,MODERATE
+154,"Lately, I am scared about appearing before the court and I am becoming increasingly worried.",en,FEAR_OF_COURT,1,MODERATE
+155,"Right now, I don't have the energy to keep reporting this these days.",en,REPEATED_REPORTING_FATIGUE,1,HIGH
+156,"At the moment, I fear that the police may not take me seriously these days.",en,FEAR_OF_POLICE,1,HIGH
+157,"For the past few days, I don't know what step I should take next and the situation is getting worse.",en,LEGAL_UNCERTAINTY,1,MODERATE
+158,I feel that I am exhausted from telling the same story to different people and I don't know what to do.,en,REPEATED_REPORTING_FATIGUE,1,HIGH
+159,"These days, I am worried that speaking up will put me at greater risk and this is affecting my daily life.",en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+160,Nobody seems to hear what I am saying and this is affecting my daily life.,en,FEELING_IGNORED_UNHEARD,1,HIGH
+161,"Recently, I don't understand what will happen with my case and I am becoming increasingly worried.",en,LEGAL_UNCERTAINTY,1,MODERATE
+162,"Right now, I am worried about approaching the police and I am becoming increasingly worried.",en,FEAR_OF_POLICE,1,HIGH
+163,"Recently, I don't feel safe speaking to the police these days.",en,FEAR_OF_POLICE,1,HIGH
+164,"For the past few days, I am afraid they will come after me because I complained",en,FEAR_OF_RETALIATION_AFTER_COMPLAINT,1,CRITICAL
+165,"Lately, I have lost trust in the people handling my case lately.",en,DISTRUST_OF_AUTHORITIES,1,HIGH
+166,I have noticed that I don't believe the authorities will protect me and I am becoming increasingly worried.,en,DISTRUST_OF_AUTHORITIES,1,HIGH
+167,I feel that the authorities are ignoring my situation and this is affecting my daily life.,en,DISTRUST_OF_AUTHORITIES,1,HIGH
+168,"Right now, I am tired of answering the same questions repeatedly these days.",en,REPEATED_REPORTING_FATIGUE,1,HIGH
+169,I have noticed that The thought of going to court makes me very anxious and I need help.,en,FEAR_OF_COURT,1,MODERATE
+170,"At the moment, The delay in my case is causing me a lot of stress and I am becoming increasingly worried.",en,PERCEIVED_DELAYS,1,HIGH
+171,"For the past few days, Having to explain everything again is overwhelming and I don't know what to do.",en,REPEATED_REPORTING_FATIGUE,1,HIGH
+172,"For the past few days, Nothing seems to happen with my complaint because of the situation.",en,PERCEIVED_DELAYS,1,HIGH
+173,I keep feeling that I don't have the energy to keep reporting this these days.,en,REPEATED_REPORTING_FATIGUE,1,HIGH
+174,"These days, I feel like my complaint does not matter lately.",en,FEELING_IGNORED_UNHEARD,1,HIGH
+175,I feel that I am exhausted from reporting the same thing repeatedly,en,REPEATED_REPORTING_FATIGUE,1,HIGH
+176,"For the past few days, I feel nervous about reporting this to the police and the situation is getting worse.",en,FEAR_OF_POLICE,1,HIGH
+177,I don't want to keep repeating what happened these days.,en,REPEATED_REPORTING_FATIGUE,1,HIGH
+178,"Lately, Nobody seems to hear what I am saying and I am becoming increasingly worried.",en,FEELING_IGNORED_UNHEARD,1,HIGH
+179,"Right now, I feel frustrated by the way my case is progressing and this is affecting my daily life.",en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+180,I am tired of repeatedly reporting the incident and it is becoming difficult to cope.,en,REPEATED_REPORTING_FATIGUE,1,HIGH
+181,"These days, The process has become extremely difficult for me and the situation is getting worse.",en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+182,"Right now, I fear that the police may not take me seriously these days.",en,FEAR_OF_POLICE,1,HIGH
+183,"Right now, I don't feel comfortable asking the police for help lately.",en,FEAR_OF_POLICE,1,HIGH
+184,My case has been delayed for a long time because of the situation.,en,PERCEIVED_DELAYS,1,HIGH
+185,I feel that Going to court makes me extremely anxious and the situation is getting worse.,en,FEAR_OF_COURT,1,MODERATE
+186,"For the past few days, I am scared that the police will not protect me and this is affecting my daily life.",en,FEAR_OF_POLICE,1,HIGH
+187,"At the moment, The legal proceedings are exhausting me and it is becoming difficult to cope.",en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+188,Nothing seems to happen with my complaint and I don't know what to do.,en,PERCEIVED_DELAYS,1,HIGH
+189,"Lately, The legal proceedings are exhausting me and I don't know what to do.",en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+190,I keep feeling that I feel that my requests for help are being ignored,en,FEELING_IGNORED_UNHEARD,1,HIGH
+191,"For the past few days, I am frustrated with how my case is being handled because of the situation.",en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+192,I keep feeling that I feel frustrated by the way my case is progressing and I don't know what to do.,en,FRUSTRATION_WITH_PROCEEDINGS,1,HIGH
+193,"For the past few days, I don't feel safe speaking to the police and I need help.",en,FEAR_OF_POLICE,1,HIGH
+194,I am confused about my rights these days.,en,LEGAL_UNCERTAINTY,1,MODERATE
+195,"Right now, I am confused about my rights because of the situation.",en,LEGAL_UNCERTAINTY,1,MODERATE
+196,"For the past few days, I am afraid to go to court and I need help.",en,FEAR_OF_COURT,1,MODERATE
+197,I have noticed that My case seems to be moving extremely slowly and I am becoming increasingly worried.,en,PERCEIVED_DELAYS,1,HIGH
+198,I have noticed that I don't feel comfortable asking the police for help lately.,en,FEAR_OF_POLICE,1,HIGH
+199,"Recently, I don't have the energy to keep reporting this because of the situation.",en,REPEATED_REPORTING_FATIGUE,1,HIGH
+200,I keep feeling that I feel like my complaint does not matter and I am becoming increasingly worried.,en,FEELING_IGNORED_UNHEARD,1,HIGH

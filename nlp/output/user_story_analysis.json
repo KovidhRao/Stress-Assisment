@@ -1,0 +1,82 @@
+{
+    "text": "They threatened our family and attacked our house, I feel completely terrified and have nowhere to go.",
+    "cleaned_text": "They threatened our family and attacked our house, I feel completely terrified and have nowhere to go.",
+    "language": "en",
+    "language_name": "English",
+    "romanized": false,
+    "romanized_language": null,
+    "romanized_confidence": 0.0,
+    "analysis_text": "They threatened our family and attacked our house, I feel completely terrified and have nowhere to go.",
+    "translated": false,
+    "translation_method": "none",
+    "situation": "VIOLENCE",
+    "situation_confidence": 0.65,
+    "emotion": "neutral",
+    "emotion_confidence": 0.0,
+    "indicators": {
+        "stress": 0.4,
+        "fear": 0.8,
+        "anxiety": 0.0,
+        "distress": 0.0,
+        "trauma": 0.0,
+        "threat": 0.8,
+        "violence": 0.8,
+        "immediate_danger": 0.0,
+        "isolation": 0.0,
+        "vulnerability": 0.7
+    },
+    "svi": 60.0,
+    "risk_category": "HIGH",
+    "svi_confidence": 0.5275,
+    "contributing_factors": [
+        {
+            "indicator": "situation_severity",
+            "contribution": 16.25
+        },
+        {
+            "indicator": "threat",
+            "contribution": 12.8
+        },
+        {
+            "indicator": "violence",
+            "contribution": 12.0
+        },
+        {
+            "indicator": "fear",
+            "contribution": 9.6
+        },
+        {
+            "indicator": "stress",
+            "contribution": 3.2
+        },
+        {
+            "indicator": "vulnerability",
+            "contribution": 1.4
+        }
+    ],
+    "matched_situation_rules": [
+        "attacked"
+    ],
+    "matched_indicator_keywords": {
+        "stress": [],
+        "fear": [
+            "terrified -> terrified",
+            "natural_pattern: \\bterrified\\b"
+        ],
+        "anxiety": [],
+        "distress": [],
+        "trauma": [],
+        "threat": [
+            "threatened -> threatened",
+            "natural_pattern: \\bthreatened\\b"
+        ],
+        "violence": [
+            "attacked -> attacked"
+        ],
+        "immediate_danger": [],
+        "isolation": [],
+        "vulnerability": [
+            "natural_pattern: \\bnowhere to go\\b"
+        ]
+    }
+}

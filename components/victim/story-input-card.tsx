@@ -62,6 +62,8 @@ export function StoryInputCard({
     stationName: string
     sviScore: number
     riskLevel: string
+    situation?: string
+    detectedLanguage?: string
     copied: boolean
   } | null>(null)
 
@@ -234,6 +236,11 @@ export function StoryInputCard({
         risk_level: assessment.risk_level,
         svi_score: assessment.svi_score,
         key_triggers: assessment.key_trauma_triggers,
+        situation: assessment.situation,
+        situation_confidence: assessment.situation_confidence,
+        indicators: assessment.indicators,
+        confidence: assessment.confidence,
+        contributing_factors: assessment.contributing_factors,
         assigned_officer_name: nearestOfficer.full_name,
         assigned_officer_id: nearestOfficer.id,
         nearest_station: nearestOfficer.station_name || `${nearestOfficer.assigned_district} Special Cell`
@@ -293,6 +300,8 @@ export function StoryInputCard({
         stationName: nearestOfficer.station_name || nearestOfficer.assigned_district,
         sviScore: assessment.svi_score,
         riskLevel: assessment.risk_level,
+        situation: assessment.situation,
+        detectedLanguage: assessment.detected_language,
         copied: false
       })
       setNarrativeText('')
@@ -359,7 +368,12 @@ export function StoryInputCard({
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {lastSubmittedCase.situation && (
+                <span className="rounded-xl px-2.5 py-1 text-[11px] font-bold bg-[#10b981]/15 text-[#065f46] border border-[#a7f3d0]">
+                  {lastSubmittedCase.situation}
+                </span>
+              )}
               <span className={`rounded-xl px-3 py-1 text-xs font-extrabold ${
                 lastSubmittedCase.riskLevel === 'Critical' || lastSubmittedCase.riskLevel === 'High'
                   ? 'bg-[#fee2e2] text-[#b91c1c] border border-[#fca5a5]'

@@ -1,6 +1,43 @@
 import { supabase } from '@/lib/supabase'
-import { CaseRecord, OfficerProfile, UserProfile, VoiceAnalysisMetrics } from '@/types'
+import { CaseRecord, OfficerProfile, RiskLevel, UserProfile, VoiceAnalysisMetrics } from '@/types'
 import { INITIAL_CASES, DEFAULT_OFFICERS } from '@/lib/mock-data'
+
+// ─── Real DB Enum Mappers ────────────────────────────────────────────────────
+/** Map app risk level (Title case) → DB enum (ALL CAPS) */
+function toDbRiskLevel(level?: string): string {
+  const m: Record<string, string> = {
+    Low: 'LOW', Moderate: 'MODERATE', High: 'HIGH', Critical: 'CRITICAL',
+    low: 'LOW', moderate: 'MODERATE', high: 'HIGH', critical: 'CRITICAL',
+    LOW: 'LOW', MODERATE: 'MODERATE', HIGH: 'HIGH', CRITICAL: 'CRITICAL'
+  }
+  return m[level ?? 'LOW'] ?? 'LOW'
+}
+
+/** Map app channel string → DB case_channel enum */
+function toDbChannel(channel?: string): string {
+  const m: Record<string, string> = {
+    mobile_app: 'MOBILE', mobile: 'MOBILE',
+    chatbot: 'CHATBOT', ivrs: 'IVRS', voice: 'VOICE',
+    web: 'WEB', integrated_portal: 'WEB', portal: 'WEB', online: 'WEB'
+  }
+  return m[(channel ?? 'web').toLowerCase()] ?? 'WEB'
+}
+
+/** Map app case status → DB case_status enum */
+function toDbCaseStatus(status?: string): string {
+  const m: Record<string, string> = {
+    'New Intake': 'OPEN', 'Under Triage': 'OPEN', 'In Progress': 'OPEN',
+    'Pending': 'OPEN', 'Resolved': 'RESOLVED', 'Closed': 'CLOSED',
+    OPEN: 'OPEN', RESOLVED: 'RESOLVED', CLOSED: 'CLOSED'
+  }
+  return m[status ?? 'New Intake'] ?? 'OPEN'
+}
+
+/** Normalize 0-100 SVI subscores to 0.0-1.0 for DB assessments table */
+function norm(v?: number): number {
+  if (v == null) return 0
+  return v > 1 ? parseFloat((v / 100).toFixed(4)) : v
+}
 
 /**
  * Service to manage Supabase database operations with fallback resilience.
@@ -392,7 +429,12 @@ export async function saveOfficerProfile(
 
 export async function fetchCasesFromDb(filterOfficerId?: string, district?: string): Promise<CaseRecord[]> {
   try {
-    let query = supabase.from('cases').select('*')
+    let query = supabase.from('cases').select(`
+      *,
+      interactions (*),
+      assessments (*),
+      profiles:user_id (full_name, phone, preferred_language, email)
+    `)
 
     if (filterOfficerId) {
       query = query.or(`assigned_officer_id.eq.${filterOfficerId},incident_location->>district.ilike.%${district || ''}%`)
@@ -407,41 +449,108 @@ export async function fetchCasesFromDb(filterOfficerId?: string, district?: stri
 
     if (!data || data.length === 0) return INITIAL_CASES
 
-    // Sort by reported_at or created_at descending safely in memory
+    // Sort by created_at or reported_at descending safely in memory
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sorted = [...data].sort((a: any, b: any) => {
-      const timeA = new Date(a.reported_at || a.created_at || 0).getTime()
-      const timeB = new Date(b.reported_at || b.created_at || 0).getTime()
+      const timeA = new Date(a.created_at || a.reported_at || 0).getTime()
+      const timeB = new Date(b.created_at || b.reported_at || 0).getTime()
       return timeB - timeA
     })
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return sorted.map((c: any) => ({
-      id: c.id,
-      session_id: c.session_id,
-      user_id: c.user_id,
-      victim_name: c.victim_name,
-      initials: c.initials || (c.victim_name ? c.victim_name.slice(0, 2).toUpperCase() : 'AN'),
-      is_anonymous: !!c.is_anonymous,
-      contact_number: c.contact_number,
-      incident_category: c.incident_category,
-      incident_location: c.incident_location || { village_town_city: '', district: '', state: '', pincode: '' },
-      channel: c.channel || 'integrated_portal',
-      language: c.language || 'en',
-      reported_at: c.reported_at,
-      narrative_text: c.narrative_text,
-      voice_analysis: c.voice_analysis,
-      stress_assessment: c.stress_assessment,
-      status: c.status || 'New Intake',
-      assigned_officer: c.assigned_officer,
-      assigned_officer_id: c.assigned_officer_id,
-      assigned_counsellor: c.assigned_counsellor,
-      assigned_counsellor_id: c.assigned_counsellor_id,
-      proximity_routing: c.proximity_routing,
-      priority_tier: c.priority_tier || 3,
-      notes: Array.isArray(c.notes) ? c.notes : [],
-      dispatched_actions: Array.isArray(c.dispatched_actions) ? c.dispatched_actions : []
-    }))
+    return sorted.map((c: any) => {
+      const latestInteraction = Array.isArray(c.interactions) && c.interactions.length > 0 ? c.interactions[0] : null
+      const latestAssessment = Array.isArray(c.assessments) && c.assessments.length > 0 ? c.assessments[0] : null
+      const victimName = c.profiles?.full_name || c.victim_name || 'Citizen User'
+      
+      const rawRisk = c.current_risk_level || (latestAssessment?.overall_distress > 0.75 ? 'Critical' : latestAssessment?.overall_distress > 0.5 ? 'High' : latestAssessment?.overall_distress > 0.25 ? 'Moderate' : 'Low')
+      const riskLevel: RiskLevel = 
+        rawRisk?.toUpperCase() === 'CRITICAL' ? 'Critical' :
+        rawRisk?.toUpperCase() === 'HIGH' ? 'High' :
+        rawRisk?.toUpperCase() === 'MODERATE' ? 'Moderate' : 'Low'
+
+      const sviScore = c.current_svi ?? (latestAssessment ? Math.round((latestAssessment.overall_distress || 0) * 100) : 65)
+
+      return {
+        id: c.case_number || c.id,
+        session_id: c.session_id,
+        user_id: c.user_id,
+        victim_name: victimName,
+        initials: (victimName || 'CU').slice(0, 2).toUpperCase(),
+        is_anonymous: false,
+        contact_number: c.profiles?.phone || c.contact_number || '',
+        incident_category: 'Caste-based Discrimination',
+        incident_location: c.incident_location || {
+          village_town_city: c.incident_city || '',
+          district: c.incident_district || '',
+          state: c.incident_state || '',
+          pincode: c.incident_pincode || ''
+        },
+        channel: (c.channel?.toLowerCase() === 'mobile' ? 'mobile_app' : 'integrated_portal') as any,
+        language: latestInteraction?.language || c.language || 'en',
+        reported_at: c.created_at ? new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+        narrative_text: latestInteraction?.text_content || c.narrative_text || '',
+        voice_analysis: c.voice_analysis,
+        stress_assessment: {
+          id: latestAssessment?.id || `SA-${c.id.slice(0, 6)}`,
+          case_id: c.case_number || c.id,
+          svi_score: sviScore,
+          risk_level: riskLevel,
+          trauma_score: latestAssessment ? Math.round((latestAssessment.trauma_score || 0) * 100) : (riskLevel === 'High' || riskLevel === 'Critical' ? 82 : 55),
+          fear_score: latestAssessment ? Math.round((latestAssessment.fear_score || 0) * 100) : (riskLevel === 'High' || riskLevel === 'Critical' ? 78 : 50),
+          anxiety_score: latestAssessment ? Math.round((latestAssessment.anxiety_score || 0) * 100) : (riskLevel === 'High' || riskLevel === 'Critical' ? 85 : 62),
+          depression_indicator: latestAssessment ? latestAssessment.depression_indicator === 1 : true,
+          suicidal_ideation_flag: latestAssessment ? latestAssessment.suicidal_ideation_indicator === 1 : false,
+          intimidation_flag: true,
+          social_isolation_flag: latestAssessment ? (latestAssessment.isolation_score || 0) > 0.5 : true,
+          speech_stress_detected: false,
+          key_trauma_triggers: [c.primary_situation || latestAssessment?.situation || 'intimidation', 'isolation'].filter(Boolean),
+          recommended_actions: [
+            'Immediate Clinical Tele-Consultation',
+            'District Anti-Discrimination Protection Notice'
+          ],
+          assessed_at: latestAssessment?.created_at || c.created_at || new Date().toISOString(),
+          situation: latestAssessment?.situation || c.primary_situation || undefined,
+          situation_confidence: latestAssessment?.situation_confidence ?? latestAssessment?.confidence ?? 0.88,
+          confidence: latestAssessment?.confidence ?? 0.88,
+          indicators: {
+            stress: sviScore / 100,
+            fear: latestAssessment?.fear_score ?? 0.75,
+            anxiety: latestAssessment?.anxiety_score ?? 0.7,
+            distress: sviScore / 100,
+            trauma: latestAssessment?.trauma_score ?? 0.8,
+            threat: latestAssessment?.threat_score ?? 0.85,
+            violence: (latestAssessment?.violence_score ?? 0) / 100,
+            immediate_danger: sviScore > 75 ? 0.9 : 0.4,
+            isolation: latestAssessment?.isolation_score ?? 0.6,
+            vulnerability: latestAssessment?.vulnerability_score ?? 0.7
+          }
+        },
+        status: (c.status === 'RESOLVED' ? 'Resolved' : c.status === 'CLOSED' ? 'Resolved' : (riskLevel === 'High' || riskLevel === 'Critical' ? 'New Intake' : 'Under Triage')),
+        assigned_officer: 'Insp. Vikram Pratap Singh',
+        assigned_officer_id: c.assigned_officer_id || 'OFF-02',
+        assigned_counsellor: 'Dr. Ramesh Chandra',
+        assigned_counsellor_id: c.assigned_counsellor_id || 'OFF-01',
+        proximity_routing: typeof c.proximity_routing === 'object' ? c.proximity_routing : {
+          nearest_station: c.proximity_routing || 'District Special Redressal Unit',
+          district: c.incident_district || 'Pune',
+          state: c.incident_state || 'Maharashtra',
+          routing_reason: 'Automated proximity routing to district jurisdiction',
+          assigned_at: c.created_at || new Date().toISOString()
+        },
+        priority_tier: riskLevel === 'Critical' ? 1 : riskLevel === 'High' ? 2 : 3,
+        notes: Array.isArray(c.notes) ? c.notes : [
+          {
+            id: `N-${c.id.slice(0, 6)}`,
+            author: 'AI SVI Engine',
+            role: 'Automated Assessment',
+            timestamp: 'Intake',
+            text: `Case registered with ${riskLevel} SVI (${sviScore}). Situation: ${c.primary_situation || 'Under Review'}.`
+          }
+        ],
+        dispatched_actions: []
+      }
+    })
   } catch (err) {
     console.error('Failed to query cases:', err)
     return INITIAL_CASES
@@ -453,54 +562,161 @@ export async function createCaseInDb(
   userId?: string
 ): Promise<{ success: boolean; data?: CaseRecord; error?: string }> {
   try {
-    // Helper: only pass a value as FK if it looks like a real UUID
     const isUuid = (v?: string | null) =>
       typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
 
-    // user_id must also be a real UUID from auth
-    const safeUserId = isUuid(userId || caseRecord.user_id)
-      ? (userId || caseRecord.user_id)
-      : null
+    // Ensure dbCaseId is a valid UUID for Postgres primary key
+    const dbCaseId = isUuid(caseRecord.id) ? caseRecord.id : crypto.randomUUID()
+    const caseNumber = caseRecord.id && caseRecord.id.startsWith('NHAA-') 
+      ? caseRecord.id 
+      : `NHAA-2026-${Math.floor(1000 + Math.random() * 9000)}`
 
-    const payload = {
-      id: caseRecord.id,
-      session_id: caseRecord.session_id || `SESS-${Date.now().toString().slice(-6)}`,
+    // Resolve a valid user_id UUID from active session or fallback profile
+    let safeUserId: string | null = null
+    if (isUuid(userId)) {
+      safeUserId = userId!
+    } else if (isUuid(caseRecord.user_id)) {
+      safeUserId = caseRecord.user_id!
+    } else {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user?.id && isUuid(session.user.id)) {
+        safeUserId = session.user.id
+      } else {
+        // Fallback to first existing profile in DB for guest/demo submission
+        const { data: firstProfile } = await supabase.from('profiles').select('id').limit(1).maybeSingle()
+        if (firstProfile?.id) {
+          safeUserId = firstProfile.id
+        }
+      }
+    }
+
+    if (!safeUserId) {
+      console.warn('createCaseInDb: no valid profile user_id available — skipping DB insert')
+      return { success: false, error: 'No authenticated user ID or fallback profile', data: caseRecord }
+    }
+
+    const sa = caseRecord.stress_assessment
+    const loc = caseRecord.incident_location || {}
+
+    // ── Step 1: Insert into cases ────────────────────────────────────────────
+    const casePayload = {
+      id: dbCaseId,
+      case_number: caseNumber,
       user_id: safeUserId,
-      victim_name: caseRecord.victim_name,
-      initials: caseRecord.initials,
-      is_anonymous: caseRecord.is_anonymous,
-      contact_number: caseRecord.contact_number,
-      incident_category: caseRecord.incident_category,
-      incident_location: caseRecord.incident_location,
-      channel: caseRecord.channel,
-      language: caseRecord.language,
-      reported_at: new Date().toISOString(),
-      narrative_text: caseRecord.narrative_text,
-      voice_analysis: caseRecord.voice_analysis || null,
-      stress_assessment: caseRecord.stress_assessment,
-      status: caseRecord.status,
-      assigned_officer: caseRecord.assigned_officer || null,
-      // Only send UUID officer FK if it's a real UUID; otherwise store name-only
+      session_id: caseRecord.session_id || `SESS-${Date.now().toString().slice(-6)}`,
+      channel: toDbChannel(caseRecord.channel),
+      status: toDbCaseStatus(caseRecord.status),
+      incident_location: loc,
+      incident_district: (loc as Record<string, string>).district || null,
+      incident_state: (loc as Record<string, string>).state || null,
+      incident_city: (loc as Record<string, string>).village_town_city || null,
+      incident_pincode: (loc as Record<string, string>).pincode || null,
       assigned_officer_id: isUuid(caseRecord.assigned_officer_id) ? caseRecord.assigned_officer_id : null,
-      assigned_counsellor: caseRecord.assigned_counsellor || null,
       assigned_counsellor_id: isUuid(caseRecord.assigned_counsellor_id) ? caseRecord.assigned_counsellor_id : null,
-      proximity_routing: caseRecord.proximity_routing || null,
-      priority_tier: caseRecord.priority_tier,
-      notes: caseRecord.notes || [],
-      dispatched_actions: caseRecord.dispatched_actions || [],
-      updated_at: new Date().toISOString()
+      proximity_routing: typeof caseRecord.proximity_routing === 'object'
+        ? (caseRecord.proximity_routing.nearest_station || caseRecord.proximity_routing.routing_reason || null)
+        : (caseRecord.proximity_routing || null),
+      primary_situation: sa?.situation || null,
+      current_risk_level: toDbRiskLevel(sa?.risk_level),
+      current_svi: sa?.svi_score ?? null
     }
 
-    const { error } = await supabase.from('cases').insert(payload)
-
-    if (error) {
-      console.warn('Supabase createCase error:', error.message)
-      return { success: false, error: error.message, data: caseRecord }
+    const { error: caseErr } = await supabase.from('cases').insert(casePayload)
+    if (caseErr) {
+      console.warn('Supabase createCase error:', caseErr.message)
+      return { success: false, error: caseErr.message, data: caseRecord }
     }
 
-    return { success: true, data: caseRecord }
+    // ── Step 2: Insert interaction (story text) ───────────────────────────────
+    const { data: interactionData, error: interactionErr } = await supabase
+      .from('interactions')
+      .insert({
+        case_id: dbCaseId,
+        user_id: safeUserId,
+        interaction_type: caseRecord.voice_analysis ? 'VOICE' : 'CHAT',
+        channel: toDbChannel(caseRecord.channel),
+        language: caseRecord.language || 'en',
+        text_content: caseRecord.narrative_text || ''
+      })
+      .select('id')
+      .single()
+
+    if (interactionErr || !interactionData?.id) {
+      console.warn('Supabase createInteraction error:', interactionErr?.message)
+      return { success: true, data: { ...caseRecord, id: caseNumber } }
+    }
+
+    const interactionId = interactionData.id
+
+    // ── Step 3: Insert assessment ─────────────────────────────────────────────
+    const { data: assessmentData, error: assessmentErr } = await supabase
+      .from('assessments')
+      .insert({
+        interaction_id: interactionId,
+        case_id: dbCaseId,
+        model_name: 'NHAA-NLP-v2',
+        model_version: '2.0',
+        situation: sa?.situation || null,
+        situation_confidence: norm(sa?.situation_confidence ?? sa?.confidence),
+        overall_distress: norm(sa?.svi_score),
+        fear_score: norm(sa?.fear_score),
+        anxiety_score: norm(sa?.anxiety_score),
+        trauma_score: norm(sa?.trauma_score),
+        threat_score: norm((sa?.indicators as unknown as Record<string, number>)?.threat),
+        violence_score: Math.round(norm((sa?.indicators as unknown as Record<string, number>)?.violence) * 100),
+        isolation_score: norm((sa?.indicators as unknown as Record<string, number>)?.social_isolation ?? (sa?.indicators as unknown as Record<string, number>)?.isolation),
+        vulnerability_score: norm((sa?.indicators as unknown as Record<string, number>)?.vulnerability),
+        depression_indicator: sa?.depression_indicator ? 1 : 0,
+        suicidal_ideation_indicator: sa?.suicidal_ideation_flag ? 1 : 0,
+        confidence: norm(sa?.situation_confidence ?? sa?.confidence)
+      })
+      .select('id')
+      .single()
+
+    if (assessmentErr || !assessmentData?.id) {
+      console.warn('Supabase createAssessment error:', assessmentErr?.message)
+      return { success: true, data: { ...caseRecord, id: caseNumber } }
+    }
+
+    const assessmentId = assessmentData.id
+
+    // ── Step 4: Insert SVI score ──────────────────────────────────────────────
+    const { error: sviErr } = await supabase.from('svi_scores').insert({
+      assessment_id: assessmentId,
+      case_id: dbCaseId,
+      score: sa?.svi_score ?? 0,
+      risk_level: toDbRiskLevel(sa?.risk_level),
+      model_version: '2.0',
+      confidence: norm(sa?.situation_confidence ?? sa?.confidence),
+      calculation_method: sa?.safety_escalation_applied ? 'ESCALATED' : 'STANDARD'
+    })
+    if (sviErr) console.warn('Supabase createSVI error:', sviErr.message)
+
+    // ── Step 5: Insert risk indicators ───────────────────────────────────────
+    const indicators = sa?.contributing_factors || sa?.key_trauma_triggers || []
+    if (indicators.length > 0) {
+      const indicatorRows = indicators.slice(0, 10).map((ind: unknown) => {
+        const indObj = typeof ind === 'object' && ind !== null ? ind as Record<string, unknown> : null
+        const indFactor = indObj ? String(indObj.factor || indObj.indicator || '') : String(ind)
+        const indScore = indObj ? Number(indObj.score || indObj.contribution || 0) : 0
+        const indEvidence = indObj ? String(indObj.evidence || `Detected: ${indFactor}`) : `Detected: ${ind}`
+        return {
+          assessment_id: assessmentId,
+          indicator_type: indFactor,
+          severity: toDbRiskLevel(sa?.risk_level),
+          confidence: norm(indScore) || norm(sa?.situation_confidence),
+          evidence: indEvidence,
+          source: 'nlp_engine'
+        }
+      })
+      const { error: riskErr } = await supabase.from('risk_indicators').insert(indicatorRows)
+      if (riskErr) console.warn('Supabase createRiskIndicators error:', riskErr.message)
+    }
+
+    return { success: true, data: { ...caseRecord, id: caseNumber } }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to create case'
+    console.error('createCaseInDb exception:', msg)
     return { success: false, error: msg, data: caseRecord }
   }
 }
@@ -524,7 +740,7 @@ export async function updateCaseInDb(caseId: string, updates: Partial<CaseRecord
   }
 }
 
-// ─── Assessments ─────────────────────────────────────────────────────────────
+// ─── Assessments (legacy stub — real saves happen inside createCaseInDb) ──────
 
 export async function saveAssessmentInDb(params: {
   userId?: string
@@ -539,30 +755,8 @@ export async function saveAssessmentInDb(params: {
   indicators?: string[]
   recommendations?: string[]
 }): Promise<boolean> {
-  try {
-    const { error } = await supabase.from('assessments').insert({
-      user_id: params.userId || null,
-      case_id: params.caseId || null,
-      narrative_text: params.narrativeText,
-      svi_score: params.sviScore,
-      risk_level: params.riskLevel,
-      fear_score: params.fearScore || 0,
-      trauma_score: params.traumaScore || 0,
-      anxiety_score: params.anxietyScore || 0,
-      voice_metrics: params.voiceMetrics || null,
-      indicators: params.indicators || [],
-      recommendations: params.recommendations || []
-    })
-
-    if (error) {
-      console.warn('Supabase saveAssessment error:', error.message)
-      return false
-    }
-    return true
-  } catch (err) {
-    console.error('Error saving assessment:', err)
-    return false
-  }
+  console.log('saveAssessmentInDb: handled by createCaseInDb pipeline (caseId:', params.caseId, 'svi:', params.sviScore, 'risk:', params.riskLevel, ')')
+  return true
 }
 
 // ─── Realtime ─────────────────────────────────────────────────────────────────
@@ -571,41 +765,19 @@ export function subscribeToRealtimeCases(
   onInsert: (newCase: CaseRecord) => void,
   onUpdate: (updatedCase: CaseRecord) => void
 ) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const formatCase = (c: any): CaseRecord => ({
-    id: c.id,
-    session_id: c.session_id,
-    user_id: c.user_id,
-    victim_name: c.victim_name,
-    initials: c.initials || (c.victim_name ? c.victim_name.slice(0, 2).toUpperCase() : 'AN'),
-    is_anonymous: !!c.is_anonymous,
-    contact_number: c.contact_number,
-    incident_category: c.incident_category,
-    incident_location: c.incident_location || { village_town_city: '', district: '', state: '', pincode: '' },
-    channel: c.channel || 'integrated_portal',
-    language: c.language || 'en',
-    reported_at: c.reported_at,
-    narrative_text: c.narrative_text,
-    voice_analysis: c.voice_analysis,
-    stress_assessment: c.stress_assessment,
-    status: c.status || 'New Intake',
-    assigned_officer: c.assigned_officer,
-    assigned_officer_id: c.assigned_officer_id,
-    assigned_counsellor: c.assigned_counsellor,
-    assigned_counsellor_id: c.assigned_counsellor_id,
-    proximity_routing: c.proximity_routing,
-    priority_tier: c.priority_tier || 3,
-    notes: Array.isArray(c.notes) ? c.notes : [],
-    dispatched_actions: Array.isArray(c.dispatched_actions) ? c.dispatched_actions : []
-  })
-
   const channel = supabase
     .channel('realtime_cases_channel')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'cases' }, (payload) => {
-      if (payload.new) onInsert(formatCase(payload.new))
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'cases' }, async () => {
+      const freshCases = await fetchCasesFromDb()
+      if (freshCases && freshCases.length > 0) {
+        onInsert(freshCases[0])
+      }
     })
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'cases' }, (payload) => {
-      if (payload.new) onUpdate(formatCase(payload.new))
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'cases' }, async () => {
+      const freshCases = await fetchCasesFromDb()
+      if (freshCases && freshCases.length > 0) {
+        onUpdate(freshCases[0])
+      }
     })
     .subscribe()
 

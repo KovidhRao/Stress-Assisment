@@ -1,0 +1,51 @@
+{
+    "stress": {
+        "description": "Mental or emotional pressure, overload, strain, or excessive demands.",
+        "weight": 1.0
+    },
+
+    "fear": {
+        "description": "Feeling afraid, frightened, scared, unsafe, or expecting harm.",
+        "weight": 1.0
+    },
+
+    "anxiety": {
+        "description": "Persistent worry, nervousness, apprehension, uncertainty, panic, or excessive concern.",
+        "weight": 1.0
+    },
+
+    "distress": {
+        "description": "Significant emotional suffering, helplessness, confusion, inability to cope, or feeling overwhelmed.",
+        "weight": 1.0
+    },
+
+    "trauma": {
+        "description": "Psychological impact of a traumatic or deeply disturbing event, including recurring memories or nightmares.",
+        "weight": 1.0
+    },
+
+    "threat": {
+        "description": "Threatening, intimidating, coercive, warning, harassment, or danger caused by another person or group.",
+        "weight": 1.0
+    },
+
+    "violence": {
+        "description": "Physical violence, assault, beating, physical attack, or intentional physical harm.",
+        "weight": 1.0
+    },
+
+    "immediate_danger": {
+        "description": "A person is currently or imminently in danger and may be harmed right now.",
+        "weight": 1.5
+    },
+
+    "isolation": {
+        "description": "Being alone, socially isolated, disconnected, excluded, or lacking someone to talk to or support.",
+        "weight": 1.0
+    },
+
+    "vulnerability": {
+        "description": "Reduced ability to protect oneself or cope because of displacement, homelessness, dependency, lack of support, financial hardship, or other vulnerability.",
+        "weight": 1.0
+    }
+}

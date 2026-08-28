@@ -1,0 +1,301 @@
+id,text,language,indicator,present,risk_level
+1,People treat me differently because of my community,en,DISCRIMINATION,1,HIGH
+2,I am being discriminated against by people around me,en,DISCRIMINATION,1,HIGH
+3,They refuse to treat my family fairly,en,DISCRIMINATION,1,HIGH
+4,I am being treated badly because of who I am,en,DISCRIMINATION,1,HIGH
+5,They publicly humiliated me,en,HUMILIATION,1,HIGH
+6,My family was humiliated in front of everyone,en,HUMILIATION,1,HIGH
+7,People insult me whenever I go outside,en,HUMILIATION,1,HIGH
+8,I was made to feel ashamed in front of the community,en,HUMILIATION,1,HIGH
+9,People in the community refuse to speak with us,en,SOCIAL_EXCLUSION,1,HIGH
+10,I am being excluded from community activities,en,SOCIAL_EXCLUSION,1,HIGH
+11,Nobody wants to associate with my family,en,SOCIAL_EXCLUSION,1,HIGH
+12,People deliberately keep me away from the community,en,SOCIAL_EXCLUSION,1,HIGH
+13,Everyone has stopped talking to my family,en,SOCIAL_BOYCOTT,1,HIGH
+14,Our community has refused to interact with us,en,SOCIAL_BOYCOTT,1,HIGH
+15,People are deliberately boycotting my family,en,SOCIAL_BOYCOTT,1,HIGH
+16,The community has stopped doing business with us,en,SOCIAL_BOYCOTT,1,HIGH
+17,My community has rejected my family,en,COMMUNITY_REJECTION,1,HIGH
+18,People have turned against us,en,COMMUNITY_REJECTION,1,HIGH
+19,The community refuses to accept us,en,COMMUNITY_REJECTION,1,HIGH
+20,I feel rejected by everyone around me,en,COMMUNITY_REJECTION,1,HIGH
+21,They abuse me because of my caste,en,CASTE_BASED_ABUSE,1,HIGH
+22,People insult my family because of our caste,en,CASTE_BASED_ABUSE,1,HIGH
+23,I am being verbally abused because of my caste,en,CASTE_BASED_ABUSE,1,HIGH
+24,They use caste-based insults against me,en,CASTE_BASED_ABUSE,1,HIGH
+25,I have received threats because of my caste,en,CASTE_BASED_THREATS,1,CRITICAL
+26,People from the community threatened my family,en,CASTE_BASED_THREATS,1,CRITICAL
+27,They threatened me because I complained about caste discrimination,en,CASTE_BASED_THREATS,1,CRITICAL
+28,I am afraid because of threats from people in the community,en,CASTE_BASED_THREATS,1,CRITICAL
+29,I lost my work because of pressure from the community,en,LOSS_OF_LIVELIHOOD,1,HIGH
+30,People stopped giving me work because of the community conflict,en,LOSS_OF_LIVELIHOOD,1,HIGH
+31,My family lost its source of income,en,LOSS_OF_LIVELIHOOD,1,HIGH
+32,I cannot earn a living because of the situation,en,LOSS_OF_LIVELIHOOD,1,HIGH
+33,We were forced to leave our community,en,FORCED_DISPLACEMENT,1,HIGH
+34,My family had to move away because of community pressure,en,FORCED_DISPLACEMENT,1,HIGH
+35,They forced us to leave the area,en,FORCED_DISPLACEMENT,1,HIGH
+36,We cannot safely remain in our community,en,FORCED_DISPLACEMENT,1,HIGH
+37,I am afraid of people in my community,en,FEAR_OF_COMMUNITY,1,HIGH
+38,I am scared that people around us will harm my family,en,FEAR_OF_COMMUNITY,1,HIGH
+39,I don't feel safe around members of the community,en,FEAR_OF_COMMUNITY,1,HIGH
+40,I am afraid to return to my community,en,FEAR_OF_COMMUNITY,1,HIGH
+41,My family is pressuring me not to report what happened,en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+42,My relatives are telling me to stay silent,en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+43,People in my community are pressuring me to withdraw my complaint,en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+44,My family says I should not seek help,en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+45,"Recently, Nobody wants to include my family",en,SOCIAL_EXCLUSION,1,HIGH
+46,"Right now, I am afraid to return to my community and this is affecting my daily life.",en,FEAR_OF_COMMUNITY,1,HIGH
+47,"Right now, My relatives are afraid that I will speak about the incident",en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+48,"For the past few days, I cannot return to my previous home safely and I need help.",en,FORCED_DISPLACEMENT,1,HIGH
+49,I keep feeling that People intentionally leave us out and I don't know what to do.,en,SOCIAL_EXCLUSION,1,HIGH
+50,I feel that I am afraid to return to my community and this is affecting my daily life.,en,FEAR_OF_COMMUNITY,1,HIGH
+51,"Recently, My relatives are telling me not to report what happened these days.",en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+52,"These days, Someone threatened me because I spoke about discrimination lately.",en,CASTE_BASED_THREATS,1,CRITICAL
+53,I have noticed that My family was forced to relocate and I feel increasingly unsafe.,en,FORCED_DISPLACEMENT,1,HIGH
+54,I don't feel safe around members of the community and this is affecting my daily life.,en,FEAR_OF_COMMUNITY,1,HIGH
+55,I keep feeling that People humiliated me because of what happened and it is becoming difficult to cope.,en,HUMILIATION,1,HIGH
+56,I keep feeling that I am afraid of people in my community and I don't know what to do.,en,FEAR_OF_COMMUNITY,1,HIGH
+57,"These days, I am frightened of the reaction from my community and I don't know what to do.",en,FEAR_OF_COMMUNITY,1,HIGH
+58,"At the moment, People in the community refuse to accept us lately.",en,COMMUNITY_REJECTION,1,HIGH
+59,"Lately, My family lost its source of income",en,LOSS_OF_LIVELIHOOD,1,HIGH
+60,Someone threatened me because I spoke about discrimination and I don't know what to do.,en,CASTE_BASED_THREATS,1,CRITICAL
+61,"For the past few days, I no longer feel accepted in my community",en,COMMUNITY_REJECTION,1,HIGH
+62,"For the past few days, They warned me that something would happen if I complained and this is affecting my daily life.",en,CASTE_BASED_THREATS,1,CRITICAL
+63,I keep feeling that My family is being kept out of community events and the situation is getting worse.,en,SOCIAL_EXCLUSION,1,HIGH
+64,I keep feeling that They publicly humiliated me because of the situation.,en,HUMILIATION,1,HIGH
+65,"Right now, People refuse to let us participate in community activities",en,SOCIAL_EXCLUSION,1,HIGH
+66,My family is verbally abused because of our caste these days.,en,CASTE_BASED_ABUSE,1,HIGH
+67,"At the moment, They make insulting comments about my caste because of the situation.",en,CASTE_BASED_ABUSE,1,HIGH
+68,"Recently, My relatives are telling me not to report what happened and the situation is getting worse.",en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+69,I have noticed that I experience unfair treatment because of who I am and I feel increasingly unsafe.,en,DISCRIMINATION,1,HIGH
+70,"Lately, People use caste-based insults against me these days.",en,CASTE_BASED_ABUSE,1,HIGH
+71,"Lately, I am repeatedly treated unfairly and I feel increasingly unsafe.",en,DISCRIMINATION,1,HIGH
+72,"Recently, We cannot safely remain in our community and I feel increasingly unsafe.",en,FORCED_DISPLACEMENT,1,HIGH
+73,"These days, People humiliated me because of what happened lately.",en,HUMILIATION,1,HIGH
+74,"Right now, They publicly humiliated me and I feel increasingly unsafe.",en,HUMILIATION,1,HIGH
+75,"Recently, We were pushed out of our community and it is becoming difficult to cope.",en,FORCED_DISPLACEMENT,1,HIGH
+76,"Recently, The experience left me feeling deeply humiliated these days.",en,HUMILIATION,1,HIGH
+77,I was publicly insulted by members of the community because of the situation.,en,HUMILIATION,1,HIGH
+78,People around me are pressuring me not to complain these days.,en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+79,I have noticed that I worry about what people in my community might do and I feel increasingly unsafe.,en,FEAR_OF_COMMUNITY,1,HIGH
+80,I feel that They use derogatory words against me because of my caste,en,CASTE_BASED_ABUSE,1,HIGH
+81,"Right now, The community refuses to support us because of the situation.",en,COMMUNITY_REJECTION,1,HIGH
+82,"Right now, I am afraid to return to my community",en,FEAR_OF_COMMUNITY,1,HIGH
+83,I have noticed that I am treated differently from everyone else and it is becoming difficult to cope.,en,DISCRIMINATION,1,HIGH
+84,I keep feeling that I am scared that people around us will harm my family lately.,en,FEAR_OF_COMMUNITY,1,HIGH
+85,I keep feeling that I have experienced caste-based verbal abuse because of the situation.,en,CASTE_BASED_ABUSE,1,HIGH
+86,"For the past few days, I feel excluded from everyone around me",en,SOCIAL_EXCLUSION,1,HIGH
+87,I feel that I am afraid because of caste-based threats and the situation is getting worse.,en,CASTE_BASED_THREATS,1,CRITICAL
+88,I keep feeling that Our family is being socially boycotted because of the situation.,en,SOCIAL_BOYCOTT,1,HIGH
+89,I have noticed that I am struggling financially because I lost my source of income and I don't know what to do.,en,LOSS_OF_LIVELIHOOD,1,HIGH
+90,"Lately, I lost my job after the community conflict and it is becoming difficult to cope.",en,LOSS_OF_LIVELIHOOD,1,HIGH
+91,"Recently, People in my community are pressuring me to withdraw my complaint these days.",en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+92,I feel that We cannot safely remain in our community because of the situation.,en,FORCED_DISPLACEMENT,1,HIGH
+93,"For the past few days, I had to leave my home because of threats and I don't know what to do.",en,FORCED_DISPLACEMENT,1,HIGH
+94,"These days, Nobody wants to associate with us lately.",en,SOCIAL_BOYCOTT,1,HIGH
+95,"At the moment, I am scared that people around us will harm my family and this is affecting my daily life.",en,FEAR_OF_COMMUNITY,1,HIGH
+96,I keep feeling that I no longer feel accepted in my community lately.,en,COMMUNITY_REJECTION,1,HIGH
+97,I have noticed that They deliberately embarrassed me in public and I feel increasingly unsafe.,en,HUMILIATION,1,HIGH
+98,"Right now, I am being discriminated against by people around me and this is affecting my daily life.",en,DISCRIMINATION,1,HIGH
+99,"Lately, My livelihood has been affected by discrimination and I need help.",en,LOSS_OF_LIVELIHOOD,1,HIGH
+100,My family was humiliated in front of everyone and the situation is getting worse.,en,HUMILIATION,1,HIGH
+101,"At the moment, People intentionally leave us out and it is becoming difficult to cope.",en,SOCIAL_EXCLUSION,1,HIGH
+102,"Lately, People humiliate me because of my caste and I don't know what to do.",en,CASTE_BASED_ABUSE,1,HIGH
+103,I am repeatedly treated unfairly lately.,en,DISCRIMINATION,1,HIGH
+104,"Right now, People around me are pressuring me not to complain and I don't know what to do.",en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+105,"These days, We were forced to leave our community and I need help.",en,FORCED_DISPLACEMENT,1,HIGH
+106,I have noticed that I feel completely rejected by the people around me and I feel increasingly unsafe.,en,COMMUNITY_REJECTION,1,HIGH
+107,"These days, I am being discriminated against by people around me and the situation is getting worse.",en,DISCRIMINATION,1,HIGH
+108,"At the moment, Nobody wants to include my family and I feel increasingly unsafe.",en,SOCIAL_EXCLUSION,1,HIGH
+109,"At the moment, My family is verbally abused because of our caste and this is affecting my daily life.",en,CASTE_BASED_ABUSE,1,HIGH
+110,"These days, People in my community are pressuring me to withdraw my complaint these days.",en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+111,I feel that Someone threatened me because I spoke about discrimination these days.,en,CASTE_BASED_THREATS,1,CRITICAL
+112,I feel that Someone threatened me because I spoke about discrimination and it is becoming difficult to cope.,en,CASTE_BASED_THREATS,1,CRITICAL
+113,I keep feeling that People treat me differently because of my background and the situation is getting worse.,en,DISCRIMINATION,1,HIGH
+114,"For the past few days, I am excluded from social gatherings",en,SOCIAL_EXCLUSION,1,HIGH
+115,I feel that They deliberately embarrassed me in public lately.,en,HUMILIATION,1,HIGH
+116,I have noticed that They make insulting comments about my caste,en,CASTE_BASED_ABUSE,1,HIGH
+117,"These days, People refuse to interact with us",en,SOCIAL_BOYCOTT,1,HIGH
+118,"For the past few days, My community has rejected my family",en,COMMUNITY_REJECTION,1,HIGH
+119,"Recently, People are deliberately avoiding my family and I don't know what to do.",en,SOCIAL_BOYCOTT,1,HIGH
+120,I have noticed that I have experienced caste-based verbal abuse and the situation is getting worse.,en,CASTE_BASED_ABUSE,1,HIGH
+121,"Lately, My livelihood has been affected by discrimination",en,LOSS_OF_LIVELIHOOD,1,HIGH
+122,I have noticed that Our family is being socially boycotted and this is affecting my daily life.,en,SOCIAL_BOYCOTT,1,HIGH
+123,"Recently, I no longer feel accepted in my community lately.",en,COMMUNITY_REJECTION,1,HIGH
+124,I have noticed that My family was humiliated in front of everyone and this is affecting my daily life.,en,HUMILIATION,1,HIGH
+125,"Right now, They publicly humiliated me these days.",en,HUMILIATION,1,HIGH
+126,I feel that We cannot safely remain in our community these days.,en,FORCED_DISPLACEMENT,1,HIGH
+127,I have noticed that People refuse to let us participate in community activities and the situation is getting worse.,en,SOCIAL_EXCLUSION,1,HIGH
+128,"For the past few days, I am afraid because of caste-based threats and the situation is getting worse.",en,CASTE_BASED_THREATS,1,CRITICAL
+129,"For the past few days, People are preventing me from working and I need help.",en,LOSS_OF_LIVELIHOOD,1,HIGH
+130,I have noticed that I no longer feel accepted in my community these days.,en,COMMUNITY_REJECTION,1,HIGH
+131,"Right now, I am afraid because of caste-based threats and I feel increasingly unsafe.",en,CASTE_BASED_THREATS,1,CRITICAL
+132,I have noticed that People in my community are pressuring me to withdraw my complaint and it is becoming difficult to cope.,en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+133,"For the past few days, I worry about what people in my community might do these days.",en,FEAR_OF_COMMUNITY,1,HIGH
+134,"Right now, People deliberately keep me away from the community",en,SOCIAL_EXCLUSION,1,HIGH
+135,"At the moment, Our family is being socially boycotted and the situation is getting worse.",en,SOCIAL_BOYCOTT,1,HIGH
+136,"These days, They deliberately embarrassed me in public lately.",en,HUMILIATION,1,HIGH
+137,I feel that I am being discriminated against by people around me,en,DISCRIMINATION,1,HIGH
+138,We were pushed out of our community and I need help.,en,FORCED_DISPLACEMENT,1,HIGH
+139,The community has deliberately stopped interacting with us and the situation is getting worse.,en,SOCIAL_BOYCOTT,1,HIGH
+140,"Recently, They insult me because of my caste and I feel increasingly unsafe.",en,CASTE_BASED_ABUSE,1,HIGH
+141,"Recently, My family had to move because of community pressure and this is affecting my daily life.",en,FORCED_DISPLACEMENT,1,HIGH
+142,I keep feeling that They make insulting comments about my caste and this is affecting my daily life.,en,CASTE_BASED_ABUSE,1,HIGH
+143,"Lately, My family was humiliated in front of everyone and it is becoming difficult to cope.",en,HUMILIATION,1,HIGH
+144,"For the past few days, I am repeatedly treated unfairly and this is affecting my daily life.",en,DISCRIMINATION,1,HIGH
+145,"Right now, I am struggling financially because I lost my source of income and I don't know what to do.",en,LOSS_OF_LIVELIHOOD,1,HIGH
+146,"At the moment, People in the community refuse to accept us and the situation is getting worse.",en,COMMUNITY_REJECTION,1,HIGH
+147,"Right now, Everyone has stopped talking to my family because of the situation.",en,SOCIAL_BOYCOTT,1,HIGH
+148,"Right now, We cannot safely remain in our community and this is affecting my daily life.",en,FORCED_DISPLACEMENT,1,HIGH
+149,I keep feeling that I cannot earn a living because of the situation and the situation is getting worse.,en,LOSS_OF_LIVELIHOOD,1,HIGH
+150,"Right now, I lost my work because of pressure from the community and I don't know what to do.",en,LOSS_OF_LIVELIHOOD,1,HIGH
+151,I feel that I have received threats because of my caste and it is becoming difficult to cope.,en,CASTE_BASED_THREATS,1,CRITICAL
+152,"These days, I lost my job after the community conflict lately.",en,LOSS_OF_LIVELIHOOD,1,HIGH
+153,"For the past few days, People intentionally leave us out because of the situation.",en,SOCIAL_EXCLUSION,1,HIGH
+154,"Recently, I no longer feel accepted in my community because of the situation.",en,COMMUNITY_REJECTION,1,HIGH
+155,"Recently, My family was forced to relocate and I need help.",en,FORCED_DISPLACEMENT,1,HIGH
+156,"At the moment, Nobody wants to associate with us and the situation is getting worse.",en,SOCIAL_BOYCOTT,1,HIGH
+157,"At the moment, I am afraid to return to my community because of the situation.",en,FEAR_OF_COMMUNITY,1,HIGH
+158,"Lately, People intentionally leave us out lately.",en,SOCIAL_EXCLUSION,1,HIGH
+159,"At the moment, My family was forced to relocate because of the situation.",en,FORCED_DISPLACEMENT,1,HIGH
+160,"Right now, People are preventing me from working and I don't know what to do.",en,LOSS_OF_LIVELIHOOD,1,HIGH
+161,"For the past few days, We were pushed out of our community and I feel increasingly unsafe.",en,FORCED_DISPLACEMENT,1,HIGH
+162,"Lately, People deliberately keep me away from the community and I don't know what to do.",en,SOCIAL_EXCLUSION,1,HIGH
+163,I feel that Our family has been rejected by the community and I feel increasingly unsafe.,en,COMMUNITY_REJECTION,1,HIGH
+164,I feel that People refuse to interact with us,en,SOCIAL_BOYCOTT,1,HIGH
+165,I keep feeling that I cannot return to my previous home safely and the situation is getting worse.,en,FORCED_DISPLACEMENT,1,HIGH
+166,"Right now, I was made to feel ashamed in front of the community and I feel increasingly unsafe.",en,HUMILIATION,1,HIGH
+167,I keep feeling that I was publicly insulted by members of the community these days.,en,HUMILIATION,1,HIGH
+168,I keep feeling that I experience unfair treatment because of who I am,en,DISCRIMINATION,1,HIGH
+169,I am excluded from social gatherings,en,SOCIAL_EXCLUSION,1,HIGH
+170,"Lately, People use caste-based insults against me and I don't know what to do.",en,CASTE_BASED_ABUSE,1,HIGH
+171,I feel that I cannot earn a living because of the situation because of the situation.,en,LOSS_OF_LIVELIHOOD,1,HIGH
+172,I keep feeling that My relatives are afraid that I will speak about the incident because of the situation.,en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+173,I have noticed that I fear further harm from people around me and I don't know what to do.,en,FEAR_OF_COMMUNITY,1,HIGH
+174,I keep feeling that I am frightened of the reaction from my community and the situation is getting worse.,en,FEAR_OF_COMMUNITY,1,HIGH
+175,"These days, Everyone has stopped talking to my family because of the situation.",en,SOCIAL_BOYCOTT,1,HIGH
+176,I have noticed that My family says I should not seek help and I need help.,en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+177,"Recently, Our family has been rejected by the community and I need help.",en,COMMUNITY_REJECTION,1,HIGH
+178,"Recently, People intentionally leave us out and I need help.",en,SOCIAL_EXCLUSION,1,HIGH
+179,I feel that People insult me whenever I go outside these days.,en,HUMILIATION,1,HIGH
+180,I feel that My family has received threats related to our caste and I don't know what to do.,en,CASTE_BASED_THREATS,1,CRITICAL
+181,"At the moment, People refuse to let us participate in community activities",en,SOCIAL_EXCLUSION,1,HIGH
+182,"At the moment, They make insulting comments about my caste",en,CASTE_BASED_ABUSE,1,HIGH
+183,People in my community are pressuring me to withdraw my complaint and it is becoming difficult to cope.,en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+184,"Right now, I am repeatedly treated unfairly these days.",en,DISCRIMINATION,1,HIGH
+185,"Right now, My family was humiliated in front of everyone because of the situation.",en,HUMILIATION,1,HIGH
+186,"Right now, Our family has been rejected by the community and I don't know what to do.",en,COMMUNITY_REJECTION,1,HIGH
+187,"These days, I feel unsafe whenever I meet members of the community lately.",en,FEAR_OF_COMMUNITY,1,HIGH
+188,I feel that I feel unwanted in my own community and it is becoming difficult to cope.,en,COMMUNITY_REJECTION,1,HIGH
+189,"At the moment, Our family has been rejected by the community and the situation is getting worse.",en,COMMUNITY_REJECTION,1,HIGH
+190,"Recently, My family is not treated fairly and the situation is getting worse.",en,DISCRIMINATION,1,HIGH
+191,"Right now, I was publicly insulted by members of the community and the situation is getting worse.",en,HUMILIATION,1,HIGH
+192,"Right now, I feel that people discriminate against my family and this is affecting my daily life.",en,DISCRIMINATION,1,HIGH
+193,I am being excluded from community activities and I don't know what to do.,en,SOCIAL_EXCLUSION,1,HIGH
+194,I have noticed that My family has received threats related to our caste lately.,en,CASTE_BASED_THREATS,1,CRITICAL
+195,"Lately, People deliberately keep me away from the community and this is affecting my daily life.",en,SOCIAL_EXCLUSION,1,HIGH
+196,I feel that My family was humiliated in front of everyone and it is becoming difficult to cope.,en,HUMILIATION,1,HIGH
+197,I have noticed that Nobody wants to associate with us and I need help.,en,SOCIAL_BOYCOTT,1,HIGH
+198,I have noticed that I have received threats because of my caste and the situation is getting worse.,en,CASTE_BASED_THREATS,1,CRITICAL
+199,I have noticed that I am scared that people around us will harm my family lately.,en,FEAR_OF_COMMUNITY,1,HIGH
+200,I feel that I was threatened after speaking about caste discrimination these days.,en,CASTE_BASED_THREATS,1,CRITICAL
+201,"These days, They publicly humiliated me lately.",en,HUMILIATION,1,HIGH
+202,"These days, I am afraid to return to my community because of the situation.",en,FEAR_OF_COMMUNITY,1,HIGH
+203,I feel that They publicly humiliated me and I don't know what to do.,en,HUMILIATION,1,HIGH
+204,I keep feeling that My family has received threats related to our caste lately.,en,CASTE_BASED_THREATS,1,CRITICAL
+205,"Right now, People humiliate me because of my caste and I need help.",en,CASTE_BASED_ABUSE,1,HIGH
+206,"Right now, I cannot return to my previous home safely these days.",en,FORCED_DISPLACEMENT,1,HIGH
+207,The experience left me feeling deeply humiliated and I need help.,en,HUMILIATION,1,HIGH
+208,I have noticed that I experience unfair treatment because of who I am and the situation is getting worse.,en,DISCRIMINATION,1,HIGH
+209,"Recently, The experience left me feeling deeply humiliated and I feel increasingly unsafe.",en,HUMILIATION,1,HIGH
+210,Our family is being socially boycotted because of the situation.,en,SOCIAL_BOYCOTT,1,HIGH
+211,"At the moment, I was made to feel ashamed in front of the community and this is affecting my daily life.",en,HUMILIATION,1,HIGH
+212,I fear further harm from people around me lately.,en,FEAR_OF_COMMUNITY,1,HIGH
+213,"Right now, My family had to move because of community pressure these days.",en,FORCED_DISPLACEMENT,1,HIGH
+214,"For the past few days, I lost my work because of pressure from the community lately.",en,LOSS_OF_LIVELIHOOD,1,HIGH
+215,"Lately, People are deliberately avoiding my family and the situation is getting worse.",en,SOCIAL_BOYCOTT,1,HIGH
+216,"Lately, I feel completely rejected by the people around me and it is becoming difficult to cope.",en,COMMUNITY_REJECTION,1,HIGH
+217,"Right now, My family is not treated fairly and it is becoming difficult to cope.",en,DISCRIMINATION,1,HIGH
+218,"For the past few days, My livelihood has been affected by discrimination",en,LOSS_OF_LIVELIHOOD,1,HIGH
+219,"For the past few days, My family has received threats related to our caste",en,CASTE_BASED_THREATS,1,CRITICAL
+220,"Recently, I cannot earn a living because of the situation these days.",en,LOSS_OF_LIVELIHOOD,1,HIGH
+221,"Recently, My community has rejected my family and the situation is getting worse.",en,COMMUNITY_REJECTION,1,HIGH
+222,"At the moment, People deliberately keep me away from the community and I feel increasingly unsafe.",en,SOCIAL_EXCLUSION,1,HIGH
+223,"Recently, They publicly humiliated me and I need help.",en,HUMILIATION,1,HIGH
+224,I feel that My community has rejected my family because of the situation.,en,COMMUNITY_REJECTION,1,HIGH
+225,"Lately, I have received threats because of my caste and I need help.",en,CASTE_BASED_THREATS,1,CRITICAL
+226,"Right now, People around me are pressuring me not to complain and I need help.",en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+227,"Recently, I lost my work because of pressure from the community",en,LOSS_OF_LIVELIHOOD,1,HIGH
+228,"These days, I am afraid of people in my community",en,FEAR_OF_COMMUNITY,1,HIGH
+229,"These days, I am frightened of the reaction from my community and the situation is getting worse.",en,FEAR_OF_COMMUNITY,1,HIGH
+230,I feel that Everyone has stopped talking to my family these days.,en,SOCIAL_BOYCOTT,1,HIGH
+231,"Recently, I no longer feel accepted in my community these days.",en,COMMUNITY_REJECTION,1,HIGH
+232,"For the past few days, My family lost its source of income",en,LOSS_OF_LIVELIHOOD,1,HIGH
+233,"At the moment, I am repeatedly treated unfairly and I don't know what to do.",en,DISCRIMINATION,1,HIGH
+234,I cannot earn a living because of the situation and I don't know what to do.,en,LOSS_OF_LIVELIHOOD,1,HIGH
+235,"Right now, People insult me whenever I go outside and I need help.",en,HUMILIATION,1,HIGH
+236,"Right now, We cannot safely remain in our community and I feel increasingly unsafe.",en,FORCED_DISPLACEMENT,1,HIGH
+237,"Right now, They make insulting comments about my caste and this is affecting my daily life.",en,CASTE_BASED_ABUSE,1,HIGH
+238,"For the past few days, I am frightened of the reaction from my community and this is affecting my daily life.",en,FEAR_OF_COMMUNITY,1,HIGH
+239,"Right now, My family lost its source of income and this is affecting my daily life.",en,LOSS_OF_LIVELIHOOD,1,HIGH
+240,"For the past few days, I had to leave my home because of threats lately.",en,FORCED_DISPLACEMENT,1,HIGH
+241,"These days, People refuse to let us participate in community activities and it is becoming difficult to cope.",en,SOCIAL_EXCLUSION,1,HIGH
+242,I am afraid because of caste-based threats and the situation is getting worse.,en,CASTE_BASED_THREATS,1,CRITICAL
+243,"At the moment, We were pushed out of our community because of the situation.",en,FORCED_DISPLACEMENT,1,HIGH
+244,I keep feeling that My family had to move because of community pressure and I feel increasingly unsafe.,en,FORCED_DISPLACEMENT,1,HIGH
+245,"For the past few days, My relatives are telling me not to report what happened",en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+246,"Right now, I fear further harm from people around me these days.",en,FEAR_OF_COMMUNITY,1,HIGH
+247,"Right now, My family wants me to avoid involving authorities and I don't know what to do.",en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+248,"Recently, My family has received threats related to our caste because of the situation.",en,CASTE_BASED_THREATS,1,CRITICAL
+249,"These days, I am being discriminated against by people around me because of the situation.",en,DISCRIMINATION,1,HIGH
+250,I feel that I fear retaliation because of caste-related conflict,en,CASTE_BASED_THREATS,1,CRITICAL
+251,"Lately, I cannot return to my previous home safely and this is affecting my daily life.",en,FORCED_DISPLACEMENT,1,HIGH
+252,"Right now, People use caste-based insults against me lately.",en,CASTE_BASED_ABUSE,1,HIGH
+253,I keep feeling that I am struggling financially because I lost my source of income because of the situation.,en,LOSS_OF_LIVELIHOOD,1,HIGH
+254,I keep feeling that People are deliberately avoiding my family,en,SOCIAL_BOYCOTT,1,HIGH
+255,I feel that I feel completely rejected by the people around me and I feel increasingly unsafe.,en,COMMUNITY_REJECTION,1,HIGH
+256,They deliberately embarrassed me in public these days.,en,HUMILIATION,1,HIGH
+257,"These days, My family was humiliated in front of everyone and the situation is getting worse.",en,HUMILIATION,1,HIGH
+258,"For the past few days, I feel unsafe whenever I meet members of the community and it is becoming difficult to cope.",en,FEAR_OF_COMMUNITY,1,HIGH
+259,"Recently, People refuse to interact with us",en,SOCIAL_BOYCOTT,1,HIGH
+260,"These days, I don't feel safe around members of the community and I don't know what to do.",en,FEAR_OF_COMMUNITY,1,HIGH
+261,"Lately, Our family has been rejected by the community and the situation is getting worse.",en,COMMUNITY_REJECTION,1,HIGH
+262,"Recently, People stopped giving me work because of the conflict and the situation is getting worse.",en,LOSS_OF_LIVELIHOOD,1,HIGH
+263,"Lately, I have received threats because of my caste",en,CASTE_BASED_THREATS,1,CRITICAL
+264,"For the past few days, I am repeatedly treated unfairly and the situation is getting worse.",en,DISCRIMINATION,1,HIGH
+265,"For the past few days, My family is pressuring me to stay silent because of the situation.",en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+266,I feel completely rejected by the people around me these days.,en,COMMUNITY_REJECTION,1,HIGH
+267,"For the past few days, My family is verbally abused because of our caste and I need help.",en,CASTE_BASED_ABUSE,1,HIGH
+268,We cannot safely remain in our community and the situation is getting worse.,en,FORCED_DISPLACEMENT,1,HIGH
+269,"Right now, People intentionally leave us out",en,SOCIAL_EXCLUSION,1,HIGH
+270,"For the past few days, They make insulting comments about my caste and this is affecting my daily life.",en,CASTE_BASED_ABUSE,1,HIGH
+271,I keep feeling that My family had to move because of community pressure lately.,en,FORCED_DISPLACEMENT,1,HIGH
+272,"Lately, The community has deliberately stopped interacting with us and this is affecting my daily life.",en,SOCIAL_BOYCOTT,1,HIGH
+273,"Recently, They make insulting comments about my caste and this is affecting my daily life.",en,CASTE_BASED_ABUSE,1,HIGH
+274,People have threatened my family because of our caste and I need help.,en,CASTE_BASED_THREATS,1,CRITICAL
+275,"Right now, I am repeatedly treated unfairly because of the situation.",en,DISCRIMINATION,1,HIGH
+276,"For the past few days, I don't feel safe around members of the community and the situation is getting worse.",en,FEAR_OF_COMMUNITY,1,HIGH
+277,"For the past few days, My family was humiliated in front of everyone and it is becoming difficult to cope.",en,HUMILIATION,1,HIGH
+278,"Recently, Everyone has stopped talking to my family and I need help.",en,SOCIAL_BOYCOTT,1,HIGH
+279,I have noticed that People around me are pressuring me not to complain these days.,en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+280,"Right now, They warned me that something would happen if I complained and it is becoming difficult to cope.",en,CASTE_BASED_THREATS,1,CRITICAL
+281,They forced us to leave the area and I don't know what to do.,en,FORCED_DISPLACEMENT,1,HIGH
+282,I have noticed that My family was humiliated in front of everyone these days.,en,HUMILIATION,1,HIGH
+283,"For the past few days, Nobody wants to include my family and I don't know what to do.",en,SOCIAL_EXCLUSION,1,HIGH
+284,People have turned against my family and this is affecting my daily life.,en,COMMUNITY_REJECTION,1,HIGH
+285,"Right now, I feel unsafe whenever I meet members of the community these days.",en,FEAR_OF_COMMUNITY,1,HIGH
+286,I keep feeling that I feel that people discriminate against my family these days.,en,DISCRIMINATION,1,HIGH
+287,I keep feeling that My family says I should not seek help,en,FAMILY_COMMUNITY_PRESSURE,1,HIGH
+288,I have noticed that I am afraid because of caste-based threats these days.,en,CASTE_BASED_THREATS,1,CRITICAL
+289,"Recently, I lost my work because of pressure from the community and I feel increasingly unsafe.",en,LOSS_OF_LIVELIHOOD,1,HIGH
+290,"At the moment, I cannot return to my previous home safely and the situation is getting worse.",en,FORCED_DISPLACEMENT,1,HIGH
+291,I keep feeling that My family is being kept out of community events because of the situation.,en,SOCIAL_EXCLUSION,1,HIGH
+292,"Right now, My family had to move because of community pressure and this is affecting my daily life.",en,FORCED_DISPLACEMENT,1,HIGH
+293,"Recently, We were pushed out of our community and I need help.",en,FORCED_DISPLACEMENT,1,HIGH
+294,"At the moment, I was publicly insulted by members of the community these days.",en,HUMILIATION,1,HIGH
+295,"Lately, Our family is being socially boycotted",en,SOCIAL_BOYCOTT,1,HIGH
+296,I keep feeling that I feel excluded from everyone around me and I feel increasingly unsafe.,en,SOCIAL_EXCLUSION,1,HIGH
+297,"These days, The community has deliberately stopped interacting with us and it is becoming difficult to cope.",en,SOCIAL_BOYCOTT,1,HIGH
+298,I keep feeling that People insult me whenever I go outside lately.,en,HUMILIATION,1,HIGH
+299,I cannot earn a living because of the situation and I need help.,en,LOSS_OF_LIVELIHOOD,1,HIGH
+300,"These days, I am repeatedly treated unfairly lately.",en,DISCRIMINATION,1,HIGH

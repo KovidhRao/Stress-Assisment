@@ -85,6 +85,24 @@ export interface VoiceAnalysisMetrics {
   mfcc_indicators?: string[]
 }
 
+export interface NLPIndicators {
+  stress: number
+  fear: number
+  anxiety: number
+  distress: number
+  trauma: number
+  threat: number
+  violence: number
+  immediate_danger: number
+  isolation: number
+  vulnerability: number
+}
+
+export interface ContributingFactor {
+  indicator: string
+  contribution: number
+}
+
 export interface StressAssessment {
   id: string
   case_id: string
@@ -101,6 +119,15 @@ export interface StressAssessment {
   key_trauma_triggers: string[]
   recommended_actions: string[]
   assessed_at: string
+  // NHAA NLP Extensions
+  situation?: string
+  situation_confidence?: number
+  indicators?: NLPIndicators
+  confidence?: number
+  contributing_factors?: ContributingFactor[]
+  detected_language?: string
+  romanized?: boolean
+  safety_escalation_applied?: boolean
 }
 
 export interface CaseRecord {
@@ -169,6 +196,11 @@ export interface UserStory {
   risk_level: RiskLevel
   svi_score: number
   key_triggers?: string[]
+  situation?: string
+  situation_confidence?: number
+  indicators?: NLPIndicators
+  confidence?: number
+  contributing_factors?: ContributingFactor[]
   assigned_officer_name?: string
   assigned_officer_id?: string
   nearest_station?: string

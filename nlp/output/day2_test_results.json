@@ -1,0 +1,670 @@
+[
+    {
+        "expected_test": "LOW",
+        "result": {
+            "text": "I had a normal day and I feel calm and comfortable.",
+            "cleaned_text": "I had a normal day and I feel calm and comfortable.",
+            "language": "en",
+            "language_name": "English",
+            "romanized": false,
+            "romanized_language": null,
+            "romanized_confidence": 0.0,
+            "analysis_text": "I had a normal day and I feel calm and comfortable.",
+            "translated": false,
+            "translation_method": "none",
+            "situation": "UNKNOWN",
+            "situation_confidence": 0.0,
+            "emotion": "neutral",
+            "emotion_confidence": 0.0,
+            "indicators": {
+                "stress": 0.0,
+                "fear": 0.0,
+                "anxiety": 0.0,
+                "distress": 0.0,
+                "trauma": 0.0,
+                "threat": 0.0,
+                "violence": 0.0,
+                "immediate_danger": 0.0,
+                "isolation": 0.0,
+                "vulnerability": 0.0
+            },
+            "matched_indicator_keywords": {
+                "stress": [],
+                "fear": [],
+                "anxiety": [],
+                "distress": [],
+                "trauma": [],
+                "threat": [],
+                "violence": [],
+                "immediate_danger": [],
+                "isolation": [],
+                "vulnerability": []
+            },
+            "svi": 0.0,
+            "risk_category": "LOW",
+            "svi_confidence": 0.0,
+            "contributing_factors": [],
+            "matched_situation_rules": []
+        }
+    },
+    {
+        "expected_test": "MODERATE",
+        "result": {
+            "text": "I have been feeling stressed and worried about my studies lately.",
+            "cleaned_text": "I have been feeling stressed and worried about my studies lately.",
+            "language": "en",
+            "language_name": "English",
+            "romanized": false,
+            "romanized_language": null,
+            "romanized_confidence": 0.0,
+            "analysis_text": "I have been feeling stressed and worried about my studies lately.",
+            "translated": false,
+            "translation_method": "none",
+            "situation": "ACADEMIC_STRESS",
+            "situation_confidence": 0.8,
+            "emotion": "neutral",
+            "emotion_confidence": 0.0,
+            "indicators": {
+                "stress": 0.8,
+                "fear": 0.0,
+                "anxiety": 0.8,
+                "distress": 0.0,
+                "trauma": 0.0,
+                "threat": 0.0,
+                "violence": 0.0,
+                "immediate_danger": 0.0,
+                "isolation": 0.0,
+                "vulnerability": 0.0
+            },
+            "matched_indicator_keywords": {
+                "stress": [
+                    "stressed -> stressed",
+                    "natural_pattern: \\bstressed\\b"
+                ],
+                "fear": [],
+                "anxiety": [
+                    "worried -> worried",
+                    "natural_pattern: \\bworried\\b"
+                ],
+                "distress": [],
+                "trauma": [],
+                "threat": [],
+                "violence": [],
+                "immediate_danger": [],
+                "isolation": [],
+                "vulnerability": []
+            },
+            "svi": 16.0,
+            "risk_category": "LOW",
+            "svi_confidence": 0.4,
+            "contributing_factors": [
+                {
+                    "indicator": "anxiety",
+                    "contribution": 9.6
+                },
+                {
+                    "indicator": "stress",
+                    "contribution": 6.4
+                }
+            ],
+            "matched_situation_rules": [
+                "studies",
+                "my studies"
+            ]
+        }
+    },
+    {
+        "expected_test": "HIGH",
+        "result": {
+            "text": "I feel extremely anxious, overwhelmed and afraid, and I cannot sleep.",
+            "cleaned_text": "I feel extremely anxious, overwhelmed and afraid, and I cannot sleep.",
+            "language": "en",
+            "language_name": "English",
+            "romanized": false,
+            "romanized_language": null,
+            "romanized_confidence": 0.0,
+            "analysis_text": "I feel extremely anxious, overwhelmed and afraid, and I cannot sleep.",
+            "translated": false,
+            "translation_method": "none",
+            "situation": "EMOTIONAL_DISTRESS",
+            "situation_confidence": 0.65,
+            "emotion": "neutral",
+            "emotion_confidence": 0.0,
+            "indicators": {
+                "stress": 0.8,
+                "fear": 0.8,
+                "anxiety": 0.8,
+                "distress": 0.7,
+                "trauma": 0.0,
+                "threat": 0.0,
+                "violence": 0.0,
+                "immediate_danger": 0.0,
+                "isolation": 0.0,
+                "vulnerability": 0.0
+            },
+            "matched_indicator_keywords": {
+                "stress": [
+                    "overwhelmed -> overwhelmed"
+                ],
+                "fear": [
+                    "afraid -> afraid",
+                    "natural_pattern: \\bafraid\\b"
+                ],
+                "anxiety": [
+                    "anxious -> anxious",
+                    "natural_pattern: \\banxious\\b"
+                ],
+                "distress": [
+                    "natural_pattern: \\boverwhelmed\\b"
+                ],
+                "trauma": [],
+                "threat": [],
+                "violence": [],
+                "immediate_danger": [],
+                "isolation": [],
+                "vulnerability": []
+            },
+            "svi": 34.0,
+            "risk_category": "MODERATE",
+            "svi_confidence": 0.4675,
+            "contributing_factors": [
+                {
+                    "indicator": "fear",
+                    "contribution": 9.6
+                },
+                {
+                    "indicator": "anxiety",
+                    "contribution": 9.6
+                },
+                {
+                    "indicator": "distress",
+                    "contribution": 8.4
+                },
+                {
+                    "indicator": "stress",
+                    "contribution": 6.4
+                }
+            ],
+            "matched_situation_rules": [
+                "overwhelmed"
+            ]
+        }
+    },
+    {
+        "expected_test": "CRITICAL",
+        "result": {
+            "text": "Someone is threatening me and I am afraid they may hurt me right now.",
+            "cleaned_text": "Someone is threatening me and I am afraid they may hurt me right now.",
+            "language": "en",
+            "language_name": "English",
+            "romanized": false,
+            "romanized_language": null,
+            "romanized_confidence": 0.0,
+            "analysis_text": "Someone is threatening me and I am afraid they may hurt me right now.",
+            "translated": false,
+            "translation_method": "none",
+            "situation": "IMMEDIATE_DANGER",
+            "situation_confidence": 0.9,
+            "emotion": "neutral",
+            "emotion_confidence": 0.0,
+            "indicators": {
+                "stress": 0.0,
+                "fear": 0.9,
+                "anxiety": 0.0,
+                "distress": 0.0,
+                "trauma": 0.0,
+                "threat": 1.0,
+                "violence": 0.0,
+                "immediate_danger": 0.7,
+                "isolation": 0.0,
+                "vulnerability": 0.0
+            },
+            "matched_indicator_keywords": {
+                "stress": [],
+                "fear": [
+                    "afraid -> afraid",
+                    "i am afraid -> i am afraid",
+                    "natural_pattern: \\bafraid\\b",
+                    "natural_pattern: \\bafraid they may hurt me\\b"
+                ],
+                "anxiety": [],
+                "distress": [],
+                "trauma": [],
+                "threat": [
+                    "threatening -> threatening",
+                    "threatening me -> threatening me",
+                    "hurt me -> hurt me",
+                    "natural_pattern: \\bthreatening me\\b",
+                    "natural_pattern: \\bsomeone is threatening me\\b",
+                    "natural_pattern: \\bmay hurt me\\b"
+                ],
+                "violence": [],
+                "immediate_danger": [
+                    "natural_pattern: \\bmay hurt me right now\\b"
+                ],
+                "isolation": [],
+                "vulnerability": []
+            },
+            "svi": 76.0,
+            "risk_category": "CRITICAL",
+            "svi_confidence": 0.495,
+            "contributing_factors": [
+                {
+                    "indicator": "threat",
+                    "contribution": 16.0
+                },
+                {
+                    "indicator": "fear",
+                    "contribution": 10.8
+                },
+                {
+                    "indicator": "immediate_danger",
+                    "contribution": 7.0
+                }
+            ],
+            "matched_situation_rules": [
+                "right now",
+                "may hurt me right now"
+            ]
+        }
+    },
+    {
+        "expected_test": "ACADEMIC_STRESS",
+        "result": {
+            "text": "I am extremely stressed about my exams, assignments and grades.",
+            "cleaned_text": "I am extremely stressed about my exams, assignments and grades.",
+            "language": "en",
+            "language_name": "English",
+            "romanized": false,
+            "romanized_language": null,
+            "romanized_confidence": 0.0,
+            "analysis_text": "I am extremely stressed about my exams, assignments and grades.",
+            "translated": false,
+            "translation_method": "none",
+            "situation": "ACADEMIC_STRESS",
+            "situation_confidence": 0.9,
+            "emotion": "neutral",
+            "emotion_confidence": 0.0,
+            "indicators": {
+                "stress": 0.8,
+                "fear": 0.0,
+                "anxiety": 0.0,
+                "distress": 0.0,
+                "trauma": 0.0,
+                "threat": 0.0,
+                "violence": 0.0,
+                "immediate_danger": 0.0,
+                "isolation": 0.0,
+                "vulnerability": 0.0
+            },
+            "matched_indicator_keywords": {
+                "stress": [
+                    "stressed -> stressed",
+                    "natural_pattern: \\bstressed\\b"
+                ],
+                "fear": [],
+                "anxiety": [],
+                "distress": [],
+                "trauma": [],
+                "threat": [],
+                "violence": [],
+                "immediate_danger": [],
+                "isolation": [],
+                "vulnerability": []
+            },
+            "svi": 6.4,
+            "risk_category": "LOW",
+            "svi_confidence": 0.375,
+            "contributing_factors": [
+                {
+                    "indicator": "stress",
+                    "contribution": 6.4
+                }
+            ],
+            "matched_situation_rules": [
+                "exams",
+                "assignments",
+                "grades"
+            ]
+        }
+    },
+    {
+        "expected_test": "ANXIETY",
+        "result": {
+            "text": "I am constantly anxious and worried and I cannot relax.",
+            "cleaned_text": "I am constantly anxious and worried and I cannot relax.",
+            "language": "en",
+            "language_name": "English",
+            "romanized": false,
+            "romanized_language": null,
+            "romanized_confidence": 0.0,
+            "analysis_text": "I am constantly anxious and worried and I cannot relax.",
+            "translated": false,
+            "translation_method": "none",
+            "situation": "ANXIETY",
+            "situation_confidence": 0.9,
+            "emotion": "neutral",
+            "emotion_confidence": 0.0,
+            "indicators": {
+                "stress": 0.0,
+                "fear": 0.0,
+                "anxiety": 0.9,
+                "distress": 0.0,
+                "trauma": 0.0,
+                "threat": 0.0,
+                "violence": 0.0,
+                "immediate_danger": 0.0,
+                "isolation": 0.0,
+                "vulnerability": 0.0
+            },
+            "matched_indicator_keywords": {
+                "stress": [],
+                "fear": [],
+                "anxiety": [
+                    "anxious -> anxious",
+                    "worried -> worried",
+                    "natural_pattern: \\banxious\\b",
+                    "natural_pattern: \\bworried\\b",
+                    "natural_pattern: \\bconstantly anxious\\b",
+                    "natural_pattern: \\bcannot relax\\b"
+                ],
+                "distress": [],
+                "trauma": [],
+                "threat": [],
+                "violence": [],
+                "immediate_danger": [],
+                "isolation": [],
+                "vulnerability": []
+            },
+            "svi": 10.8,
+            "risk_category": "LOW",
+            "svi_confidence": 0.375,
+            "contributing_factors": [
+                {
+                    "indicator": "anxiety",
+                    "contribution": 10.8
+                }
+            ],
+            "matched_situation_rules": [
+                "cannot relax",
+                "constantly anxious"
+            ]
+        }
+    },
+    {
+        "expected_test": "THREAT",
+        "result": {
+            "text": "Someone has threatened me and warned me not to speak about what happened.",
+            "cleaned_text": "Someone has threatened me and warned me not to speak about what happened.",
+            "language": "en",
+            "language_name": "English",
+            "romanized": false,
+            "romanized_language": null,
+            "romanized_confidence": 0.0,
+            "analysis_text": "Someone has threatened me and warned me not to speak about what happened.",
+            "translated": false,
+            "translation_method": "none",
+            "situation": "THREAT",
+            "situation_confidence": 1.0,
+            "emotion": "neutral",
+            "emotion_confidence": 0.0,
+            "indicators": {
+                "stress": 0.0,
+                "fear": 0.0,
+                "anxiety": 0.0,
+                "distress": 0.0,
+                "trauma": 0.0,
+                "threat": 0.9,
+                "violence": 0.0,
+                "immediate_danger": 0.0,
+                "isolation": 0.0,
+                "vulnerability": 0.0
+            },
+            "matched_indicator_keywords": {
+                "stress": [],
+                "fear": [],
+                "anxiety": [],
+                "distress": [],
+                "trauma": [],
+                "threat": [
+                    "threatened -> threatened",
+                    "warned me -> warned me",
+                    "natural_pattern: \\bthreatened\\b",
+                    "natural_pattern: \\bwarned me\\b",
+                    "natural_pattern: \\bwarned me not to speak\\b"
+                ],
+                "violence": [],
+                "immediate_danger": [],
+                "isolation": [],
+                "vulnerability": []
+            },
+            "svi": 34.4,
+            "risk_category": "MODERATE",
+            "svi_confidence": 0.41,
+            "contributing_factors": [
+                {
+                    "indicator": "situation_severity",
+                    "contribution": 20.0
+                },
+                {
+                    "indicator": "threat",
+                    "contribution": 14.4
+                }
+            ],
+            "matched_situation_rules": [
+                "threatened",
+                "threatened me",
+                "warned me",
+                "warned me not to speak",
+                "not to speak"
+            ]
+        }
+    },
+    {
+        "expected_test": "VIOLENCE",
+        "result": {
+            "text": "Someone attacked me and I am afraid they may hurt me again.",
+            "cleaned_text": "Someone attacked me and I am afraid they may hurt me again.",
+            "language": "en",
+            "language_name": "English",
+            "romanized": false,
+            "romanized_language": null,
+            "romanized_confidence": 0.0,
+            "analysis_text": "Someone attacked me and I am afraid they may hurt me again.",
+            "translated": false,
+            "translation_method": "none",
+            "situation": "VIOLENCE",
+            "situation_confidence": 0.9833,
+            "emotion": "neutral",
+            "emotion_confidence": 0.0,
+            "indicators": {
+                "stress": 0.0,
+                "fear": 0.9,
+                "anxiety": 0.0,
+                "distress": 0.0,
+                "trauma": 0.0,
+                "threat": 0.8,
+                "violence": 0.8,
+                "immediate_danger": 0.0,
+                "isolation": 0.0,
+                "vulnerability": 0.0
+            },
+            "matched_indicator_keywords": {
+                "stress": [],
+                "fear": [
+                    "afraid -> afraid",
+                    "i am afraid -> i am afraid",
+                    "natural_pattern: \\bafraid\\b",
+                    "natural_pattern: \\bafraid they may hurt me\\b"
+                ],
+                "anxiety": [],
+                "distress": [],
+                "trauma": [],
+                "threat": [
+                    "hurt me -> hurt me",
+                    "natural_pattern: \\bmay hurt me\\b"
+                ],
+                "violence": [
+                    "attacked -> attacked",
+                    "natural_pattern: \\battacked me\\b"
+                ],
+                "immediate_danger": [],
+                "isolation": [],
+                "vulnerability": []
+            },
+            "svi": 60.18,
+            "risk_category": "HIGH",
+            "svi_confidence": 0.5242,
+            "contributing_factors": [
+                {
+                    "indicator": "situation_severity",
+                    "contribution": 24.58
+                },
+                {
+                    "indicator": "threat",
+                    "contribution": 12.8
+                },
+                {
+                    "indicator": "violence",
+                    "contribution": 12.0
+                },
+                {
+                    "indicator": "fear",
+                    "contribution": 10.8
+                }
+            ],
+            "matched_situation_rules": [
+                "attacked",
+                "hurt me",
+                "someone attacked me"
+            ]
+        }
+    },
+    {
+        "expected_test": "GRIEF",
+        "result": {
+            "text": "I lost someone important to me and I feel deeply sad and empty.",
+            "cleaned_text": "I lost someone important to me and I feel deeply sad and empty.",
+            "language": "en",
+            "language_name": "English",
+            "romanized": false,
+            "romanized_language": null,
+            "romanized_confidence": 0.0,
+            "analysis_text": "I lost someone important to me and I feel deeply sad and empty.",
+            "translated": false,
+            "translation_method": "none",
+            "situation": "GRIEF",
+            "situation_confidence": 1.0,
+            "emotion": "neutral",
+            "emotion_confidence": 0.0,
+            "indicators": {
+                "stress": 0.0,
+                "fear": 0.0,
+                "anxiety": 0.0,
+                "distress": 0.7,
+                "trauma": 0.0,
+                "threat": 0.0,
+                "violence": 0.0,
+                "immediate_danger": 0.0,
+                "isolation": 0.0,
+                "vulnerability": 0.0
+            },
+            "matched_indicator_keywords": {
+                "stress": [],
+                "fear": [],
+                "anxiety": [],
+                "distress": [],
+                "trauma": [],
+                "threat": [],
+                "violence": [],
+                "immediate_danger": [],
+                "isolation": [],
+                "vulnerability": []
+            },
+            "svi": 13.4,
+            "risk_category": "LOW",
+            "svi_confidence": 0.41,
+            "contributing_factors": [
+                {
+                    "indicator": "distress",
+                    "contribution": 8.4
+                },
+                {
+                    "indicator": "situation_severity",
+                    "contribution": 5.0
+                }
+            ],
+            "matched_situation_rules": [
+                "lost someone",
+                "lost someone important",
+                "deeply sad and empty"
+            ]
+        }
+    },
+    {
+        "expected_test": "SOCIAL_ISOLATION",
+        "result": {
+            "text": "I feel completely alone and isolated and I have nobody to talk to.",
+            "cleaned_text": "I feel completely alone and isolated and I have nobody to talk to.",
+            "language": "en",
+            "language_name": "English",
+            "romanized": false,
+            "romanized_language": null,
+            "romanized_confidence": 0.0,
+            "analysis_text": "I feel completely alone and isolated and I have nobody to talk to.",
+            "translated": false,
+            "translation_method": "none",
+            "situation": "ISOLATION",
+            "situation_confidence": 1.0,
+            "emotion": "neutral",
+            "emotion_confidence": 0.0,
+            "indicators": {
+                "stress": 0.0,
+                "fear": 0.0,
+                "anxiety": 0.0,
+                "distress": 0.0,
+                "trauma": 0.0,
+                "threat": 0.0,
+                "violence": 0.0,
+                "immediate_danger": 0.0,
+                "isolation": 1.0,
+                "vulnerability": 0.0
+            },
+            "matched_indicator_keywords": {
+                "stress": [],
+                "fear": [],
+                "anxiety": [],
+                "distress": [],
+                "trauma": [],
+                "threat": [],
+                "violence": [],
+                "immediate_danger": [],
+                "isolation": [
+                    "alone -> alone",
+                    "isolated -> isolated",
+                    "nobody to talk to -> nobody to talk to",
+                    "natural_pattern: \\bcompletely alone\\b",
+                    "natural_pattern: \\bfeel completely alone\\b",
+                    "natural_pattern: \\bhave nobody to talk to\\b",
+                    "natural_pattern: \\bnobody to talk to\\b"
+                ],
+                "vulnerability": []
+            },
+            "svi": 3.0,
+            "risk_category": "LOW",
+            "svi_confidence": 0.41,
+            "contributing_factors": [
+                {
+                    "indicator": "isolation",
+                    "contribution": 3.0
+                }
+            ],
+            "matched_situation_rules": [
+                "alone",
+                "completely alone",
+                "nobody to talk to",
+                "have nobody"
+            ]
+        }
+    }
+]

@@ -151,48 +151,42 @@ export default function Home() {
     })
   }, [])
 
-  // 1. Supabase Session Check on OAuth Redirect & Real-time Listeners
+  // 1. Supabase Session Check & Real-time Listeners
   useEffect(() => {
     let isMounted = true
 
     const initAuth = async () => {
       try {
-        const isOAuthRedirect =
-          typeof window !== 'undefined' &&
-          (window.location.hash.includes('access_token') || window.location.search.includes('code='))
-
-        if (isOAuthRedirect) {
-          const { data: { session } } = await supabase.auth.getSession()
-          if (session?.user && isMounted) {
-            const profile = await fetchUserProfile(session.user.id, session.user.email)
-            if (profile) {
-              setCurrentUser(profile)
-              if (profile.preferred_language) setSelectedLanguage(profile.preferred_language)
-              const isOff = profile.role === 'officer' || profile.role === 'counsellor' || profile.role === 'admin'
-              setIsOfficerMode(isOff)
-              setActiveTab('My space')
-              if (!profile.is_profile_complete) {
-                setDetailsModalOpen(true)
-              }
-            } else {
-              const meta = session.user.user_metadata ?? {}
-              const guessedName =
-                meta.full_name || meta.name || session.user.email?.split('@')[0] || 'Citizen User'
-              const tempUser: UserProfile = {
-                id: session.user.id,
-                email: session.user.email,
-                full_name: guessedName,
-                phone: meta.phone || '',
-                role: 'victim',
-                is_profile_complete: false,
-                avatar_initials: guessedName.slice(0, 2).toUpperCase(),
-                created_at: session.user.created_at
-              }
-              setCurrentUser(tempUser)
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user && isMounted) {
+          const profile = await fetchUserProfile(session.user.id, session.user.email)
+          if (profile) {
+            setCurrentUser(profile)
+            if (profile.preferred_language) setSelectedLanguage(profile.preferred_language)
+            const isOff = profile.role === 'officer' || profile.role === 'counsellor' || profile.role === 'admin'
+            setIsOfficerMode(isOff)
+            setActiveTab('My space')
+            if (!profile.is_profile_complete) {
               setDetailsModalOpen(true)
             }
-            setIsLoggedIn(true)
+          } else {
+            const meta = session.user.user_metadata ?? {}
+            const guessedName =
+              meta.full_name || meta.name || session.user.email?.split('@')[0] || 'Citizen User'
+            const tempUser: UserProfile = {
+              id: session.user.id,
+              email: session.user.email,
+              full_name: guessedName,
+              phone: meta.phone || '',
+              role: 'victim',
+              is_profile_complete: false,
+              avatar_initials: guessedName.slice(0, 2).toUpperCase(),
+              created_at: session.user.created_at
+            }
+            setCurrentUser(tempUser)
+            setDetailsModalOpen(true)
           }
+          setIsLoggedIn(true)
         }
       } catch (err) {
         console.error('Session check error:', err)
@@ -204,7 +198,7 @@ export default function Home() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted) return
 
-      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')) {
+      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION')) {
         const profile = await fetchUserProfile(session.user.id, session.user.email)
         if (profile) {
           setCurrentUser(profile)
@@ -216,6 +210,25 @@ export default function Home() {
           if (!profile.is_profile_complete && !profile.anonymous) {
             setDetailsModalOpen(true)
           }
+        } else {
+          // Profile not returned (new OAuth user, trigger delay, etc.)
+          const meta = session.user.user_metadata ?? {}
+          const guessedName = meta.full_name || meta.name || session.user.email?.split('@')[0] || 'Citizen User'
+          const tempUser: UserProfile = {
+            id: session.user.id,
+            email: session.user.email,
+            full_name: guessedName,
+            phone: meta.phone || '',
+            role: 'victim',
+            preferred_language: 'en',
+            is_profile_complete: false,
+            avatar_initials: guessedName.slice(0, 2).toUpperCase(),
+            created_at: session.user.created_at
+          }
+          setCurrentUser(tempUser)
+          setActiveTab('My space')
+          setIsLoggedIn(true)
+          setDetailsModalOpen(true)
         }
       } else if (event === 'SIGNED_OUT' && isMounted) {
         setIsLoggedIn(false)
@@ -229,31 +242,29 @@ export default function Home() {
     }
   }, [])
 
-  // 2. Fetch Cases & Subscribe to Real-time Updates when Logged In
+  // 2. Fetch Cases & Subscribe to Real-time Updates
   useEffect(() => {
-    if (isLoggedIn) {
-      const loadCases = async () => {
-        const dbCases = await fetchCasesFromDb()
-        if (dbCases && dbCases.length > 0) {
-          setCasesList(dbCases)
-          setSelectedCase(dbCases[0])
-        }
+    const loadCases = async () => {
+      const dbCases = await fetchCasesFromDb()
+      if (dbCases && dbCases.length > 0) {
+        setCasesList(dbCases)
+        setSelectedCase(dbCases[0])
       }
-      loadCases()
+    }
+    loadCases()
 
-      const unsubscribe = subscribeToRealtimeCases(
-        (newCase) => {
-          setCasesList(prev => [newCase, ...prev.filter(c => c.id !== newCase.id)])
-        },
-        (updatedCase) => {
-          setCasesList(prev => prev.map(c => c.id === updatedCase.id ? updatedCase : c))
-          setSelectedCase(prev => prev.id === updatedCase.id ? updatedCase : prev)
-        }
-      )
-
-      return () => {
-        unsubscribe()
+    const unsubscribe = subscribeToRealtimeCases(
+      (newCase) => {
+        setCasesList(prev => [newCase, ...prev.filter(c => c.id !== newCase.id)])
+      },
+      (updatedCase) => {
+        setCasesList(prev => prev.map(c => c.id === updatedCase.id ? updatedCase : c))
+        setSelectedCase(prev => prev.id === updatedCase.id ? updatedCase : prev)
       }
+    )
+
+    return () => {
+      unsubscribe()
     }
   }, [isLoggedIn])
 
@@ -430,23 +441,14 @@ export default function Home() {
     setCasesList(prev => [targetCase, ...prev])
 
     // Save to Supabase
-    await createCaseInDb(targetCase, currentUser.id)
-    await saveAssessmentInDb({
-      userId: currentUser.id,
-      caseId: targetCase.id,
-      narrativeText: newStory.narrative_text,
-      sviScore: newStory.svi_score,
-      riskLevel: newStory.risk_level,
-      fearScore: newStory.risk_level === 'High' ? 78 : 50,
-      traumaScore: newStory.risk_level === 'High' ? 82 : 55,
-      anxietyScore: newStory.risk_level === 'High' ? 85 : 62,
-      voiceMetrics: metrics,
-      indicators: newStory.key_triggers,
-      recommendations: [
-        'Immediate Clinical Tele-Consultation',
-        'District Anti-Discrimination Protection Notice'
-      ]
-    })
+    const dbResult = await createCaseInDb(targetCase, currentUser.id)
+    if (dbResult.success) {
+      console.log('Case successfully saved to Supabase DB:', dbResult.data?.id)
+      const freshCases = await fetchCasesFromDb()
+      if (freshCases && freshCases.length > 0) {
+        setCasesList(freshCases)
+      }
+    }
   }
 
   // Handle Mood Selection

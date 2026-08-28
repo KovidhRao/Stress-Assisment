@@ -1,0 +1,123 @@
+text,situation,stress,fear,anxiety,distress,trauma,threat,violence,immediate_danger,isolation,vulnerability
+"Things have been difficult at home recently, and I feel like I can't handle everything by myself.",FAMILY_STRESS,0.8,0.0,0.4,0.8,0.0,0.0,0.0,0.0,0.4,0.5
+"My family has been going through a lot lately and I don't know how to deal with everything.",FAMILY_STRESS,0.8,0.1,0.5,0.8,0.0,0.0,0.0,0.0,0.2,0.4
+"There has been a lot of tension at home and it is becoming difficult for me.",FAMILY_STRESS,0.8,0.2,0.5,0.7,0.0,0.0,0.0,0.0,0.1,0.3
+"My parents keep putting pressure on me and I don't know how to handle it.",FAMILY_STRESS,0.8,0.1,0.6,0.7,0.0,0.0,0.0,0.0,0.1,0.3
+"Everyone at home keeps arguing and I am exhausted from dealing with it.",FAMILY_STRESS,0.7,0.2,0.5,0.7,0.0,0.0,0.0,0.0,0.1,0.2
+"I have too many responsibilities at home and it is getting hard to manage them.",FAMILY_STRESS,0.8,0.0,0.5,0.6,0.0,0.0,0.0,0.0,0.0,0.4
+"I feel like everything at home depends on me.",FAMILY_STRESS,0.7,0.1,0.5,0.6,0.0,0.0,0.0,0.0,0.0,0.5
+"Home doesn't feel peaceful anymore and I don't know what to do.",FAMILY_STRESS,0.6,0.4,0.5,0.7,0.0,0.1,0.0,0.0,0.1,0.4
+"I have been struggling to keep up with everything at college lately.",ACADEMIC_STRESS,0.8,0.0,0.5,0.5,0.0,0.0,0.0,0.0,0.0,0.2
+"Every time I think about my exams I start worrying.",ACADEMIC_STRESS,0.7,0.2,0.9,0.3,0.0,0.0,0.0,0.0,0.0,0.0
+"I don't know how I'm going to get through this semester.",ACADEMIC_STRESS,0.7,0.2,0.7,0.7,0.0,0.0,0.0,0.0,0.0,0.1
+"I studied hard but I still feel like I am falling behind.",ACADEMIC_STRESS,0.7,0.3,0.7,0.5,0.0,0.0,0.0,0.0,0.0,0.1
+"I have so much coursework left and I can't seem to concentrate.",ACADEMIC_STRESS,0.8,0.1,0.7,0.6,0.0,0.0,0.0,0.0,0.0,0.1
+"I keep thinking that I might fail my exams.",ACADEMIC_STRESS,0.7,0.7,0.9,0.4,0.0,0.0,0.0,0.0,0.0,0.1
+"My grades have been worrying me a lot lately.",ACADEMIC_STRESS,0.7,0.3,0.8,0.4,0.0,0.0,0.0,0.0,0.0,0.0
+"I am under a lot of pressure to do well in my studies.",ACADEMIC_STRESS,0.8,0.2,0.7,0.5,0.0,0.0,0.0,0.0,0.0,0.2
+"I have been under a lot of pressure at work and I feel exhausted.",WORK_STRESS,0.9,0.1,0.5,0.6,0.0,0.0,0.0,0.0,0.0,0.1
+"I keep getting more work and I don't know how I will finish everything.",WORK_STRESS,0.9,0.1,0.6,0.6,0.0,0.0,0.0,0.0,0.0,0.1
+"My workload has become too much for me lately.",WORK_STRESS,0.9,0.0,0.5,0.7,0.0,0.0,0.0,0.0,0.0,0.1
+"I have deadlines coming from every direction and I am struggling to keep up.",WORK_STRESS,0.9,0.1,0.7,0.7,0.0,0.0,0.0,0.0,0.0,0.1
+"I feel completely drained after dealing with work every day.",WORK_STRESS,0.8,0.0,0.4,0.7,0.0,0.0,0.0,0.0,0.0,0.1
+"My job has become really stressful and I don't know how long I can continue like this.",WORK_STRESS,0.9,0.1,0.7,0.8,0.0,0.0,0.0,0.0,0.0,0.2
+"I am worried about losing my job and what that would mean for my family.",WORK_STRESS,0.8,0.4,0.8,0.6,0.0,0.0,0.0,0.0,0.0,0.4
+"I have been working constantly but it still feels like I am falling behind.",WORK_STRESS,0.8,0.1,0.6,0.6,0.0,0.0,0.0,0.0,0.0,0.1
+"Money has been tight lately and I am worried about how we will manage.",FINANCIAL_STRESS,0.8,0.2,0.8,0.5,0.0,0.0,0.0,0.0,0.0,0.3
+"I don't know how I am going to pay all of my bills this month.",FINANCIAL_STRESS,0.9,0.2,0.9,0.6,0.0,0.0,0.0,0.0,0.0,0.4
+"We are struggling financially and I don't know what to do next.",FINANCIAL_STRESS,0.8,0.2,0.8,0.7,0.0,0.0,0.0,0.0,0.0,0.5
+"I have debts that I can't seem to get under control.",FINANCIAL_STRESS,0.8,0.2,0.8,0.6,0.0,0.0,0.0,0.0,0.0,0.4
+"I am constantly worrying about money.",FINANCIAL_STRESS,0.7,0.1,1.0,0.4,0.0,0.0,0.0,0.0,0.0,0.3
+"I don't know how we are going to afford everything we need.",FINANCIAL_STRESS,0.8,0.2,0.8,0.6,0.0,0.0,0.0,0.0,0.0,0.5
+"I keep worrying about what might happen next.",ANXIETY,0.3,0.3,1.0,0.3,0.0,0.0,0.0,0.0,0.0,0.0
+"I haven't been sleeping well because I keep thinking about everything that is happening.",ANXIETY,0.5,0.2,0.8,0.4,0.0,0.0,0.0,0.0,0.0,0.0
+"My mind keeps going over the same worries again and again.",ANXIETY,0.3,0.3,1.0,0.4,0.0,0.0,0.0,0.0,0.0,0.0
+"I can't stop thinking about what could go wrong.",ANXIETY,0.2,0.5,1.0,0.3,0.0,0.0,0.0,0.0,0.0,0.0
+"I feel nervous even when nothing is happening.",ANXIETY,0.2,0.6,0.9,0.3,0.0,0.0,0.0,0.0,0.0,0.0
+"I have been worrying about the future constantly.",ANXIETY,0.3,0.3,1.0,0.3,0.0,0.0,0.0,0.0,0.0,0.1
+"I keep expecting something bad to happen.",ANXIETY,0.2,0.7,0.9,0.4,0.0,0.0,0.0,0.0,0.0,0.1
+"I feel tense all the time and I can't relax.",ANXIETY,0.5,0.4,0.9,0.4,0.0,0.0,0.0,0.0,0.0,0.0
+"I am scared and I don't know why I feel this way.",FEAR,0.1,1.0,0.5,0.4,0.0,0.0,0.0,0.0,0.0,0.1
+"I feel frightened about what might happen.",FEAR,0.1,1.0,0.7,0.3,0.0,0.0,0.0,0.0,0.0,0.1
+"Something about this situation makes me really afraid.",FEAR,0.1,1.0,0.4,0.3,0.0,0.0,0.0,0.0,0.0,0.2
+"I don't feel safe and it is making me scared.",FEAR,0.1,1.0,0.6,0.5,0.0,0.3,0.0,0.1,0.1,0.5
+"I am afraid to go back there.",FEAR,0.1,0.9,0.7,0.5,0.0,0.3,0.0,0.1,0.1,0.6
+"I feel like I need to be careful all the time.",FEAR,0.2,0.8,0.6,0.3,0.0,0.3,0.0,0.0,0.1,0.4
+"I feel like I can't cope with everything anymore.",EMOTIONAL_DISTRESS,0.6,0.2,0.5,1.0,0.0,0.0,0.0,0.0,0.0,0.3
+"I don't know what to do anymore.",EMOTIONAL_DISTRESS,0.5,0.2,0.4,0.9,0.0,0.0,0.0,0.0,0.0,0.3
+"I have been feeling overwhelmed by everything lately.",EMOTIONAL_DISTRESS,0.7,0.2,0.5,0.9,0.0,0.0,0.0,0.0,0.1,0.3
+"Everything feels like too much right now.",EMOTIONAL_DISTRESS,0.7,0.2,0.5,0.9,0.0,0.0,0.0,0.0,0.0,0.2
+"I am struggling to deal with everything that is happening.",EMOTIONAL_DISTRESS,0.7,0.2,0.5,0.8,0.0,0.0,0.0,0.0,0.1,0.3
+"I feel helpless and I don't know where to begin.",EMOTIONAL_DISTRESS,0.6,0.3,0.5,0.9,0.0,0.0,0.0,0.0,0.1,0.6
+"I am exhausted from trying to deal with everything on my own.",EMOTIONAL_DISTRESS,0.7,0.1,0.4,0.8,0.0,0.0,0.0,0.0,0.4,0.6
+"I feel like I am reaching my limit.",EMOTIONAL_DISTRESS,0.7,0.2,0.5,0.9,0.0,0.0,0.0,0.0,0.1,0.4
+"I don't really have anyone I can talk to about this.",ISOLATION,0.2,0.1,0.3,0.5,0.0,0.0,0.0,0.0,1.0,0.6
+"I feel completely alone even though people are around me.",ISOLATION,0.2,0.2,0.4,0.6,0.0,0.0,0.0,0.0,1.0,0.5
+"I don't have anyone I can turn to right now.",ISOLATION,0.2,0.2,0.4,0.6,0.0,0.0,0.0,0.0,1.0,0.7
+"I feel like I am dealing with everything by myself.",ISOLATION,0.4,0.1,0.4,0.6,0.0,0.0,0.0,0.0,0.9,0.7
+"There is nobody I trust enough to talk to.",ISOLATION,0.2,0.2,0.4,0.5,0.0,0.1,0.0,0.0,1.0,0.6
+"I have been keeping everything to myself.",ISOLATION,0.3,0.1,0.4,0.5,0.0,0.1,0.0,0.0,0.9,0.5
+"I wish I had someone who understood what I am going through.",ISOLATION,0.2,0.2,0.4,0.6,0.0,0.0,0.0,0.0,0.9,0.5
+"I don't know who I can reach out to for help.",ISOLATION,0.3,0.2,0.4,0.6,0.0,0.0,0.0,0.0,0.9,0.7
+"I keep remembering what happened and I can't seem to move past it.",TRAUMA,0.2,0.6,0.4,0.7,1.0,0.0,0.0,0.0,0.0,0.2
+"Something happened a few days ago and I keep thinking about it.",TRAUMA,0.2,0.5,0.4,0.7,0.9,0.0,0.0,0.0,0.0,0.2
+"I wish I could forget what happened, but it keeps coming back to me.",TRAUMA,0.2,0.6,0.4,0.7,1.0,0.0,0.0,0.0,0.0,0.2
+"I still have nightmares about what happened.",TRAUMA,0.2,0.7,0.5,0.7,1.0,0.0,0.0,0.0,0.0,0.2
+"I get upset whenever I remember that incident.",TRAUMA,0.2,0.6,0.4,0.7,0.9,0.0,0.0,0.0,0.0,0.2
+"What happened keeps replaying in my mind.",TRAUMA,0.2,0.5,0.5,0.7,1.0,0.0,0.0,0.0,0.0,0.2
+"I thought I had moved on, but the memories keep coming back.",TRAUMA,0.2,0.5,0.4,0.6,1.0,0.0,0.0,0.0,0.0,0.1
+"I feel shaken whenever I think about what happened.",TRAUMA,0.2,0.7,0.5,0.7,1.0,0.0,0.0,0.0,0.0,0.3
+"They keep warning me not to say anything.",INTIMIDATION,0.0,0.5,0.3,0.3,0.0,0.9,0.0,0.0,0.1,0.4
+"They told me to keep quiet about what happened.",INTIMIDATION,0.0,0.5,0.3,0.4,0.0,0.9,0.0,0.0,0.1,0.4
+"I am scared about what might happen if I speak up.",INTIMIDATION,0.1,0.9,0.6,0.4,0.0,0.9,0.0,0.0,0.2,0.4
+"They told me something bad would happen if I talked.",INTIMIDATION,0.0,0.9,0.6,0.5,0.0,1.0,0.0,0.2,0.1,0.5
+"I was warned not to tell anyone.",INTIMIDATION,0.0,0.7,0.5,0.4,0.0,0.9,0.0,0.0,0.1,0.5
+"I feel pressured to stay silent about what happened.",INTIMIDATION,0.2,0.6,0.5,0.5,0.0,0.8,0.0,0.0,0.2,0.5
+"They keep trying to scare me into staying quiet.",INTIMIDATION,0.0,0.9,0.5,0.5,0.0,1.0,0.0,0.1,0.1,0.5
+"I don't feel free to speak about what is happening.",INTIMIDATION,0.1,0.6,0.5,0.5,0.0,0.8,0.0,0.0,0.2,0.5
+"I am worried because someone has threatened me.",THREAT,0.1,0.8,0.6,0.4,0.0,1.0,0.0,0.2,0.0,0.5
+"Someone told me they would hurt me if I didn't do what they wanted.",THREAT,0.0,1.0,0.7,0.5,0.0,1.0,0.0,0.3,0.0,0.6
+"I have been receiving threats and I don't know what to do.",THREAT,0.2,0.9,0.7,0.7,0.0,1.0,0.0,0.2,0.1,0.6
+"I am afraid because someone keeps threatening me.",THREAT,0.1,1.0,0.7,0.5,0.0,1.0,0.0,0.2,0.0,0.6
+"They keep telling me that I will regret speaking about this.",THREAT,0.0,0.8,0.6,0.4,0.0,0.9,0.0,0.1,0.0,0.5
+"I was threatened and now I don't feel safe.",THREAT,0.1,0.9,0.7,0.6,0.0,1.0,0.0,0.3,0.1,0.7
+"Someone has been making threats against my family.",THREAT,0.1,0.8,0.7,0.6,0.0,1.0,0.0,0.2,0.0,0.6
+"I don't know what they might do after threatening me.",THREAT,0.1,0.9,0.8,0.6,0.0,1.0,0.0,0.3,0.1,0.7
+"They attacked me and I was hurt.",VIOLENCE,0.1,0.9,0.4,0.7,0.4,0.2,1.0,0.1,0.1,0.7
+"Someone physically hurt me.",VIOLENCE,0.1,0.9,0.4,0.6,0.3,0.2,1.0,0.1,0.1,0.7
+"I was beaten and I don't know what to do now.",VIOLENCE,0.2,0.9,0.5,0.8,0.5,0.2,1.0,0.2,0.1,0.8
+"They hit me during an argument.",VIOLENCE,0.2,0.8,0.4,0.7,0.4,0.2,1.0,0.1,0.1,0.6
+"I was physically attacked.",VIOLENCE,0.1,0.9,0.4,0.6,0.3,0.2,1.0,0.2,0.1,0.7
+"Someone hurt me and I am afraid it might happen again.",VIOLENCE,0.2,1.0,0.7,0.7,0.5,0.6,1.0,0.3,0.1,0.8
+"They keep hurting me whenever they get angry.",VIOLENCE,0.2,0.9,0.6,0.8,0.6,0.4,1.0,0.3,0.1,0.8
+"I was attacked and now I don't feel safe.",VIOLENCE,0.1,1.0,0.7,0.7,0.5,0.4,1.0,0.3,0.1,0.8
+"I am in immediate danger right now.",IMMEDIATE_DANGER,0.1,1.0,0.6,0.7,0.0,0.8,0.0,1.0,0.1,0.8
+"I don't feel safe right now and I think something may happen.",IMMEDIATE_DANGER,0.1,1.0,0.8,0.7,0.0,0.8,0.0,1.0,0.1,0.8
+"Someone is outside and I am afraid to leave the room.",IMMEDIATE_DANGER,0.1,1.0,0.7,0.7,0.0,0.8,0.0,1.0,0.2,0.8
+"I need help right now because I don't feel safe.",IMMEDIATE_DANGER,0.1,1.0,0.7,0.8,0.0,0.8,0.0,1.0,0.2,0.9
+"I think I might be in danger right now.",IMMEDIATE_DANGER,0.1,1.0,0.8,0.7,0.0,0.9,0.0,1.0,0.1,0.8
+"I don't know where to go and I don't feel safe here tonight.",IMMEDIATE_DANGER,0.3,0.9,0.7,0.8,0.0,0.6,0.0,1.0,0.4,1.0
+"I had to leave my home unexpectedly and I don't know where we will stay.",DISPLACEMENT,0.6,0.6,0.5,0.8,0.0,0.5,0.0,0.0,0.2,0.8
+"We were forced to leave our home because of threats.",DISPLACEMENT,0.6,0.8,0.6,0.8,0.0,0.9,0.0,0.1,0.2,0.9
+"We had to leave suddenly and we have nowhere familiar to go.",DISPLACEMENT,0.7,0.6,0.6,0.8,0.0,0.2,0.0,0.0,0.3,0.9
+"I can't go back home anymore.",DISPLACEMENT,0.5,0.8,0.6,0.7,0.0,0.5,0.0,0.1,0.3,0.9
+"We had to move because it wasn't safe to stay.",DISPLACEMENT,0.5,0.9,0.6,0.7,0.0,0.7,0.0,0.2,0.2,0.9
+"I left home and now I don't know where I belong.",DISPLACEMENT,0.5,0.5,0.5,0.7,0.0,0.2,0.0,0.0,0.5,0.8
+"We were made to leave our home and everything behind.",DISPLACEMENT,0.6,0.7,0.6,0.8,0.0,0.6,0.0,0.1,0.3,0.9
+"I don't know when I will be able to return home.",DISPLACEMENT,0.5,0.5,0.6,0.6,0.0,0.3,0.0,0.0,0.3,0.8
+"I feel completely alone and have nobody to talk to.",ISOLATION,0.2,0.2,0.4,0.6,0.0,0.0,0.0,0.0,1.0,0.6
+"I feel like I am facing all of this alone.",ISOLATION,0.3,0.2,0.4,0.6,0.0,0.0,0.0,0.0,1.0,0.7
+"Everyone seems busy with their own lives and I have nobody to turn to.",ISOLATION,0.2,0.1,0.4,0.5,0.0,0.0,0.0,0.0,1.0,0.6
+"I haven't told anyone because I don't think anyone would understand.",ISOLATION,0.2,0.2,0.4,0.5,0.0,0.0,0.0,0.0,0.9,0.6
+"I feel disconnected from everyone around me.",ISOLATION,0.2,0.1,0.4,0.5,0.0,0.0,0.0,0.0,0.9,0.5
+"I have no one I feel comfortable asking for help.",ISOLATION,0.3,0.2,0.4,0.6,0.0,0.0,0.0,0.0,1.0,0.7
+"I wish I had somebody to talk to.",ISOLATION,0.2,0.1,0.3,0.5,0.0,0.0,0.0,0.0,1.0,0.5
+"I have been dealing with this without any support.",ISOLATION,0.4,0.1,0.4,0.6,0.0,0.0,0.0,0.0,0.9,0.8
+"I don't feel able to protect myself in this situation.",VULNERABILITY,0.2,0.7,0.6,0.6,0.0,0.5,0.0,0.2,0.2,1.0
+"I feel powerless and I don't know how to keep myself safe.",VULNERABILITY,0.2,0.9,0.7,0.8,0.0,0.6,0.0,0.4,0.2,1.0
+"I don't have anyone here who can protect me.",VULNERABILITY,0.2,0.7,0.5,0.6,0.0,0.4,0.0,0.2,0.6,1.0
+"I feel helpless because I can't control what is happening around me.",VULNERABILITY,0.4,0.6,0.7,0.9,0.0,0.4,0.0,0.2,0.2,1.0
+"I don't know how to keep myself safe.",VULNERABILITY,0.2,0.8,0.7,0.7,0.0,0.5,0.0,0.4,0.2,1.0
+"I feel exposed and unable to protect myself.",VULNERABILITY,0.2,0.8,0.6,0.7,0.0,0.5,0.0,0.3,0.2,1.0
+"I have no control over what is happening to me.",VULNERABILITY,0.3,0.7,0.7,0.8,0.1,0.4,0.0,0.2,0.2,1.0
+"I feel helpless because I don't have anywhere safe to turn.",VULNERABILITY,0.3,0.8,0.7,0.8,0.0,0.5,0.0,0.3,0.5,1.0

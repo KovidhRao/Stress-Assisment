@@ -228,6 +228,49 @@ export function CaseDetailModal({ caseRecord, isOpen, onClose, onUpdateCase }: C
                 </div>
               </div>
 
+              {/* NHAA Situation & Safety Escalation Highlights */}
+              <div className="p-4 rounded-2xl bg-white border border-[#e0ece8] space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-[#718b85] uppercase">Primary Situation:</span>
+                    <span className="px-3 py-1 rounded-xl text-xs font-bold bg-[#1d8272]/10 text-[#1d8272] border border-[#1d8272]/20">
+                      {stress_assessment.situation || 'DISCRIMINATION & ATROCITY'}
+                    </span>
+                    {stress_assessment.situation_confidence && (
+                      <span className="text-[11px] text-[#718b85]">
+                        ({Math.round(stress_assessment.situation_confidence * 100)}% confidence)
+                      </span>
+                    )}
+                  </div>
+                  {stress_assessment.detected_language && (
+                    <span className="text-[11px] font-medium text-[#41605a] bg-[#f0f6f4] px-2.5 py-0.5 rounded-lg">
+                      Language: {stress_assessment.detected_language} {stress_assessment.romanized ? '(Transliterated)' : ''}
+                    </span>
+                  )}
+                </div>
+
+                {stress_assessment.safety_escalation_applied && (
+                  <div className="p-2.5 bg-[#fef2f2] border border-[#fecaca] rounded-xl flex items-center gap-2 text-xs font-semibold text-[#dc2626]">
+                    <AlertTriangle size={15} />
+                    <span>Immediate Safety Escalation Rule Triggered (High Threat / Active Danger)</span>
+                  </div>
+                )}
+
+                {stress_assessment.contributing_factors && stress_assessment.contributing_factors.length > 0 && (
+                  <div className="pt-2 border-t border-[#f0f4f2]">
+                    <p className="text-[11px] font-bold text-[#718b85] mb-2 uppercase">Key SVI Contributing Factors</p>
+                    <div className="flex flex-wrap gap-2">
+                      {stress_assessment.contributing_factors.slice(0, 5).map((f, idx) => (
+                        <span key={idx} className="text-[11px] px-2.5 py-1 rounded-lg bg-[#f4f7f6] text-[#2d4d47] border border-[#e2ece8] flex items-center gap-1">
+                          <span className="font-semibold capitalize">{f.indicator.replace('_', ' ')}:</span>
+                          <span className="text-[#1d8272] font-mono font-bold">+{f.contribution}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Critical Flags */}
               <div>
                 <p className="text-xs font-bold text-[#20433e] mb-2 uppercase tracking-wider">Clinical &amp; Vulnerability Indicators</p>

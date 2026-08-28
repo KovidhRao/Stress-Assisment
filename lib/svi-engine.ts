@@ -1,98 +1,20 @@
 import { OfficerProfile, RiskLevel, StressAssessment, VoiceAnalysisMetrics } from '@/types'
+import { computeComprehensiveNLP, extractNLPIndicators } from './nlp-engine'
 
-// Key emotional and trauma triggers in English and Indian transliterated terms
-const CRITICAL_KEYWORDS = [
-  'kill', 'murder', 'suicide', 'die', 'threat to life', 'mar denge', 'jaan se marne',
-  'burn', 'acid', 'rape', 'gang rape', 'weapon', 'talwar', 'bandook', 'gun', 'hanging', 'no hope',
-  'saavina', 'kollu', 'chavu', 'kolai', 'maran', 'maar dalna', 'chaku', 'hathyar'
-]
+export { extractNLPIndicators, computeComprehensiveNLP }
 
-const INTIMIDATION_KEYWORDS = [
-  'threat', 'threatened', 'dhamki', 'dar', 'terror', 'boycott', 'social boycott',
-  'expelled', 'hata diya', 'pani band', 'ousted', 'basti', 'caste slur', 'jaati',
-  'dalit', 'adivasi', 'untouchable', 'oppression', 'forced', 'kidnap',
-  'bahiskara', 'bedarike', 'kulabhasti', 'jaati nindane', 'theendedadhavan', 'jaathiya'
-]
-
-const TRAUMA_KEYWORDS = [
-  'crying', 'nightmare', 'shaking', 'trembling', 'anxious', 'can\'t sleep', 'panic',
-  'beaten', 'injury', 'blood', 'hospital', 'pain', 'broken', 'helpless', 'fear', 'alone',
-  'ghabrahat', 'dard', 'rone laga', 'chot', 'bhaya', 'alugai', 'kanniru', 'bedarike'
-]
-
-export function analyzeNarrativeText(text: string): {
-  traumaScore: number
-  fearScore: number
-  anxietyScore: number
-  suicidalFlag: boolean
-  intimidationFlag: boolean
-  socialIsolationFlag: boolean
-  triggers: string[]
-} {
-  const lower = (text || '').toLowerCase()
-  const detectedTriggers: string[] = []
-
-  let suicidalFlag = false
-  let intimidationFlag = false
-  let socialIsolationFlag = false
-
-  let criticalMatches = 0
-  let intimidationMatches = 0
-  let traumaMatches = 0
-
-  CRITICAL_KEYWORDS.forEach(kw => {
-    if (lower.includes(kw)) {
-      criticalMatches++
-      detectedTriggers.push(kw)
-      if (['suicide', 'die', 'marne', 'no hope', 'hanging', 'saavina', 'chavu'].includes(kw)) {
-        suicidalFlag = true
-      }
-    }
-  })
-
-  INTIMIDATION_KEYWORDS.forEach(kw => {
-    if (lower.includes(kw)) {
-      intimidationMatches++
-      detectedTriggers.push(kw)
-      intimidationFlag = true
-      if (['boycott', 'social boycott', 'pani band', 'ousted', 'expelled', 'bahiskara'].includes(kw)) {
-        socialIsolationFlag = true
-      }
-    }
-  })
-
-  TRAUMA_KEYWORDS.forEach(kw => {
-    if (lower.includes(kw)) {
-      traumaMatches++
-      detectedTriggers.push(kw)
-    }
-  })
-
-  // Normalize scores 0 - 100
-  let traumaScore = Math.min(100, Math.round(traumaMatches * 24 + criticalMatches * 32 + (text.length > 50 ? 15 : 5)))
-  let fearScore = Math.min(100, Math.round(intimidationMatches * 26 + (intimidationFlag ? 20 : 0) + criticalMatches * 22))
-  let anxietyScore = Math.min(100, Math.round(traumaMatches * 20 + intimidationMatches * 16 + (text.length > 100 ? 15 : 0)))
-
-  if (text.trim().length === 0) {
-    return {
-      traumaScore: 10,
-      fearScore: 10,
-      anxietyScore: 15,
-      suicidalFlag: false,
-      intimidationFlag: false,
-      socialIsolationFlag: false,
-      triggers: []
-    }
-  }
-
+export function analyzeNarrativeText(text: string) {
+  const result = computeComprehensiveNLP(text)
+  const allTriggers: string[] = []
+  Object.values(result.matchedKeywords).forEach(list => list.forEach(k => allTriggers.push(k)))
   return {
-    traumaScore: Math.max(15, traumaScore),
-    fearScore: Math.max(15, fearScore),
-    anxietyScore: Math.max(20, anxietyScore),
-    suicidalFlag,
-    intimidationFlag,
-    socialIsolationFlag,
-    triggers: Array.from(new Set(detectedTriggers))
+    traumaScore: Math.round(result.indicators.trauma * 100),
+    fearScore: Math.round(result.indicators.fear * 100),
+    anxietyScore: Math.round(result.indicators.anxiety * 100),
+    suicidalFlag: result.suicidalFlag,
+    intimidationFlag: result.intimidationFlag,
+    socialIsolationFlag: result.socialIsolationFlag,
+    triggers: Array.from(new Set(allTriggers))
   }
 }
 
@@ -101,8 +23,6 @@ export function computeSVI(
   voiceMetrics?: VoiceAnalysisMetrics | null,
   clinicalAnswersScore: number = 0 // from questionnaire if answered (0-20)
 ): StressAssessment {
-  const textAnalysis = analyzeNarrativeText(narrativeText)
-
   let voiceDistressScore = 0
   let speechStressDetected = false
 
@@ -117,72 +37,56 @@ export function computeSVI(
     speechStressDetected = voiceDistressScore > 45
   }
 
-  // Composite Stress Vulnerability Index (SVI)
-  const textWeight = voiceMetrics ? 0.45 : 0.75
-  const voiceWeight = voiceMetrics ? 0.40 : 0
-  const clinicalWeight = 0.15
+  const nlpResult = computeComprehensiveNLP(narrativeText, voiceDistressScore)
 
-  const normalizedClinical = (clinicalAnswersScore / 20) * 100
+  // Integrate clinical questionnaire if provided
+  let finalSVI = nlpResult.sviScore
+  if (clinicalAnswersScore > 0) {
+    const clinicalContribution = (clinicalAnswersScore / 20) * 20
+    finalSVI = Math.min(100, Math.round(finalSVI * 0.85 + clinicalContribution))
+  }
 
-  const compositeRaw = (
-    ((textAnalysis.traumaScore + textAnalysis.fearScore + textAnalysis.anxietyScore) / 3) * textWeight +
-    voiceDistressScore * voiceWeight +
-    normalizedClinical * (voiceMetrics ? clinicalWeight : 0.25)
-  )
-
-  let finalSVI = Math.min(100, Math.round(compositeRaw))
-
-  // Boost for critical indicators
-  if (textAnalysis.suicidalFlag) finalSVI = Math.max(88, finalSVI)
-  if (textAnalysis.intimidationFlag && textAnalysis.fearScore > 60) finalSVI = Math.max(74, finalSVI)
-
-  let riskLevel: RiskLevel = 'Low'
-  if (finalSVI >= 75 || textAnalysis.suicidalFlag) {
+  let riskLevel = nlpResult.riskLevel
+  if (finalSVI >= 75 || nlpResult.suicidalFlag) {
     riskLevel = 'Critical'
   } else if (finalSVI >= 50) {
     riskLevel = 'High'
   } else if (finalSVI >= 25) {
     riskLevel = 'Moderate'
+  } else {
+    riskLevel = 'Low'
   }
 
-  // Build actionable recommendations based on problem statement
-  const recommendedActions: string[] = []
-  if (riskLevel === 'Critical') {
-    recommendedActions.push('Immediate Emergency Police Intervention & Protection')
-    recommendedActions.push('Urgent Psychological Crisis Counselling (Within 15 mins)')
-    recommendedActions.push('District Magistrate / Nodal Atrocity Cell Notification')
-    recommendedActions.push('Medical Emergency & Physical Safety Verification')
-  } else if (riskLevel === 'High') {
-    recommendedActions.push('Assigned Dedicated Trauma Counsellor (Within 2 hours)')
-    recommendedActions.push('Free Legal Aid Cell (NALSA / SLSA Advocate Appointment)')
-    recommendedActions.push('Local Police Station Station House Officer (SHO) Alert')
-    recommendedActions.push('Witness Protection Assessment')
-  } else if (riskLevel === 'Moderate') {
-    recommendedActions.push('Scheduled Tele-Counselling Session within 24 Hours')
-    recommendedActions.push('Guidance on Filing SC/ST PoA Act FIR & Portal Redressal')
-    recommendedActions.push('Community Support & Welfare Officer Allocation')
-  } else {
-    recommendedActions.push('Self-Guided Coping & Grounding Exercises')
-    recommendedActions.push('Informational Legal Brochure & Rights Guide')
-    recommendedActions.push('Follow-up Check-in in 48 Hours')
-  }
+  // Extract all matched triggers
+  const allTriggers: string[] = []
+  Object.values(nlpResult.matchedKeywords).forEach(kwList => {
+    kwList.forEach(k => allTriggers.push(k))
+  })
 
   return {
     id: `SA-${Date.now().toString().slice(-6)}`,
     case_id: '',
     svi_score: finalSVI,
     risk_level: riskLevel,
-    trauma_score: textAnalysis.traumaScore,
-    fear_score: textAnalysis.fearScore,
-    anxiety_score: textAnalysis.anxietyScore,
-    depression_indicator: finalSVI > 55 || textAnalysis.traumaScore > 65,
-    suicidal_ideation_flag: textAnalysis.suicidalFlag,
-    intimidation_flag: textAnalysis.intimidationFlag,
-    social_isolation_flag: textAnalysis.socialIsolationFlag,
+    trauma_score: Math.round(nlpResult.indicators.trauma * 100),
+    fear_score: Math.round(nlpResult.indicators.fear * 100),
+    anxiety_score: Math.round(nlpResult.indicators.anxiety * 100),
+    depression_indicator: finalSVI > 55 || nlpResult.indicators.trauma > 0.65,
+    suicidal_ideation_flag: nlpResult.suicidalFlag,
+    intimidation_flag: nlpResult.intimidationFlag,
+    social_isolation_flag: nlpResult.socialIsolationFlag,
     speech_stress_detected: speechStressDetected,
-    key_trauma_triggers: textAnalysis.triggers,
-    recommended_actions: recommendedActions,
-    assessed_at: new Date().toISOString()
+    key_trauma_triggers: Array.from(new Set(allTriggers)),
+    recommended_actions: nlpResult.recommendedActions,
+    assessed_at: new Date().toISOString(),
+    situation: nlpResult.situation,
+    situation_confidence: nlpResult.situationConfidence,
+    indicators: nlpResult.indicators,
+    confidence: nlpResult.confidence,
+    contributing_factors: nlpResult.contributingFactors,
+    detected_language: nlpResult.languageName,
+    romanized: nlpResult.isRomanized,
+    safety_escalation_applied: nlpResult.safetyEscalationApplied
   }
 }
 
@@ -190,6 +94,21 @@ export function computeSVI(
  * Proximity-based Officer Matching Engine:
  * When a high/critical SVI case occurs, routes directly to the officer situated closest to the victim's location.
  */
+const DEFAULT_FALLBACK_OFFICER: OfficerProfile = {
+  id: 'OFF-NODAL-HQ',
+  officer_badge_id: 'NHAA-HQ-99',
+  full_name: 'Dr. Ramesh Chandra',
+  department: 'Psychological Triage',
+  role: 'counsellor',
+  assigned_state: 'National HQ',
+  assigned_district: 'Central Cell',
+  station_name: 'National Atrocity Redressal HQ',
+  active_cases_count: 0,
+  email: 'triage@nhaa.gov.in',
+  phone: '14566',
+  is_available: true
+}
+
 export function findNearestOfficer(
   officers: OfficerProfile[],
   victimLocation: {
@@ -204,7 +123,11 @@ export function findNearestOfficer(
   routingReason: string
 } {
   if (!officers || officers.length === 0) {
-    throw new Error('No officers available for proximity routing.')
+    return {
+      officer: DEFAULT_FALLBACK_OFFICER,
+      matchLevel: 'national_hq',
+      routingReason: 'Assigned to National Atrocity Redressal & Triage HQ (14566 Helpline).'
+    }
   }
 
   const vPincode = (victimLocation.pincode || '').trim()
