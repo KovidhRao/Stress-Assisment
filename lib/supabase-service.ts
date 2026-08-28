@@ -1,54 +1,49 @@
 import { supabase } from '@/lib/supabase'
-import { CaseRecord, OfficerProfile, UserProfile, VoiceAnalysisMetrics } from '@/types'
-import { INITIAL_CASES, DEFAULT_OFFICERS } from '@/lib/mock-data'
+import { CaseRecord, OfficerProfile, PsychiatristProfile, UserProfile, VoiceAnalysisMetrics } from '@/types'
+import { INITIAL_CASES, DEFAULT_OFFICERS, DEFAULT_PSYCHIATRISTS } from '@/lib/mock-data'
+import { CaseService } from './services/case-service'
+import { AssignmentService } from './services/assignment-service'
+import { AnalysisService } from './services/analysis-service'
+import { AppointmentService } from './services/appointment-service'
+import { WellbeingService } from './services/wellbeing-service'
 
-/**
- * Service to manage Supabase database operations with fallback resilience.
- *
- * Real schema (from Supabase dashboard):
- *   profiles: id, full_name, phone, preferred_language, role(user_role enum → 'VICTIM'|'OFFICER'|'COUNSELLOR'|'ADMIN'),
- *             is_active, phonenumber, is_profile_complete, created_at, updated_at
- *   addresses: id, user_id(FK→profiles.id), address_line1, address_line2,
- *              village_town_city, district, state, pincode (+ possibly more)
- */
+// Re-export services for convenience
+export { CaseService, AssignmentService, AnalysisService, AppointmentService, WellbeingService }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-/** Convert our lowercase role to the DB user_role enum (uppercase) */
 function toDbRole(role?: string): string {
   const map: Record<string, string> = {
     victim: 'VICTIM',
     officer: 'OFFICER',
     counsellor: 'COUNSELLOR',
+    psychiatrist: 'PSYCHIATRIST',
     admin: 'ADMIN'
   }
   return map[role?.toLowerCase() ?? 'victim'] ?? 'VICTIM'
 }
 
-/** Convert DB enum value back to our app lowercase role */
 function fromDbRole(dbRole?: string): UserProfile['role'] {
   const map: Record<string, UserProfile['role']> = {
     VICTIM: 'victim',
     OFFICER: 'officer',
     COUNSELLOR: 'counsellor',
+    PSYCHIATRIST: 'psychiatrist',
     ADMIN: 'admin'
   }
   return map[dbRole ?? 'VICTIM'] ?? 'victim'
 }
 
-/** Convert language name to short code (e.g. "English" → "en") */
 function toLangCode(lang?: string): string {
   const map: Record<string, string> = {
     English: 'en', Hindi: 'hi', Bengali: 'bn', Telugu: 'te',
     Marathi: 'mr', Tamil: 'ta', Urdu: 'ur', Gujarati: 'gu',
     Kannada: 'kn', Odia: 'or', Malayalam: 'ml', Punjabi: 'pa', Assamese: 'as'
   }
-  // If already a short code, return as-is
   if (lang && lang.length <= 3) return lang
   return map[lang ?? 'English'] ?? 'en'
 }
 
-/** Convert lang code to display name */
 function fromLangCode(code?: string): string {
   const map: Record<string, string> = {
     en: 'English', hi: 'Hindi', bn: 'Bengali', te: 'Telugu',
@@ -79,12 +74,6 @@ export async function checkSupabaseConnection(): Promise<{ ok: boolean; hasTable
 
 // ─── Profile ─────────────────────────────────────────────────────────────────
 
-/**
- * Fetch user profile + their address from Supabase.
- * Profile fields are in `profiles`; location data is in `addresses` (joined by user_id).
- * NOTE: email is NOT a column in profiles table — it lives in auth.users.
- *       Pass callerEmail from the auth session to include it.
- */
 export async function fetchUserProfile(
   userId: string,
   callerEmail?: string
@@ -102,7 +91,6 @@ export async function fetchUserProfile(
       return null
     }
 
-    // Fetch address row (may be empty for new users)
     const { data: addressData } = await supabase
       .from('addresses')
       .select('*')
@@ -117,14 +105,12 @@ export async function fetchUserProfile(
       role: fromDbRole(profileData.role),
       preferred_language: fromLangCode(profileData.preferred_language),
       is_profile_complete: !!profileData.is_profile_complete,
-      // Address fields from addresses table
       state: addressData?.state ?? '',
       district: addressData?.district ?? '',
       address_line1: addressData?.address_line1 ?? '',
       address_line2: addressData?.address_line2 ?? '',
       village_town_city: addressData?.village_town_city ?? '',
       pincode: addressData?.pincode ?? '',
-      // Avatar helper
       avatar_url: profileData.avatar_url ?? undefined,
       avatar_initials: ((profileData.full_name || callerEmail || 'US') as string).slice(0, 2).toUpperCase(),
       created_at: profileData.created_at,
@@ -136,12 +122,6 @@ export async function fetchUserProfile(
   }
 }
 
-/**
- * Save profile fields to `profiles` table.
- * Strategy: always UPDATE first (trigger creates the row on signup),
- * INSERT only if UPDATE affects 0 rows (very first login race condition).
- * Then upsert address to `addresses` table.
- */
 export async function saveUserProfile(
   profile: Partial<UserProfile> & { id: string }
 ): Promise<{ success: boolean; data?: UserProfile; error?: string }> {
@@ -156,7 +136,6 @@ export async function saveUserProfile(
       updated_at: new Date().toISOString()
     }
 
-    // Step 1: Try UPDATE (row should already exist from auth trigger)
     const { data: updateData, error: updateError } = await supabase
       .from('profiles')
       .update(profilePayload)
@@ -166,14 +145,11 @@ export async function saveUserProfile(
 
     let profileData = updateData
 
-    // Step 2: If no row was found, fall back to INSERT
-    // NOTE: email column may not exist in profiles table (lives in auth.users)
     if (!updateData && !updateError) {
       const insertPayload: Record<string, unknown> = {
         ...profilePayload,
         id: profile.id,
         created_at: new Date().toISOString()
-        // email deliberately excluded — not a column in this schema
       }
       const { data: insertData, error: insertError } = await supabase
         .from('profiles')
@@ -183,38 +159,13 @@ export async function saveUserProfile(
 
       if (insertError) {
         console.error('Supabase saveUserProfile insert error:', insertError.message)
-        // Don't hard-fail — return optimistic data so the UI still works
-        return {
-          success: false,
-          error: insertError.message,
-          data: {
-            id: profile.id,
-            email: profile.email ?? '',
-            full_name: profile.full_name ?? '',
-            phone: profile.phone ?? '',
-            role: profile.role ?? 'victim',
-            preferred_language: toLangCode(profile.preferred_language),
-            state: profile.state ?? '',
-            district: profile.district ?? '',
-            address_line1: profile.address_line1 ?? '',
-            address_line2: profile.address_line2 ?? '',
-            village_town_city: profile.village_town_city ?? '',
-            pincode: profile.pincode ?? '',
-            is_profile_complete: true,
-            avatar_initials: (profile.full_name || profile.email || 'US').slice(0, 2).toUpperCase(),
-            created_at: new Date().toISOString()
-          } as UserProfile
-        }
+      } else {
+        profileData = insertData
       }
-      profileData = insertData
-    } else if (updateError) {
-      console.error('Supabase saveUserProfile update error:', updateError.message)
-      return { success: false, error: updateError.message }
     }
 
-    // Step 3: Save address if any location field provided
     const hasAddress =
-      profile.state || profile.district || profile.village_town_city || profile.address_line1
+      profile.state || profile.district || profile.village_town_city || profile.address_line1 || profile.pincode
 
     if (hasAddress) {
       await saveUserAddress(profile.id, {
@@ -255,10 +206,6 @@ export async function saveUserProfile(
   }
 }
 
-/**
- * Upsert address row in the `addresses` table.
- * Uses user_id to find and update existing row, or inserts if missing.
- */
 export async function saveUserAddress(
   userId: string,
   address: {
@@ -271,7 +218,6 @@ export async function saveUserAddress(
   }
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Check if an address already exists for this user
     const { data: existing } = await supabase
       .from('addresses')
       .select('id')
@@ -279,7 +225,6 @@ export async function saveUserAddress(
       .maybeSingle()
 
     if (existing?.id) {
-      // Update existing row
       const { error } = await supabase
         .from('addresses')
         .update({
@@ -294,7 +239,6 @@ export async function saveUserAddress(
 
       if (error) return { success: false, error: error.message }
     } else {
-      // Insert new row
       const { error } = await supabase.from('addresses').insert({
         user_id: userId,
         address_line1: address.address_line1 ?? '',
@@ -315,9 +259,7 @@ export async function saveUserAddress(
   }
 }
 
-// ─── Cases ───────────────────────────────────────────────────────────────────
-
-// ─── Officers ─────────────────────────────────────────────────────────────────
+// ─── Officers & Psychiatrists ────────────────────────────────────────────────
 
 export async function fetchOfficersFromDb(): Promise<OfficerProfile[]> {
   try {
@@ -327,13 +269,13 @@ export async function fetchOfficersFromDb(): Promise<OfficerProfile[]> {
       .order('active_cases_count', { ascending: true })
 
     if (error || !data || data.length === 0) {
-      console.warn('Could not fetch officers from Supabase, using defaults:', error?.message)
       return DEFAULT_OFFICERS
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return data.map((o: any) => ({
       id: o.id,
+      user_id: o.user_id,
       officer_badge_id: o.officer_badge_id,
       full_name: o.full_name,
       department: o.department,
@@ -388,64 +330,43 @@ export async function saveOfficerProfile(
   }
 }
 
-// ─── Cases ───────────────────────────────────────────────────────────────────
-
-export async function fetchCasesFromDb(filterOfficerId?: string, district?: string): Promise<CaseRecord[]> {
+export async function fetchPsychiatristsFromDb(): Promise<PsychiatristProfile[]> {
   try {
-    let query = supabase.from('cases').select('*')
+    const { data, error } = await supabase
+      .from('psychiatrists')
+      .select('*')
+      .order('active_patients_count', { ascending: true })
 
-    if (filterOfficerId) {
-      query = query.or(`assigned_officer_id.eq.${filterOfficerId},incident_location->>district.ilike.%${district || ''}%`)
+    if (error || !data || data.length === 0) {
+      return DEFAULT_PSYCHIATRISTS
     }
 
-    const { data, error } = await query
-
-    if (error) {
-      console.warn('Error fetching cases from Supabase:', error.message)
-      return INITIAL_CASES
-    }
-
-    if (!data || data.length === 0) return INITIAL_CASES
-
-    // Sort by reported_at or created_at descending safely in memory
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sorted = [...data].sort((a: any, b: any) => {
-      const timeA = new Date(a.reported_at || a.created_at || 0).getTime()
-      const timeB = new Date(b.reported_at || b.created_at || 0).getTime()
-      return timeB - timeA
-    })
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return sorted.map((c: any) => ({
-      id: c.id,
-      session_id: c.session_id,
-      user_id: c.user_id,
-      victim_name: c.victim_name,
-      initials: c.initials || (c.victim_name ? c.victim_name.slice(0, 2).toUpperCase() : 'AN'),
-      is_anonymous: !!c.is_anonymous,
-      contact_number: c.contact_number,
-      incident_category: c.incident_category,
-      incident_location: c.incident_location || { village_town_city: '', district: '', state: '', pincode: '' },
-      channel: c.channel || 'integrated_portal',
-      language: c.language || 'en',
-      reported_at: c.reported_at,
-      narrative_text: c.narrative_text,
-      voice_analysis: c.voice_analysis,
-      stress_assessment: c.stress_assessment,
-      status: c.status || 'New Intake',
-      assigned_officer: c.assigned_officer,
-      assigned_officer_id: c.assigned_officer_id,
-      assigned_counsellor: c.assigned_counsellor,
-      assigned_counsellor_id: c.assigned_counsellor_id,
-      proximity_routing: c.proximity_routing,
-      priority_tier: c.priority_tier || 3,
-      notes: Array.isArray(c.notes) ? c.notes : [],
-      dispatched_actions: Array.isArray(c.dispatched_actions) ? c.dispatched_actions : []
+    return data.map((p: any) => ({
+      id: p.id,
+      user_id: p.user_id,
+      full_name: p.full_name,
+      title: p.title || 'Senior Clinical Psychiatrist',
+      specialization: p.specialization || 'Trauma Triage',
+      hospital_clinic: p.hospital_clinic || 'NHAA Tele-Care',
+      assigned_state: p.assigned_state || 'National',
+      assigned_district: p.assigned_district || 'All Jurisdictions',
+      email: p.email || '',
+      phone: p.phone || '',
+      is_available: p.is_available !== false,
+      avatar_url: p.avatar_url,
+      active_patients_count: p.active_patients_count || 0
     }))
   } catch (err) {
-    console.error('Failed to query cases:', err)
-    return INITIAL_CASES
+    console.warn('Error fetching psychiatrists:', err)
+    return []
   }
+}
+
+// ─── Cases (Forwarded to CaseService) ─────────────────────────────────────────
+
+export async function fetchCasesFromDb(filterOfficerId?: string, district?: string): Promise<CaseRecord[]> {
+  return CaseService.fetchOfficerCases(filterOfficerId, district)
 }
 
 export async function createCaseInDb(
@@ -453,14 +374,10 @@ export async function createCaseInDb(
   userId?: string
 ): Promise<{ success: boolean; data?: CaseRecord; error?: string }> {
   try {
-    // Helper: only pass a value as FK if it looks like a real UUID
     const isUuid = (v?: string | null) =>
       typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
 
-    // user_id must also be a real UUID from auth
-    const safeUserId = isUuid(userId || caseRecord.user_id)
-      ? (userId || caseRecord.user_id)
-      : null
+    const safeUserId = isUuid(userId || caseRecord.user_id) ? (userId || caseRecord.user_id) : null
 
     const payload = {
       id: caseRecord.id,
@@ -476,15 +393,15 @@ export async function createCaseInDb(
       language: caseRecord.language,
       reported_at: new Date().toISOString(),
       narrative_text: caseRecord.narrative_text,
+      submission_type: caseRecord.submission_type || 'text',
       voice_analysis: caseRecord.voice_analysis || null,
       stress_assessment: caseRecord.stress_assessment,
       status: caseRecord.status,
       assigned_officer: caseRecord.assigned_officer || null,
-      // Only send UUID officer FK if it's a real UUID; otherwise store name-only
       assigned_officer_id: isUuid(caseRecord.assigned_officer_id) ? caseRecord.assigned_officer_id : null,
       assigned_counsellor: caseRecord.assigned_counsellor || null,
       assigned_counsellor_id: isUuid(caseRecord.assigned_counsellor_id) ? caseRecord.assigned_counsellor_id : null,
-      proximity_routing: caseRecord.proximity_routing || null,
+      proximity_routing: typeof caseRecord.proximity_routing === 'string' ? caseRecord.proximity_routing : null,
       priority_tier: caseRecord.priority_tier,
       notes: caseRecord.notes || [],
       dispatched_actions: caseRecord.dispatched_actions || [],
@@ -505,26 +422,9 @@ export async function createCaseInDb(
   }
 }
 
-
 export async function updateCaseInDb(caseId: string, updates: Partial<CaseRecord>): Promise<boolean> {
-  try {
-    const { error } = await supabase
-      .from('cases')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', caseId)
-
-    if (error) {
-      console.warn('Supabase updateCase error:', error.message)
-      return false
-    }
-    return true
-  } catch (err) {
-    console.error('Error updating case:', err)
-    return false
-  }
+  return CaseService.updateCase(caseId, updates)
 }
-
-// ─── Assessments ─────────────────────────────────────────────────────────────
 
 export async function saveAssessmentInDb(params: {
   userId?: string
@@ -540,17 +440,14 @@ export async function saveAssessmentInDb(params: {
   recommendations?: string[]
 }): Promise<boolean> {
   try {
-    const { error } = await supabase.from('assessments').insert({
-      user_id: params.userId || null,
+    const { error } = await supabase.from('case_analysis').insert({
       case_id: params.caseId || null,
-      narrative_text: params.narrativeText,
       svi_score: params.sviScore,
       risk_level: params.riskLevel,
       fear_score: params.fearScore || 0,
       trauma_score: params.traumaScore || 0,
       anxiety_score: params.anxietyScore || 0,
-      voice_metrics: params.voiceMetrics || null,
-      indicators: params.indicators || [],
+      key_triggers: params.indicators || [],
       recommendations: params.recommendations || []
     })
 
@@ -586,6 +483,7 @@ export function subscribeToRealtimeCases(
     language: c.language || 'en',
     reported_at: c.reported_at,
     narrative_text: c.narrative_text,
+    submission_type: c.submission_type || 'text',
     voice_analysis: c.voice_analysis,
     stress_assessment: c.stress_assessment,
     status: c.status || 'New Intake',
@@ -613,4 +511,3 @@ export function subscribeToRealtimeCases(
     supabase.removeChannel(channel)
   }
 }
-

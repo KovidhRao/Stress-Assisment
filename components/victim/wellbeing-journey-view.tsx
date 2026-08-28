@@ -20,14 +20,24 @@ import {
   Volume2,
   AlertOctagon,
   Award,
-  CircleDot
+  CircleDot,
+  Brain,
+  MapPin,
+  Lock,
+  Stethoscope
 } from 'lucide-react'
-import { RiskLevel, AppointmentRecord } from '@/types'
+import { RiskLevel, AppointmentRecord, CaseRecord, UserProfile } from '@/types'
 import { TeleCallModal } from '@/components/victim/tele-call-modal'
 import { AVAILABLE_APPOINTMENT_SLOTS } from '@/lib/mock-data'
+import { WellbeingService } from '@/lib/services/wellbeing-service'
+import { AppointmentService } from '@/lib/services/appointment-service'
+import { t } from '@/lib/i18n'
 
 interface WellbeingJourneyViewProps {
   currentRiskLevel: RiskLevel
+  activeCase?: CaseRecord | null
+  currentUser?: UserProfile
+  currentLanguage?: string
   onScheduleAppointment: (appointment: AppointmentRecord) => void
   scheduledAppointments: AppointmentRecord[]
   onTriggerSOS: () => void
@@ -56,11 +66,16 @@ const INITIAL_BUBBLES: BubbleItem[] = [
 
 export function WellbeingJourneyView({
   currentRiskLevel,
+  activeCase,
+  currentUser,
   onScheduleAppointment,
   scheduledAppointments,
   onTriggerSOS,
   onOpenAudioTools
 }: WellbeingJourneyViewProps) {
+  // Dynamic journey computed from active case state
+  const journey = WellbeingService.getJourneyForCase(activeCase)
+
   // Tele-call modal state
   const [teleModalOpen, setTeleModalOpen] = useState(false)
   const [teleRecipient, setTeleRecipient] = useState({ name: '', role: '', phone: '' })
@@ -70,6 +85,7 @@ export function WellbeingJourneyView({
   const [selectedSlotId, setSelectedSlotId] = useState('slot-1')
   const [meetingMode, setMeetingMode] = useState<'Secure Video Call' | 'Telephonic Audio' | 'In-Person Safe Clinic'>('Secure Video Call')
   const [bookingSuccess, setBookingSuccess] = useState(false)
+  const [bookingLoading, setBookingLoading] = useState(false)
 
   // Box Breathing Interactive State
   const [breathingActive, setBreathingActive] = useState(false)
@@ -148,26 +164,36 @@ export function WellbeingJourneyView({
     setTeleModalOpen(true)
   }
 
-  const handleConfirmAppointment = () => {
+  const handleConfirmAppointment = async () => {
+    setBookingLoading(true)
     const chosenSlot = AVAILABLE_APPOINTMENT_SLOTS.find(s => s.id === selectedSlotId) || AVAILABLE_APPOINTMENT_SLOTS[0]
-    const newAppointment: AppointmentRecord = {
-      id: `APT-${Date.now().toString().slice(-4)}`,
-      doctor_name: 'Dr. Ramesh Chandra',
+    const doctorName = journey.assignedPsychiatrist || 'Dr. Ramesh Chandra'
+
+    const newAppointment: Omit<AppointmentRecord, 'id'> = {
+      case_id: activeCase?.id,
+      victim_user_id: currentUser?.id,
+      psychiatrist_id: activeCase?.assigned_counsellor_id,
+      doctor_name: doctorName,
       doctor_title: 'Senior Clinical Psychiatrist',
       doctor_specialization: 'Trauma & Psychological Triage · NIMHANS',
       slot_time: chosenSlot.time,
       date: `${chosenSlot.date} (${chosenSlot.period})`,
       status: 'Confirmed',
       meeting_mode: meetingMode,
-      notes: 'Scheduled via NHAA Safe Space Wellbeing Journey'
+      notes: `Scheduled via NHAA Safe Space for Case ${activeCase?.id || 'Active'}`
     }
 
-    onScheduleAppointment(newAppointment)
-    setBookingSuccess(true)
-    setTimeout(() => {
-      setAppointmentModalOpen(false)
-      setBookingSuccess(false)
-    }, 2000)
+    const res = await AppointmentService.bookAppointment(newAppointment)
+    setBookingLoading(false)
+
+    if (res.data) {
+      onScheduleAppointment(res.data)
+      setBookingSuccess(true)
+      setTimeout(() => {
+        setAppointmentModalOpen(false)
+        setBookingSuccess(false)
+      }, 1800)
+    }
   }
 
   const isNormal = currentRiskLevel === 'Low'
@@ -176,6 +202,48 @@ export function WellbeingJourneyView({
 
   return (
     <div className="mx-auto max-w-[1160px] space-y-8 animate-in fade-in duration-200">
+      {/* Active Case Context Bar */}
+      {activeCase && (
+        <div className="rounded-2xl border border-[#cfe3dc] bg-white/90 p-4 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-7 items-center justify-center rounded-xl bg-[#e4f4ef] text-[#1d8272]">
+              <Sparkles size={15} />
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-[#163a34]">Active Case:</span>
+                <span className="font-mono text-xs font-bold text-[#1d8272] bg-[#edf7f3] px-2 py-0.5 rounded border border-[#cfe6dc]">
+                  {activeCase.id}
+                </span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  isHigh ? 'bg-[#fee2e2] text-[#b91c1c]' : isModerate ? 'bg-[#e0f2fe] text-[#0369a1]' : 'bg-[#dcfce7] text-[#15803d]'
+                }`}>
+                  SVI {journey.sviScore}/100 &bull; {currentRiskLevel} Risk
+                </span>
+              </div>
+              <p className="text-[11px] text-[#63877f] mt-0.5">
+                {journey.keyFocus}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 text-xs">
+            {journey.assignedPsychiatrist && (
+              <span className="text-[#0369a1] font-semibold flex items-center gap-1">
+                <Brain size={13} />
+                <span>{journey.assignedPsychiatrist}</span>
+              </span>
+            )}
+            {journey.assignedOfficer && (
+              <span className="text-[#dc2626] font-semibold flex items-center gap-1">
+                <MapPin size={13} />
+                <span>{journey.assignedOfficer}</span>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ========================================================================= */}
       {/* FLOW 1: NORMAL CONDITION FLOW */}
       {/* ========================================================================= */}
@@ -189,7 +257,7 @@ export function WellbeingJourneyView({
             </div>
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#163a34]">Your Wellbeing Journey</h1>
             <p className="mt-1.5 text-xs text-[#68857e]">
-              You&apos;re doing well. Let&apos;s continue building healthy habits and emotional resilience together.
+              You&apos;re doing well. Let&apos;s continue building healthy habits, positive emotional regulation, and resilience.
             </p>
           </div>
 
@@ -250,7 +318,7 @@ export function WellbeingJourneyView({
                 <button
                   type="button"
                   onClick={() => setBreathingActive(!breathingActive)}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-2xl text-xs font-bold shadow-md transition active:scale-95 ${
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-2xl text-xs font-bold shadow-md transition active:scale-95 cursor-pointer ${
                     breathingActive
                       ? 'bg-[#dc2626] text-white hover:bg-[#b91c1c]'
                       : 'bg-[#1d8272] text-white hover:bg-[#186f60]'
@@ -259,85 +327,75 @@ export function WellbeingJourneyView({
                   <Play size={14} />
                   <span>{breathingActive ? 'Pause Exercise' : 'Start Box Breathing'}</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBreathingActive(false)
-                    setBreathPhase('Inhale')
-                    setBreathSeconds(4)
-                    setCyclesCompleted(0)
-                  }}
-                  className="p-2.5 rounded-xl border border-[#d6e5df] text-[#6b8781] hover:bg-[#f0f6f3]"
-                  title="Reset"
-                >
-                  <RotateCcw size={15} />
-                </button>
               </div>
             </div>
 
             {/* Zen Bubble Popping Relaxation Game */}
-            <div className="rounded-3xl border border-[#d3e5df] bg-gradient-to-b from-[#f7fbf9] to-white p-6 sm:p-7 shadow-xs flex flex-col justify-between">
+            <div className="rounded-3xl border border-[#d3e5df] bg-white p-6 sm:p-7 shadow-xs flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="flex size-8 items-center justify-center rounded-xl bg-[#e4f4ef] text-[#1d8272]">
+                    <span className="flex size-8 items-center justify-center rounded-xl bg-[#e8f1fd] text-[#2563eb]">
                       <Sparkles size={17} />
                     </span>
-                    <h3 className="font-bold text-base text-[#183f39]">Zen Bubble Pop Game</h3>
+                    <h3 className="font-bold text-base text-[#183f39]">Zen Stress-Release Bubbles</h3>
                   </div>
-                  <span className="rounded-xl bg-[#eaf6f2] px-2.5 py-1 text-[11px] font-bold text-[#1d8272]">
-                    {stressReleasedCount} Stress Points Released
+                  <span className="rounded-xl bg-[#eff6ff] px-2.5 py-1 text-[11px] font-bold text-[#2563eb]">
+                    Harmonic 528 Hz Chimes
                   </span>
                 </div>
-                <p className="mt-2 text-xs text-[#6b8881]">
-                  Click or tap the floating mindful bubbles to pop intrusive tension and hear a soothing harmonic chime.
+                <p className="mt-2 text-xs leading-relaxed text-[#6b8881]">
+                  Pop the tension bubbles to release stress and hear restorative sound frequencies.
                 </p>
 
-                {/* Bubble Canvas Area */}
-                <div className="relative h-60 w-full rounded-2xl bg-gradient-to-br from-[#12312b] to-[#1a4a40] mt-4 overflow-hidden border border-[#235850] shadow-inner flex items-center justify-center">
-                  {bubbles.map((bubble) => (
-                    !bubble.popped ? (
-                      <button
-                        key={bubble.id}
-                        onClick={() => handlePopBubble(bubble.id)}
-                        className="absolute rounded-full text-white font-bold text-xs flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110 active:scale-90 cursor-pointer animate-pulse"
-                        style={{
-                          left: `${bubble.x}%`,
-                          top: `${bubble.y}%`,
-                          width: `${bubble.size}px`,
-                          height: `${bubble.size}px`,
-                          backgroundColor: `${bubble.color}cc`,
-                          backdropFilter: 'blur(4px)',
-                          border: '2px solid rgba(255,255,255,0.4)'
-                        }}
-                      >
-                        {bubble.word}
-                      </button>
-                    ) : null
+                {/* Bubble Game Canvas */}
+                <div className="relative my-4 h-48 rounded-2xl bg-gradient-to-tr from-[#f0f9f6] via-[#f7fbf9] to-[#edf6ff] border border-[#d8ece4] overflow-hidden">
+                  {bubbles.map(bubble => (
+                    <button
+                      key={bubble.id}
+                      type="button"
+                      onClick={() => handlePopBubble(bubble.id)}
+                      disabled={bubble.popped}
+                      style={{
+                        left: `${bubble.x}%`,
+                        top: `${bubble.y}%`,
+                        width: `${bubble.size}px`,
+                        height: `${bubble.size}px`,
+                        backgroundColor: `${bubble.color}22`,
+                        borderColor: bubble.color
+                      }}
+                      className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 flex items-center justify-center transition-all duration-300 font-bold text-xs cursor-pointer shadow-sm hover:scale-110 active:scale-95 ${
+                        bubble.popped ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'
+                      }`}
+                    >
+                      <span style={{ color: bubble.color }}>{bubble.word}</span>
+                    </button>
                   ))}
 
-                  {bubbles.every(b => b.popped) && (
-                    <div className="text-center p-4 bg-black/40 backdrop-blur-md rounded-2xl text-white animate-in zoom-in-95 duration-200">
-                      <Award size={32} className="mx-auto text-[#a4ebd9]" />
-                      <p className="text-sm font-bold mt-2">All Mindful Bubbles Cleared!</p>
-                      <p className="text-xs text-[#a4ebd9] mt-0.5">Your mind is grounded and peaceful.</p>
+                  {stressReleasedCount === bubbles.length && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 backdrop-blur-xs p-4 text-center animate-in fade-in">
+                      <Award size={32} className="text-[#10b981]" />
+                      <p className="text-xs font-bold text-[#16443c] mt-1">Mind Cleared &bull; Great Job!</p>
+                      <p className="text-[11px] text-[#6d8a83]">You have popped all tension bubbles.</p>
                       <button
+                        type="button"
                         onClick={handleResetBubbles}
-                        className="mt-3 rounded-xl bg-[#1d8272] px-4 py-1.5 text-xs font-bold text-white hover:bg-[#186f60]"
+                        className="mt-3 flex items-center gap-1.5 rounded-xl bg-[#1d8272] text-white px-4 py-1.5 text-xs font-bold hover:bg-[#186f60] cursor-pointer"
                       >
-                        Spawn New Bubbles
+                        <RotateCcw size={13} />
+                        <span>Play Again</span>
                       </button>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-[#edf4f0] mt-4">
-                <span className="text-[11px] text-[#73928a]">Click bubbles to release sound chimes</span>
+              <div className="flex items-center justify-between text-xs text-[#6e8f87] pt-2">
+                <span>Bubbles Popped: <strong>{stressReleasedCount}</strong> / {bubbles.length}</span>
                 <button
                   type="button"
                   onClick={handleResetBubbles}
-                  className="flex items-center gap-1 text-xs font-bold text-[#1d8272] hover:underline"
+                  className="flex items-center gap-1 text-[#1d8272] hover:underline font-bold cursor-pointer"
                 >
                   <RotateCcw size={13} />
                   <span>Reset Bubbles</span>
@@ -349,264 +407,215 @@ export function WellbeingJourneyView({
       )}
 
       {/* ========================================================================= */}
-      {/* FLOW 2: MODERATE CONDITION FLOW */}
+      {/* FLOW 2: MODERATE STRESS CONDITION FLOW */}
       {/* ========================================================================= */}
       {isModerate && (
         <div className="space-y-8">
           {/* Header */}
           <div className="border-b border-[#e2ece7] pb-6">
-            <div className="flex items-center gap-2 text-xs font-bold text-[#b87817] uppercase tracking-wider">
-              <UserCheck size={14} />
-              <span>Personalized Professional Support Active</span>
+            <div className="flex items-center gap-2 text-xs font-bold text-[#0284c7] uppercase tracking-wider">
+              <Brain size={14} />
+              <span>Assigned Clinical Psychiatrist Support Plan</span>
             </div>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#163a34]">Your Personalized Support Journey</h1>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#163a34]">Your Guided Care Journey</h1>
             <p className="mt-1.5 text-xs text-[#68857e]">
-              A licensed clinical psychologist has been assigned to guide your emotional processing and recovery.
+              Based on your narrative analysis, we have paired you with a dedicated clinical mental health specialist.
             </p>
           </div>
 
-          {/* Assigned Psychiatrist Professional Card */}
-          <div className="rounded-3xl border border-[#d6e5df] bg-white p-6 sm:p-8 shadow-sm">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-              <div className="flex items-start sm:items-center gap-4">
-                <div className="size-16 sm:size-20 rounded-2xl bg-gradient-to-br from-[#1d8272] to-[#14574c] text-white flex items-center justify-center text-2xl font-bold shadow-md shrink-0 border-2 border-white">
-                  RC
+          {/* Assigned Psychiatrist Profile & Booking Card */}
+          <div className="rounded-3xl border-2 border-[#bae6fd] bg-gradient-to-r from-[#f0f9ff] via-[#f8fbff] to-white p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="flex items-start gap-4">
+                <div className="flex size-16 items-center justify-center rounded-2xl bg-[#0284c7] text-white text-xl font-bold shadow-md shadow-[#0284c7]/20 shrink-0">
+                  {((journey.assignedPsychiatrist || 'RC').split(' ').map(w => w[0]).join('').slice(0, 2)).toUpperCase()}
                 </div>
                 <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-xl font-bold text-[#163a34]">Dr. Ramesh Chandra</h2>
-                    <span className="rounded-full bg-[#e4f4ef] border border-[#bfe2d7] px-2.5 py-0.5 text-[10px] font-bold text-[#1d8272]">
-                      Assigned Psychiatrist
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-[#0c4a6e]">{journey.assignedPsychiatrist || 'Dr. Ramesh Chandra'}</h3>
+                    <span className="rounded-full bg-[#e0f2fe] border border-[#bae6fd] px-2.5 py-0.5 text-[10px] font-extrabold text-[#0369a1]">
+                      Verified Specialist
                     </span>
                   </div>
-                  <p className="text-xs text-[#527770] font-medium mt-1">
-                    MD Psychiatry · NIMHANS Trained · Trauma &amp; Crisis Response Specialist
+                  <p className="text-xs text-[#0369a1] font-semibold mt-0.5">
+                    Senior Clinical Psychiatrist &bull; Trauma Triage Desk (NIMHANS)
                   </p>
-                  <div className="flex items-center gap-2 mt-2 text-[11px] text-[#1d8272] font-semibold">
-                    <span className="size-2 rounded-full bg-[#10b981] animate-pulse" />
-                    <span>Available Today for Tele-Consultation &amp; Support Plan Review</span>
-                  </div>
+                  <p className="text-xs text-[#527770] mt-2 max-w-xl leading-relaxed">
+                    Specialized in acute stress debriefing, caste atrocity trauma care, cognitive somatic grounding, and safe rehabilitation.
+                  </p>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+              <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => handleOpenCall('Dr. Ramesh Chandra', 'Senior Clinical Psychiatrist', '+91 98101 23456')}
-                  className="flex flex-1 sm:flex-initial items-center justify-center gap-2 rounded-2xl bg-[#1d8272] hover:bg-[#186f60] text-white px-5 py-3 text-xs font-bold shadow-md transition active:scale-95"
+                  onClick={() => handleOpenCall(journey.assignedPsychiatrist || 'Dr. Ramesh Chandra', 'Lead Clinical Psychiatrist', '+91 98101 23456')}
+                  className="flex items-center gap-2 rounded-2xl bg-[#0284c7] hover:bg-[#0369a1] text-white px-5 py-3 text-xs font-bold shadow-md shadow-[#0284c7]/20 transition active:scale-95 cursor-pointer"
                 >
                   <PhoneCall size={15} />
-                  <span>Call Now</span>
+                  <span>Connect Telephonic Call</span>
                 </button>
-
                 <button
                   type="button"
                   onClick={() => setAppointmentModalOpen(true)}
-                  className="flex flex-1 sm:flex-initial items-center justify-center gap-2 rounded-2xl border border-[#cce4dc] bg-[#f2f8f5] hover:bg-[#e4f2ec] text-[#1a5b50] px-5 py-3 text-xs font-bold transition active:scale-95"
+                  className="flex items-center gap-2 rounded-2xl border border-[#bae6fd] bg-white hover:bg-[#f0f9ff] text-[#0284c7] px-5 py-3 text-xs font-bold transition active:scale-95 shadow-xs cursor-pointer"
                 >
                   <Calendar size={15} />
-                  <span>Schedule Appointment</span>
+                  <span>Book 1-on-1 Session</span>
                 </button>
               </div>
             </div>
-
-            {/* Scheduled Appointments Display */}
-            {scheduledAppointments.length > 0 && (
-              <div className="mt-6 rounded-2xl bg-[#ecfdf5] border border-[#a7f3d0] p-4 text-[#065f46] animate-in fade-in duration-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <CheckCircle2 size={18} className="text-[#10b981]" />
-                    <div>
-                      <p className="text-xs font-bold">Your appointment has been scheduled successfully.</p>
-                      <p className="text-[11px] text-[#047857] mt-0.5">
-                        Session with {scheduledAppointments[0].doctor_name} on {scheduledAppointments[0].date} at {scheduledAppointments[0].slot_time} ({scheduledAppointments[0].meeting_mode}).
-                      </p>
-                    </div>
-                  </div>
-                  <span className="rounded-lg bg-white px-2.5 py-1 text-[10px] font-bold text-[#1d8272] border border-[#a7f3d0]">
-                    Confirmed
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* 3-Step Moderate Clinical Care Plan */}
-          <div className="rounded-3xl border border-[#d6e5df] bg-white p-6 sm:p-7 shadow-xs">
-            <h3 className="text-base font-bold text-[#183f39]">Recommended 3-Stage Support Plan</h3>
-            <div className="mt-4 grid gap-4 sm:grid-cols-3">
-              <div className="p-4 rounded-2xl bg-[#f7faf8] border border-[#e2ede8]">
-                <span className="text-[10px] font-bold text-[#1d8272] uppercase">Phase 1</span>
-                <h4 className="font-bold text-xs text-[#193e38] mt-1">Cognitive Grounding</h4>
-                <p className="text-[11px] text-[#6d8a83] mt-1">
-                  Daily box breathing and soundscape calming to lower acute panic.
-                </p>
+          {/* Scheduled Appointments List */}
+          {scheduledAppointments.length > 0 && (
+            <div className="rounded-3xl border border-[#d3e5df] bg-white p-6 shadow-xs">
+              <h3 className="text-sm font-bold text-[#163a34] mb-3 flex items-center gap-2">
+                <Calendar size={16} className="text-[#0284c7]" />
+                <span>Your Confirmed Tele-Consultations</span>
+              </h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {scheduledAppointments.map(apt => (
+                  <div key={apt.id} className="p-4 rounded-2xl border border-[#bae6fd] bg-[#f8fbff] flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-[#0c4a6e]">{apt.doctor_name}</p>
+                      <p className="text-[11px] text-[#527770]">{apt.date} &bull; {apt.slot_time}</p>
+                      <span className="inline-block mt-1 text-[10px] font-bold bg-[#e0f2fe] text-[#0369a1] px-2 py-0.5 rounded">
+                        {apt.meeting_mode}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenCall(apt.doctor_name, apt.doctor_title, '+91 98101 23456')}
+                      className="rounded-xl bg-[#0284c7] text-white p-2.5 hover:bg-[#0369a1] transition cursor-pointer"
+                    >
+                      <PhoneCall size={14} />
+                    </button>
+                  </div>
+                ))}
               </div>
+            </div>
+          )}
 
-              <div className="p-4 rounded-2xl bg-[#f7faf8] border border-[#e2ede8]">
-                <span className="text-[10px] font-bold text-[#1d8272] uppercase">Phase 2</span>
-                <h4 className="font-bold text-xs text-[#193e38] mt-1">Tele-Consultation</h4>
-                <p className="text-[11px] text-[#6d8a83] mt-1">
-                  1-on-1 session with Dr. Ramesh Chandra to review trauma triggers.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#f7faf8] border border-[#e2ede8]">
-                <span className="text-[10px] font-bold text-[#1d8272] uppercase">Phase 3</span>
-                <h4 className="font-bold text-xs text-[#193e38] mt-1">Weekly Follow-Up</h4>
-                <p className="text-[11px] text-[#6d8a83] mt-1">
-                  Structured resilience check-in and institutional protection notice.
-                </p>
-              </div>
+          {/* Dynamic Milestones Roadmap */}
+          <div className="rounded-3xl border border-[#d3e5df] bg-white p-6 sm:p-7 shadow-xs">
+            <h3 className="text-sm font-bold text-[#163a34] mb-4">Your Dynamic 4-Stage Redressal Path</h3>
+            <div className="space-y-4">
+              {journey.steps.map((step, idx) => (
+                <div key={step.id} className="flex items-start gap-3.5 p-4 rounded-2xl bg-[#fbfdfc] border border-[#e5f0ec]">
+                  <div className="flex size-7 items-center justify-center rounded-xl bg-[#e4f4ef] text-[#1d8272] font-bold text-xs shrink-0">
+                    {idx + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h4 className="text-xs font-bold text-[#163a34]">{step.title}</h4>
+                      <span className="text-[10px] font-bold bg-[#eef7f4] text-[#1d8272] px-2 py-0.5 rounded">
+                        {step.timeframe}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#6b8c84] mt-0.5">{step.subtitle}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* FLOW 3: HIGH-RISK CONDITION FLOW */}
+      {/* FLOW 3: HIGH & CRITICAL RISK ESCALATION FLOW */}
       {/* ========================================================================= */}
       {isHigh && (
         <div className="space-y-8">
-          {/* Header */}
-          <div className="border-b border-[#e2ece7] pb-6">
-            <div className="flex items-center gap-2 text-xs font-bold text-[#dc2626] uppercase tracking-wider">
-              <AlertOctagon size={14} />
-              <span>Immediate Support Network Activated</span>
-            </div>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#163a34]">Immediate Support Network</h1>
-            <p className="mt-1.5 text-xs text-[#68857e]">
-              You are not alone. Your support network has been notified and is available to help protect and guide you immediately.
-            </p>
-          </div>
-
-          {/* Dual Support Cards Grid */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Card 1: Psychiatrist Support */}
-            <div className="rounded-3xl border border-[#d6e5df] bg-white p-6 sm:p-7 shadow-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between border-b border-[#edf4f0] pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="size-12 rounded-2xl bg-[#1d8272] text-white flex items-center justify-center text-base font-bold shadow-sm">
-                      RC
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-sm text-[#183e38]">Dr. Ramesh Chandra</h3>
-                      <p className="text-[11px] text-[#5f7e77]">Lead Psychological Triage</p>
-                    </div>
+          {/* Critical Priority Alert Banner */}
+          <div className="rounded-3xl border-2 border-[#fca5a5] bg-[#fff5f5] p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="flex items-start gap-4">
+                <div className="flex size-14 items-center justify-center rounded-2xl bg-[#dc2626] text-white shadow-md shadow-[#dc2626]/20 shrink-0">
+                  <ShieldAlert size={28} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-[#991b1b]">
+                      Priority Protection &amp; Immediate Safeguard Active
+                    </h2>
+                    <span className="rounded-full bg-[#fecaca] px-2.5 py-0.5 text-[10px] font-extrabold text-[#991b1b]">
+                      TIER-1 ESCALATION
+                    </span>
                   </div>
-                  <span className="rounded-xl bg-[#e4f4ef] px-2.5 py-1 text-[10px] font-bold text-[#1d8272]">
-                    Assigned
-                  </span>
-                </div>
-
-                <div className="mt-4 space-y-2 text-xs text-[#527770]">
-                  <p className="flex items-center gap-2 font-medium">
-                    <Check size={14} className="text-[#10b981]" />
-                    <span>Specialized trauma de-escalation protocol</span>
-                  </p>
-                  <p className="flex items-center gap-2 font-medium">
-                    <Check size={14} className="text-[#10b981]" />
-                    <span>Priority Tele-Consultation slot reserved</span>
+                  <p className="text-xs text-[#991b1b] mt-1 max-w-2xl leading-relaxed">
+                    High stress signals and intimidation markers have been verified. Your case is directly routed to the nearest designated SC/ST PoA Nodal Unit.
                   </p>
                 </div>
               </div>
 
-              <div className="mt-6 flex items-center gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => handleOpenCall('Dr. Ramesh Chandra', 'Senior Clinical Psychiatrist', '+91 98101 23456')}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-[#1d8272] hover:bg-[#186f60] text-white py-2.5 text-xs font-bold shadow-sm transition"
-                >
-                  <PhoneCall size={14} />
-                  <span>Call Doctor</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAppointmentModalOpen(true)}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-[#cbe4db] bg-[#f0f8f5] hover:bg-[#e2f1ec] text-[#1a5b50] py-2.5 text-xs font-bold transition"
-                >
-                  <Calendar size={14} />
-                  <span>Book Slot</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Card 2: Emergency / Police Safety Support */}
-            <div className="rounded-3xl border border-[#fca5a5] bg-[#fffbfb] p-6 sm:p-7 shadow-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between border-b border-[#fee2e2] pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="size-12 rounded-2xl bg-[#dc2626] text-white flex items-center justify-center text-base font-bold shadow-sm">
-                      VS
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-sm text-[#991b1b]">Insp. Vikram Pratap Singh</h3>
-                      <p className="text-[11px] text-[#b91c1c]">Law Enforcement Liaison · Nodal Officer</p>
-                    </div>
-                  </div>
-                  <span className="rounded-xl bg-[#fee2e2] px-2.5 py-1 text-[10px] font-bold text-[#dc2626] border border-[#fca5a5]">
-                    Active Protection
-                  </span>
-                </div>
-
-                <div className="mt-4 space-y-2 text-xs text-[#7f1d1d]">
-                  <p className="flex items-center gap-2 font-medium">
-                    <ShieldCheck size={14} className="text-[#dc2626]" />
-                    <span>Special PoA Protection Cell notified</span>
-                  </p>
-                  <p className="flex items-center gap-2 font-medium">
-                    <ShieldCheck size={14} className="text-[#dc2626]" />
-                    <span>24x7 Escort &amp; PCR Van coordination ready</span>
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-6 flex items-center gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => handleOpenCall('Insp. Vikram Pratap Singh', 'Law Enforcement Liaison', '+91 94220 98765')}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-[#dc2626] hover:bg-[#b91c1c] text-white py-2.5 text-xs font-bold shadow-sm transition"
-                >
-                  <PhoneCall size={14} />
-                  <span>Call Officer</span>
-                </button>
+              <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   onClick={onTriggerSOS}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-[#fca5a5] bg-white hover:bg-[#fee2e2] text-[#991b1b] py-2.5 text-xs font-bold transition"
+                  className="flex items-center gap-2 rounded-2xl bg-[#dc2626] hover:bg-[#b91c1c] text-white px-6 py-3.5 text-xs font-extrabold shadow-lg shadow-[#dc2626]/30 transition active:scale-95 cursor-pointer animate-pulse"
                 >
-                  <AlertOctagon size={14} />
-                  <span>Trigger SOS</span>
+                  <AlertOctagon size={16} />
+                  <span>Call 14566 National Helpline</span>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* 5-Step Journey Status Timeline */}
-          <div className="rounded-3xl border border-[#d6e5df] bg-white p-6 sm:p-8 shadow-xs">
-            <h3 className="text-base font-bold text-[#183f39]">Active Protection Journey Progress</h3>
-            
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-5 gap-3">
-              {[
-                { step: 1, title: 'Story Shared', status: 'Completed', color: 'bg-[#10b981]' },
-                { step: 2, title: 'Assessment Completed', status: 'Completed', color: 'bg-[#10b981]' },
-                { step: 3, title: 'Psychiatrist Assigned', status: 'Active', color: 'bg-[#1d8272]' },
-                { step: 4, title: 'Safety Support Activated', status: 'Active', color: 'bg-[#dc2626]' },
-                { step: 5, title: 'Ongoing Support', status: 'In Progress', color: 'bg-[#f59e0b]' }
-              ].map((item) => (
-                <div key={item.step} className="p-3.5 rounded-2xl bg-[#f8faf9] border border-[#e5efe9] flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-[#718f88]">Step {item.step}</span>
-                      <span className={`size-2.5 rounded-full ${item.color}`} />
-                    </div>
-                    <p className="font-bold text-xs text-[#1c443e] mt-1.5">{item.title}</p>
+          {/* Assigned Nearest Officer Dossier Card */}
+          <div className="rounded-3xl border border-[#fed7aa] bg-gradient-to-r from-[#fffbf5] to-white p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="flex items-start gap-4">
+                <div className="flex size-16 items-center justify-center rounded-2xl bg-[#ea580c] text-white text-xl font-bold shadow-md shadow-[#ea580c]/20 shrink-0">
+                  {((journey.assignedOfficer || 'VS').split(' ').map(w => w[0]).join('').slice(0, 2)).toUpperCase()}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-[#9a3412]">{journey.assignedOfficer || 'Insp. Vikram Pratap Singh'}</h3>
+                    <span className="rounded-full bg-[#ffedd5] border border-[#fed7aa] px-2.5 py-0.5 text-[10px] font-extrabold text-[#c2410c]">
+                      Station In-Charge
+                    </span>
                   </div>
-                  <span className="text-[10px] font-semibold text-[#1d8272] mt-3">
-                    {item.status}
-                  </span>
+                  <p className="text-xs text-[#c2410c] font-semibold mt-0.5">
+                    {journey.stationName || 'District Special Atrocities Redressal Cell'}
+                  </p>
+                  <p className="text-xs text-[#6b8c84] mt-2 max-w-xl leading-relaxed">
+                    Directly assigned for rapid physical escort, witness protection verification, and statutory zero-FIR filing under PoA Act.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleOpenCall(journey.assignedOfficer || 'Insp. Vikram Pratap Singh', 'Nodal Police Escort', '+91 94220 98765')}
+                  className="flex items-center gap-2 rounded-2xl bg-[#ea580c] hover:bg-[#c2410c] text-white px-5 py-3 text-xs font-bold shadow-md shadow-[#ea580c]/20 transition active:scale-95 cursor-pointer"
+                >
+                  <PhoneCall size={15} />
+                  <span>Call Officer Now</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* High Priority Roadmap */}
+          <div className="rounded-3xl border border-[#d3e5df] bg-white p-6 sm:p-7 shadow-xs">
+            <h3 className="text-sm font-bold text-[#163a34] mb-4">Emergency Redressal Roadmap</h3>
+            <div className="space-y-4">
+              {journey.steps.map((step, idx) => (
+                <div key={step.id} className="flex items-start gap-3.5 p-4 rounded-2xl bg-[#fffbfb] border border-[#fecdd3]">
+                  <div className="flex size-7 items-center justify-center rounded-xl bg-[#fee2e2] text-[#dc2626] font-bold text-xs shrink-0">
+                    {idx + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h4 className="text-xs font-bold text-[#163a34]">{step.title}</h4>
+                      <span className="text-[10px] font-bold bg-[#fee2e2] text-[#dc2626] px-2 py-0.5 rounded">
+                        {step.timeframe}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#6b8c84] mt-0.5">{step.subtitle}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -616,46 +625,52 @@ export function WellbeingJourneyView({
 
       {/* Appointment Booking Modal */}
       {appointmentModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md rounded-3xl border border-[#d6e5df] shadow-2xl p-6 sm:p-7 space-y-5">
-            <div className="flex items-center justify-between border-b border-[#edf4f0] pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="w-full max-w-lg rounded-3xl border border-[#cfe3dc] bg-white p-6 sm:p-8 shadow-2xl space-y-6">
+            <div className="flex items-center justify-between border-b border-[#edf4f0] pb-4">
               <div>
-                <h3 className="font-bold text-base text-[#183e38]">Schedule Tele-Consultation</h3>
-                <p className="text-xs text-[#6e8e86]">Select an available slot with Dr. Ramesh Chandra</p>
+                <h3 className="text-base font-bold text-[#163a34]">Book Clinical Tele-Consultation</h3>
+                <p className="text-xs text-[#63877f] mt-0.5">
+                  With {journey.assignedPsychiatrist || 'Dr. Ramesh Chandra'} (100% Confidential)
+                </p>
               </div>
-              <button onClick={() => setAppointmentModalOpen(false)} className="text-[#718f88] hover:text-[#183e38]">
+              <button
+                type="button"
+                onClick={() => setAppointmentModalOpen(false)}
+                className="size-8 rounded-full bg-[#f0f6f3] text-[#64877f] hover:bg-[#e4ede8] flex items-center justify-center text-xs font-bold cursor-pointer"
+              >
                 ✕
               </button>
             </div>
 
             {bookingSuccess ? (
-              <div className="py-8 text-center space-y-3">
-                <div className="size-14 rounded-full bg-[#10b981] text-white flex items-center justify-center mx-auto shadow-md">
+              <div className="py-8 text-center space-y-3 animate-in zoom-in-95">
+                <div className="size-14 mx-auto rounded-full bg-[#ecfdf5] border-2 border-[#10b981] flex items-center justify-center text-[#10b981]">
                   <Check size={28} />
                 </div>
-                <h4 className="font-bold text-sm text-[#183e38]">Your appointment has been scheduled successfully.</h4>
-                <p className="text-xs text-[#6e8e86]">
-                  A reminder will be sent 30 minutes prior to the session.
+                <h4 className="text-base font-bold text-[#065f46]">Appointment Confirmed!</h4>
+                <p className="text-xs text-[#047857]">
+                  Your session has been logged in the database and synced with Dr. Ramesh Chandra&apos;s schedule.
                 </p>
               </div>
             ) : (
-              <>
-                {/* Mode Selector */}
+              <div className="space-y-4">
+                {/* Meeting Mode Selector */}
                 <div>
-                  <label className="text-xs font-bold text-[#2a4e47]">Consultation Mode:</label>
-                  <div className="grid grid-cols-3 gap-2 mt-1.5 text-xs">
-                    {(['Secure Video Call', 'Telephonic Audio', 'In-Person Safe Clinic'] as const).map((m) => (
+                  <label className="block text-xs font-bold text-[#163a34] mb-2">Select Consultation Mode</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['Secure Video Call', 'Telephonic Audio', 'In-Person Safe Clinic'] as const).map(mode => (
                       <button
-                        key={m}
+                        key={mode}
                         type="button"
-                        onClick={() => setMeetingMode(m)}
-                        className={`p-2 rounded-xl text-[11px] font-semibold border transition ${
-                          meetingMode === m
-                            ? 'bg-[#1d8272] text-white border-[#1d8272]'
-                            : 'bg-[#fbfcfb] border-[#d8e6e1] text-[#55766f] hover:bg-[#eef6f3]'
+                        onClick={() => setMeetingMode(mode)}
+                        className={`p-3 rounded-2xl border text-center text-xs font-bold transition cursor-pointer ${
+                          meetingMode === mode
+                            ? 'border-[#0284c7] bg-[#f0f9ff] text-[#0369a1]'
+                            : 'border-[#cfe2db] bg-white text-[#527770] hover:bg-[#f7fbf9]'
                         }`}
                       >
-                        {m}
+                        {mode}
                       </button>
                     ))}
                   </div>
@@ -663,57 +678,62 @@ export function WellbeingJourneyView({
 
                 {/* Available Slots */}
                 <div>
-                  <label className="text-xs font-bold text-[#2a4e47]">Available Time Slots:</label>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    {AVAILABLE_APPOINTMENT_SLOTS.map((slot) => (
+                  <label className="block text-xs font-bold text-[#163a34] mb-2">Choose Time Slot</label>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {AVAILABLE_APPOINTMENT_SLOTS.map(slot => (
                       <button
                         key={slot.id}
                         type="button"
                         onClick={() => setSelectedSlotId(slot.id)}
-                        className={`p-3 rounded-2xl text-left border transition ${
+                        className={`p-3 rounded-2xl border text-left transition cursor-pointer flex items-center justify-between ${
                           selectedSlotId === slot.id
-                            ? 'bg-[#e4f4ef] border-[#1d8272] text-[#18453e] font-bold shadow-xs'
-                            : 'bg-white border-[#d8e6e1] text-[#597a73] hover:border-[#b4d8cc]'
+                            ? 'border-[#0284c7] bg-[#f0f9ff] text-[#0369a1]'
+                            : 'border-[#cfe2db] bg-white text-[#527770] hover:bg-[#f7fbf9]'
                         }`}
                       >
-                        <p className="text-xs font-bold">{slot.date} – {slot.time}</p>
-                        <p className="text-[10px] text-[#718f88] mt-0.5">{slot.period} Slot</p>
+                        <div>
+                          <p className="text-xs font-bold">{slot.date} ({slot.period})</p>
+                          <p className="text-[11px] opacity-80">{slot.time}</p>
+                        </div>
+                        {selectedSlotId === slot.id && <Check size={16} className="text-[#0284c7]" />}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Confirm Button */}
-                <div className="pt-2 flex items-center justify-end gap-3 border-t border-[#edf4f0]">
+                <div className="pt-4 border-t border-[#edf4f0] flex items-center justify-end gap-3">
                   <button
                     type="button"
                     onClick={() => setAppointmentModalOpen(false)}
-                    className="px-4 py-2 text-xs font-semibold text-[#6e8e86]"
+                    className="px-4 py-2.5 rounded-2xl border border-[#cfe2db] text-xs font-semibold text-[#527770] hover:bg-[#f7fbf9] cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
+                    disabled={bookingLoading}
                     onClick={handleConfirmAppointment}
-                    className="px-5 py-2.5 rounded-2xl bg-[#1d8272] hover:bg-[#186f60] text-white text-xs font-bold shadow-md transition"
+                    className="px-6 py-2.5 rounded-2xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-bold shadow-md shadow-[#0284c7]/20 transition cursor-pointer disabled:opacity-50"
                   >
-                    Confirm Appointment
+                    {bookingLoading ? 'Confirming in Database...' : 'Confirm Appointment'}
                   </button>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Tele-Call Modal */}
-      <TeleCallModal
-        isOpen={teleModalOpen}
-        onClose={() => setTeleModalOpen(false)}
-        recipientName={teleRecipient.name}
-        recipientRole={teleRecipient.role}
-        recipientPhone={teleRecipient.phone}
-      />
+      {/* TeleCall Modal */}
+      {teleModalOpen && (
+        <TeleCallModal
+          isOpen={teleModalOpen}
+          recipientName={teleRecipient.name}
+          recipientRole={teleRecipient.role}
+          recipientPhone={teleRecipient.phone}
+          onClose={() => setTeleModalOpen(false)}
+        />
+      )}
     </div>
   )
 }

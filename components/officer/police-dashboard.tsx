@@ -198,7 +198,7 @@ export function PoliceDashboard({
                         <span>{c.incident_location.village_town_city}, {c.incident_location.district}, {c.incident_location.state} {c.incident_location.pincode ? `(${c.incident_location.pincode})` : ''}</span>
                         {c.proximity_routing && (
                           <span className="ml-1 text-[10px] text-[#c2410c] font-semibold bg-white px-1.5 py-0.5 rounded border border-[#fed7aa]">
-                            Matched via: {c.proximity_routing.routing_reason}
+                            Matched via: {typeof c.proximity_routing === 'object' ? c.proximity_routing.routing_reason : c.proximity_routing}
                           </span>
                         )}
                       </p>
@@ -208,7 +208,7 @@ export function PoliceDashboard({
                       <button
                         type="button"
                         onClick={() => handleCallComplainant(c)}
-                        className="flex items-center gap-1.5 rounded-xl border border-[#fed7aa] bg-white px-3 py-1.5 text-xs font-bold text-[#c2410c] hover:bg-[#fff7ed] transition"
+                        className="flex items-center gap-1.5 rounded-xl border border-[#fed7aa] bg-white px-3 py-1.5 text-xs font-bold text-[#c2410c] hover:bg-[#fff7ed] transition cursor-pointer"
                       >
                         <PhoneCall size={13} />
                         <span>Call Complainant</span>
@@ -218,7 +218,7 @@ export function PoliceDashboard({
                         type="button"
                         onClick={() => handleDispatchEscort(c.id)}
                         disabled={isDispatched}
-                        className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold text-white transition ${
+                        className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold text-white transition cursor-pointer ${
                           isDispatched
                             ? 'bg-[#10b981] cursor-default'
                             : 'bg-[#ea580c] hover:bg-[#c2410c] shadow-xs'
@@ -231,7 +231,7 @@ export function PoliceDashboard({
                       <button
                         type="button"
                         onClick={() => onOpenCaseModal(c)}
-                        className="flex items-center gap-1 rounded-xl bg-[#1d8272] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#166558] transition"
+                        className="flex items-center gap-1 rounded-xl bg-[#1d8272] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#166558] transition cursor-pointer"
                       >
                         <span>{t('review_case', currentLanguage)}</span>
                         <ArrowRight size={13} />
@@ -245,9 +245,9 @@ export function PoliceDashboard({
 
                   <div className="flex flex-wrap items-center gap-1.5 pt-1">
                     <span className="text-[10px] font-semibold text-[#a8a29e]">Key Flags:</span>
-                    {c.stress_assessment.key_trauma_triggers.slice(0, 4).map((t, idx) => (
+                    {c.stress_assessment.key_trauma_triggers.slice(0, 4).map((trig, idx) => (
                       <span key={idx} className="rounded-md bg-[#fee2e2] text-[#991b1b] px-2 py-0.5 text-[10px] font-semibold">
-                        {t}
+                        {trig}
                       </span>
                     ))}
                   </div>
@@ -273,8 +273,8 @@ export function PoliceDashboard({
         recipientName={teleRecipient.name}
         recipientRole={teleRecipient.role}
         recipientPhone={teleRecipient.phone}
+        recipientAvatarColor="#dc2626"
       />
     </div>
   )
 }
-
