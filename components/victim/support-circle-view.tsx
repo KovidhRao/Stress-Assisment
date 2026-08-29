@@ -17,15 +17,18 @@ import {
 } from 'lucide-react'
 import { TrustedContact } from '@/types'
 import { TeleCallModal } from '@/components/victim/tele-call-modal'
+import { t } from '@/lib/i18n'
 
 interface SupportCircleViewProps {
   contacts: TrustedContact[]
+  currentLanguage?: string
   onAddContact: (contact: TrustedContact) => void
   onTriggerSOS: () => void
 }
 
 export function SupportCircleView({
   contacts,
+  currentLanguage = 'en',
   onAddContact,
   onTriggerSOS
 }: SupportCircleViewProps) {

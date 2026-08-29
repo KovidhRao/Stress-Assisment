@@ -145,6 +145,68 @@ export function PsychiatristDashboard({
         </div>
       </div>
 
+      {/* Scheduled Appointments Sync Section */}
+      <div className="rounded-3xl border border-[#c5e4db] bg-gradient-to-r from-[#eef8f5] to-[#f4faf7] p-6 shadow-xs">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-9 items-center justify-center rounded-2xl bg-[#1d8272] text-white shadow-xs">
+              <Calendar size={18} />
+            </span>
+            <div>
+              <h3 className="font-bold text-sm text-[#173d37]">Live Tele-Consultation Schedule</h3>
+              <p className="text-[11px] text-[#5b7d75]">Appointments booked by complainants in real time</p>
+            </div>
+          </div>
+          <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#1d8272] border border-[#cfe3db]">
+            {scheduledAppointments.length + 1} Upcoming Today
+          </span>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Synced victim appointments */}
+          {scheduledAppointments.map((apt) => (
+            <div key={apt.id} className="rounded-2xl bg-white border border-[#cfe5dc] p-4 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-[#1d8272] uppercase bg-[#eaf6f2] px-2 py-0.5 rounded">
+                  {apt.slot_time} · {apt.date}
+                </span>
+                <span className="size-2 rounded-full bg-[#10b981] animate-ping" />
+              </div>
+              <p className="font-bold text-xs text-[#1a413b] mt-2">Ananya S. (Complainant)</p>
+              <p className="text-[11px] text-[#698982] mt-0.5">{apt.meeting_mode} · Trauma Intake</p>
+              <button
+                type="button"
+                onClick={() => setTeleModalOpen(true)}
+                className="mt-3 w-full flex items-center justify-center gap-1.5 rounded-xl bg-[#1d8272] text-white py-1.5 text-xs font-bold hover:bg-[#186f60] transition cursor-pointer"
+              >
+                <PhoneCall size={12} />
+                <span>Launch Tele-Session</span>
+              </button>
+            </div>
+          ))}
+
+          {/* Default Slot */}
+          <div className="rounded-2xl bg-white border border-[#cfe5dc] p-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-[#1e40af] uppercase bg-[#eff6ff] px-2 py-0.5 rounded">
+                6:30 PM · Today
+              </span>
+              <span className="size-2 rounded-full bg-[#3b82f6]" />
+            </div>
+            <p className="font-bold text-xs text-[#1a413b] mt-2">Pooja Rani Meghwal</p>
+            <p className="text-[11px] text-[#698982] mt-0.5">Secure Video Call · Physical Assault Review</p>
+            <button
+              type="button"
+              onClick={() => setTeleModalOpen(true)}
+              className="mt-3 w-full flex items-center justify-center gap-1.5 rounded-xl bg-[#1e40af] text-white py-1.5 text-xs font-bold hover:bg-[#1d3557] transition cursor-pointer"
+            >
+              <PhoneCall size={12} />
+              <span>Launch Tele-Session</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Main Clinical Triage Case Queue */}
       <div className="rounded-3xl border border-[#dcebe5] bg-white p-6 shadow-xs space-y-5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -163,7 +225,7 @@ export function PsychiatristDashboard({
                   key={risk}
                   type="button"
                   onClick={() => setFilterRisk(risk)}
-                  className={`rounded-lg px-3 py-1 font-semibold transition ${
+                  className={`rounded-lg px-3 py-1 font-semibold transition cursor-pointer ${
                     filterRisk === risk
                       ? 'bg-white text-[#1d8272] shadow-xs'
                       : 'text-[#698881] hover:text-[#163a34]'
@@ -217,7 +279,7 @@ export function PsychiatristDashboard({
                       <button
                         type="button"
                         onClick={() => handleCallComplainant(c)}
-                        className="flex items-center gap-1.5 rounded-xl border border-[#cfe3dc] bg-white px-3 py-1.5 text-xs font-bold text-[#1d8272] hover:bg-[#edf7f3] transition"
+                        className="flex items-center gap-1.5 rounded-xl border border-[#cfe3dc] bg-white px-3 py-1.5 text-xs font-bold text-[#1d8272] hover:bg-[#edf7f3] transition cursor-pointer"
                       >
                         <PhoneCall size={13} />
                         <span>Initiate Tele-Call</span>
@@ -226,7 +288,7 @@ export function PsychiatristDashboard({
                       <button
                         type="button"
                         onClick={() => onOpenCaseModal(c)}
-                        className="flex items-center gap-1 rounded-xl bg-[#1d8272] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#166558] transition shadow-xs"
+                        className="flex items-center gap-1 rounded-xl bg-[#1d8272] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#166558] transition shadow-xs cursor-pointer"
                       >
                         <span>{t('review_case', currentLanguage)}</span>
                         <ArrowRight size={13} />
@@ -241,9 +303,9 @@ export function PsychiatristDashboard({
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px]">
                     <div className="flex items-center gap-1.5">
                       <span className="text-[#73928a] font-medium">Psych Markers:</span>
-                      {c.stress_assessment.key_trauma_triggers.slice(0, 3).map((t, idx) => (
+                      {c.stress_assessment.key_trauma_triggers.slice(0, 3).map((trig, idx) => (
                         <span key={idx} className="rounded-md bg-[#edf7f3] text-[#1d8272] px-2 py-0.5 text-[10px] font-semibold">
-                          {t}
+                          {trig}
                         </span>
                       ))}
                     </div>
@@ -280,4 +342,3 @@ export function PsychiatristDashboard({
     </div>
   )
 }
-

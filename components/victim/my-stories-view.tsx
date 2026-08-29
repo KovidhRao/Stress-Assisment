@@ -16,15 +16,21 @@ import {
   CheckCircle2,
   Trash2,
   Lock,
-  ArrowRight
+  ArrowRight,
+  Brain,
+  MapPin
 } from 'lucide-react'
 import { UserStory, RiskLevel } from '@/types'
+import { t } from '@/lib/i18n'
 
 interface MyStoriesViewProps {
   stories: UserStory[]
+  activeStoryId?: string
+  currentLanguage?: string
+  onSelectActiveStory?: (story: UserStory) => void
   onShareAnotherStory: () => void
   onDeleteStory?: (id: string) => void
-  onViewSupportPlan?: (riskLevel: RiskLevel) => void
+  onViewSupportPlan?: (riskLevel: RiskLevel, caseId?: string) => void
 }
 
 const statusBadgeStyles: Record<string, string> = {
@@ -43,6 +49,9 @@ const riskStyles: Record<RiskLevel, string> = {
 
 export function MyStoriesView({
   stories,
+  activeStoryId,
+  currentLanguage = 'en',
+  onSelectActiveStory,
   onShareAnotherStory,
   onDeleteStory,
   onViewSupportPlan
@@ -60,7 +69,6 @@ export function MyStoriesView({
       setPlayingStoryId(null)
     } else {
       setPlayingStoryId(storyId)
-      // Simulate playback progression
       let currentSec = 0
       const interval = setInterval(() => {
         currentSec += 1
@@ -83,16 +91,16 @@ export function MyStoriesView({
             <Lock size={13} />
             <span>Private &amp; Confidential Dossier</span>
           </div>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#163a34]">Your Stories</h1>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#163a34]">Your Submitted Stories &amp; Cases</h1>
           <p className="mt-1.5 text-xs text-[#68857e]">
-            This is your private space to revisit what you have shared. You can review your audio recordings, transcripts, and active support statuses.
+            Review your past testimonials, trackable Case IDs, acoustic voice distress records, and active care pathways.
           </p>
         </div>
 
         <button
           type="button"
           onClick={onShareAnotherStory}
-          className="flex items-center justify-center gap-2 rounded-2xl bg-[#1d8272] hover:bg-[#186f60] text-white px-5 py-3 text-xs font-bold shadow-md shadow-[#1d8272]/20 transition active:scale-95 shrink-0"
+          className="flex items-center justify-center gap-2 rounded-2xl bg-[#1d8272] hover:bg-[#186f60] text-white px-5 py-3 text-xs font-bold shadow-md shadow-[#1d8272]/20 transition active:scale-95 shrink-0 cursor-pointer"
         >
           <Plus size={16} />
           <span>+ Share Another Story</span>
@@ -105,13 +113,19 @@ export function MyStoriesView({
           stories.map((story, index) => {
             const isExpanded = expandedStoryId === story.id
             const isPlaying = playingStoryId === story.id
+            const isActive = activeStoryId === story.id || (!activeStoryId && index === 0)
             const currentProg = audioProgress[story.id] || 0
             const totalDur = story.audio_duration_seconds || 30
 
             return (
               <div
                 key={story.id}
-                className="rounded-3xl border border-[#d6e5df] bg-white p-6 sm:p-7 shadow-xs transition hover:border-[#b8dad0] hover:shadow-sm"
+                onClick={() => onSelectActiveStory && onSelectActiveStory(story)}
+                className={`rounded-3xl border bg-white p-6 sm:p-7 shadow-xs transition hover:shadow-md cursor-pointer ${
+                  isActive
+                    ? 'border-[#1d8272] ring-2 ring-[#1d8272]/20 bg-gradient-to-b from-white to-[#fbfdfc]'
+                    : 'border-[#d6e5df] hover:border-[#b8dad0]'
+                }`}
               >
                 {/* Top Row: Meta Info & Status Badges */}
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#edf4f0] pb-4">
@@ -127,16 +141,35 @@ export function MyStoriesView({
                             {story.case_id}
                           </span>
                         )}
+                        {isActive && (
+                          <span className="text-[10px] font-extrabold text-[#1d8272] bg-[#e4f4ef] px-2 py-0.5 rounded-md">
+                            Active Case
+                          </span>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2 text-[11px] text-[#6d8a83] mt-0.5">
-                        <Clock size={12} />
-                        <span>{story.formatted_time}</span>
+                      <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#6d8a83] mt-0.5">
+                        <span className="flex items-center gap-1">
+                          <Clock size={12} />
+                          <span>{story.formatted_time}</span>
+                        </span>
                         <span>•</span>
                         <span>{story.language || 'English'}</span>
                         {story.assigned_officer_name && (
                           <>
                             <span>•</span>
-                            <span className="text-[#1d8272] font-medium">Nearest Officer: {story.assigned_officer_name}</span>
+                            <span className="text-[#dc2626] font-medium flex items-center gap-1">
+                              <MapPin size={11} />
+                              <span>Officer: {story.assigned_officer_name}</span>
+                            </span>
+                          </>
+                        )}
+                        {story.assigned_psychiatrist_name && (
+                          <>
+                            <span>•</span>
+                            <span className="text-[#0284c7] font-medium flex items-center gap-1">
+                              <Brain size={11} />
+                              <span>Psychiatrist: {story.assigned_psychiatrist_name}</span>
+                            </span>
                           </>
                         )}
                       </div>
@@ -164,8 +197,11 @@ export function MyStoriesView({
                     {story.narrative_text.length > 180 && (
                       <button
                         type="button"
-                        onClick={() => toggleExpand(story.id)}
-                        className="mt-2.5 flex items-center gap-1 text-xs font-bold text-[#1d8272] hover:underline"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleExpand(story.id)
+                        }}
+                        className="mt-2.5 flex items-center gap-1 text-xs font-bold text-[#1d8272] hover:underline cursor-pointer"
                       >
                         {isExpanded ? (
                           <>
@@ -188,8 +224,11 @@ export function MyStoriesView({
                       <div className="flex items-center gap-3.5 w-full sm:w-auto">
                         <button
                           type="button"
-                          onClick={() => togglePlayAudio(story.id, totalDur)}
-                          className="flex size-11 items-center justify-center rounded-2xl bg-[#1d8272] text-white shadow-md hover:bg-[#186f60] transition active:scale-95 shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            togglePlayAudio(story.id, totalDur)
+                          }}
+                          className="flex size-11 items-center justify-center rounded-2xl bg-[#1d8272] text-white shadow-md hover:bg-[#186f60] transition active:scale-95 shrink-0 cursor-pointer"
                           title={isPlaying ? 'Pause' : 'Play Audio Recording'}
                         >
                           {isPlaying ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
@@ -248,8 +287,11 @@ export function MyStoriesView({
                       {onViewSupportPlan && (
                         <button
                           type="button"
-                          onClick={() => onViewSupportPlan(story.risk_level)}
-                          className="flex items-center gap-1.5 rounded-xl bg-[#e4f3ee] hover:bg-[#d5ece4] px-3 py-1.5 text-xs font-bold text-[#1a6e60] transition"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onViewSupportPlan(story.risk_level, story.case_id)
+                          }}
+                          className="flex items-center gap-1.5 rounded-xl bg-[#e4f3ee] hover:bg-[#d5ece4] px-3 py-1.5 text-xs font-bold text-[#1a6e60] transition cursor-pointer"
                         >
                           <span>View Support Plan</span>
                           <ArrowRight size={13} />
@@ -271,7 +313,7 @@ export function MyStoriesView({
             <button
               type="button"
               onClick={onShareAnotherStory}
-              className="mt-5 rounded-2xl bg-[#1d8272] text-white px-5 py-2.5 text-xs font-bold shadow-md hover:bg-[#186f60] transition"
+              className="mt-5 rounded-2xl bg-[#1d8272] text-white px-5 py-2.5 text-xs font-bold shadow-md hover:bg-[#186f60] transition cursor-pointer"
             >
               Share Your First Story
             </button>
