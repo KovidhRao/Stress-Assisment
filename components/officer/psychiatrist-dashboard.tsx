@@ -106,42 +106,46 @@ export function PsychiatristDashboard({
               </div>
               <p className="text-xs text-[#285e54] mt-0.5 flex items-center gap-1 font-medium">
                 <MapPin size={13} />
-                <span>Specialized Triage Cell &bull; {currentOfficer.assigned_district}, {currentOfficer.assigned_state}</span>
+                <span>{t('pd_specialized_cell', currentLanguage)} &bull; {currentOfficer.assigned_district}, {currentOfficer.assigned_state}</span>
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 rounded-2xl bg-white border border-[#cfe3dc] px-4 py-2 text-xs font-bold text-[#1d8272] shadow-xs">
             <Sparkles size={14} />
-            <span>Clinical Proximity Triage Active</span>
+            <span>{t('pd_clinical_triage', currentLanguage)}</span>
           </div>
         </div>
       )}
 
-      {/* Psychiatrist Stats Row */}
+      {/* Psychiatrist Stats Row - computed from real data */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div className="rounded-2xl border border-[#dcebe5] bg-white p-4.5 shadow-xs">
           <p className="text-xs text-[#698881] font-semibold">{t('active_cases', currentLanguage)}</p>
           <p className="mt-2 text-2xl font-bold text-[#173a34]">{psychCases.length}</p>
-          <p className="mt-1 text-[11px] font-semibold text-[#1d8272]">Moderate &amp; High Triage</p>
+          <p className="mt-1 text-[11px] font-semibold text-[#1d8272]">{t('pd_moderate_high', currentLanguage)}</p>
         </div>
 
         <div className="rounded-2xl border border-[#bfdbfe] bg-[#f8faff] p-4.5 shadow-xs">
-          <p className="text-xs text-[#1e40af] font-semibold">Booked Consultations</p>
-          <p className="mt-2 text-2xl font-bold text-[#1e40af]">{scheduledAppointments.length + 2}</p>
-          <p className="mt-1 text-[11px] text-[#3b82f6] font-semibold">Synced from victim app</p>
+          <p className="text-xs text-[#1e40af] font-semibold">{t('pd_booked_consultations', currentLanguage)}</p>
+          <p className="mt-2 text-2xl font-bold text-[#1e40af]">{scheduledAppointments.length}</p>
+          <p className="mt-1 text-[11px] text-[#3b82f6] font-semibold">{t('pd_synced_victim', currentLanguage)}</p>
         </div>
 
         <div className="rounded-2xl border border-[#dcebe5] bg-white p-4.5 shadow-xs">
-          <p className="text-xs text-[#698881] font-semibold">Trauma De-escalation Rate</p>
-          <p className="mt-2 text-2xl font-bold text-[#173a34]">94.2%</p>
-          <p className="mt-1 text-[11px] text-[#1d8272] font-semibold">Over 48 hours</p>
+          <p className="text-xs text-[#698881] font-semibold">{t('pd_trauma_deescalation', currentLanguage)}</p>
+          <p className="mt-2 text-2xl font-bold text-[#173a34]">
+            {cases.length > 0 ? Math.round((cases.filter(c => c.status === 'Resolved').length / cases.length) * 100) : 0}%
+          </p>
+          <p className="mt-1 text-[11px] text-[#1d8272] font-semibold">{t('pd_over_48hrs', currentLanguage)}</p>
         </div>
 
         <div className="rounded-2xl border border-[#dcebe5] bg-white p-4.5 shadow-xs">
-          <p className="text-xs text-[#698881] font-semibold">Avg Session Length</p>
-          <p className="mt-2 text-2xl font-bold text-[#173a34]">22 min</p>
-          <p className="mt-1 text-[11px] text-[#698881]">Telephonic / Video</p>
+          <p className="text-xs text-[#698881] font-semibold">{t('cases_resolved', currentLanguage)}</p>
+          <p className="mt-2 text-2xl font-bold text-[#173a34]">
+            {cases.filter(c => c.status === 'Resolved').length} / {cases.length}
+          </p>
+          <p className="mt-1 text-[11px] text-[#698881]">{t('total_cases', currentLanguage)}</p>
         </div>
       </div>
 
@@ -153,57 +157,45 @@ export function PsychiatristDashboard({
               <Calendar size={18} />
             </span>
             <div>
-              <h3 className="font-bold text-sm text-[#173d37]">Live Tele-Consultation Schedule</h3>
-              <p className="text-[11px] text-[#5b7d75]">Appointments booked by complainants in real time</p>
+              <h3 className="font-bold text-sm text-[#173d37]">{t('pd_live_schedule', currentLanguage)}</h3>
+              <p className="text-[11px] text-[#5b7d75]">{t('pd_realtime_appts', currentLanguage)}</p>
             </div>
           </div>
           <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#1d8272] border border-[#cfe3db]">
-            {scheduledAppointments.length + 1} Upcoming Today
+            {scheduledAppointments.length + 1} {t('pd_upcoming_today', currentLanguage)}
           </span>
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Synced victim appointments */}
-          {scheduledAppointments.map((apt) => (
-            <div key={apt.id} className="rounded-2xl bg-white border border-[#cfe5dc] p-4 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-[#1d8272] uppercase bg-[#eaf6f2] px-2 py-0.5 rounded">
-                  {apt.slot_time} · {apt.date}
-                </span>
-                <span className="size-2 rounded-full bg-[#10b981] animate-ping" />
+          {scheduledAppointments.length > 0 ? (
+            scheduledAppointments.map((apt) => (
+              <div key={apt.id} className="rounded-2xl bg-white border border-[#cfe5dc] p-4 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-[#1d8272] uppercase bg-[#eaf6f2] px-2 py-0.5 rounded">
+                    {apt.slot_time} · {apt.date}
+                  </span>
+                  <span className="size-2 rounded-full bg-[#10b981] animate-ping" />
+                </div>
+                <p className="font-bold text-xs text-[#1a413b] mt-2">{apt.doctor_name || currentOfficer?.full_name || 'Clinical Specialist'}</p>
+                <p className="text-[11px] text-[#698982] mt-0.5">{apt.meeting_mode} · {apt.doctor_title || 'Trauma Intake'}</p>
+                <p className="text-[10px] text-[#8ca8a0] mt-0.5 truncate">{apt.notes || 'Scheduled via NHAA Safe Space'}</p>
+                <button
+                  type="button"
+                  onClick={() => setTeleModalOpen(true)}
+                  className="mt-3 w-full flex items-center justify-center gap-1.5 rounded-xl bg-[#1d8272] text-white py-1.5 text-xs font-bold hover:bg-[#186f60] transition cursor-pointer"
+                >
+                  <PhoneCall size={12} />
+                  <span>{t('pd_launch_session', currentLanguage)}</span>
+                </button>
               </div>
-              <p className="font-bold text-xs text-[#1a413b] mt-2">Ananya S. (Complainant)</p>
-              <p className="text-[11px] text-[#698982] mt-0.5">{apt.meeting_mode} · Trauma Intake</p>
-              <button
-                type="button"
-                onClick={() => setTeleModalOpen(true)}
-                className="mt-3 w-full flex items-center justify-center gap-1.5 rounded-xl bg-[#1d8272] text-white py-1.5 text-xs font-bold hover:bg-[#186f60] transition cursor-pointer"
-              >
-                <PhoneCall size={12} />
-                <span>Launch Tele-Session</span>
-              </button>
+            ))
+          ) : (
+            <div className="col-span-full rounded-2xl bg-white border border-dashed border-[#cfe5dc] p-6 text-center">
+              <Calendar size={24} className="mx-auto text-[#9db7b0]" />
+              <p className="mt-2 text-xs font-bold text-[#698881]">{t('no_appointments', currentLanguage)}</p>
+              <p className="text-[11px] text-[#8ca8a0] mt-0.5">{t('no_appointments_desc', currentLanguage)}</p>
             </div>
-          ))}
-
-          {/* Default Slot */}
-          <div className="rounded-2xl bg-white border border-[#cfe5dc] p-4 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[#1e40af] uppercase bg-[#eff6ff] px-2 py-0.5 rounded">
-                6:30 PM · Today
-              </span>
-              <span className="size-2 rounded-full bg-[#3b82f6]" />
-            </div>
-            <p className="font-bold text-xs text-[#1a413b] mt-2">Pooja Rani Meghwal</p>
-            <p className="text-[11px] text-[#698982] mt-0.5">Secure Video Call · Physical Assault Review</p>
-            <button
-              type="button"
-              onClick={() => setTeleModalOpen(true)}
-              className="mt-3 w-full flex items-center justify-center gap-1.5 rounded-xl bg-[#1e40af] text-white py-1.5 text-xs font-bold hover:bg-[#1d3557] transition cursor-pointer"
-            >
-              <PhoneCall size={12} />
-              <span>Launch Tele-Session</span>
-            </button>
-          </div>
+          )}
         </div>
       </div>
 
@@ -211,9 +203,9 @@ export function PsychiatristDashboard({
       <div className="rounded-3xl border border-[#dcebe5] bg-white p-6 shadow-xs space-y-5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-[#1a3d36]">Psychological &amp; Crisis Triage Queue</h2>
+            <h2 className="text-lg font-bold text-[#1a3d36]">{t('pd_triage_queue', currentLanguage)}</h2>
             <p className="text-xs text-[#6d8a83]">
-              Review citizen voice analyses, trauma markers, and initiate clinical tele-consultations.
+              {t('pd_triage_desc', currentLanguage)}
             </p>
           </div>
 
@@ -282,7 +274,7 @@ export function PsychiatristDashboard({
                         className="flex items-center gap-1.5 rounded-xl border border-[#cfe3dc] bg-white px-3 py-1.5 text-xs font-bold text-[#1d8272] hover:bg-[#edf7f3] transition cursor-pointer"
                       >
                         <PhoneCall size={13} />
-                        <span>Initiate Tele-Call</span>
+                        <span>{t('pd_initiate_telecall', currentLanguage)}</span>
                       </button>
 
                       <button
@@ -302,7 +294,7 @@ export function PsychiatristDashboard({
 
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[#73928a] font-medium">Psych Markers:</span>
+                      <span className="text-[#73928a] font-medium">{t('pd_psych_markers', currentLanguage)}</span>
                       {c.stress_assessment.key_trauma_triggers.slice(0, 3).map((trig, idx) => (
                         <span key={idx} className="rounded-md bg-[#edf7f3] text-[#1d8272] px-2 py-0.5 text-[10px] font-semibold">
                           {trig}
@@ -312,7 +304,7 @@ export function PsychiatristDashboard({
 
                     {c.voice_analysis && (
                       <span className="text-[#1d8272] font-semibold bg-[#eaf5f1] px-2 py-0.5 rounded-md text-[10px]">
-                        🎙️ Voice Distress: {c.voice_analysis.acoustic_distress_score}/100
+                        🎙️ {t('pd_voice_distress', currentLanguage)} {c.voice_analysis.acoustic_distress_score}/100
                       </span>
                     )}
                   </div>
@@ -322,9 +314,9 @@ export function PsychiatristDashboard({
           ) : (
             <div className="rounded-2xl border border-dashed border-[#dcebe5] p-8 text-center bg-[#fafdfc]">
               <CheckCircle2 size={32} className="mx-auto text-[#10b981]" />
-              <h4 className="mt-2 text-xs font-bold text-[#163a34]">All Triage Cases Clear in Your District</h4>
+              <h4 className="mt-2 text-xs font-bold text-[#163a34]">{t('pd_all_clear', currentLanguage)}</h4>
               <p className="mt-1 text-[11px] text-[#6d8a83]">
-                No pending moderate or high trauma cases requiring immediate psychiatric triage.
+                {t('pd_all_clear_desc', currentLanguage)}
               </p>
             </div>
           )}

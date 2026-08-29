@@ -20,10 +20,11 @@ import {
 interface WellbeingToolsModalProps {
   isOpen: boolean
   onClose: () => void
+  onCloseWithSurvey?: () => void
   initialTab?: 'breathing' | 'soundscape' | 'grounding'
 }
 
-export function WellbeingToolsModal({ isOpen, onClose, initialTab = 'breathing' }: WellbeingToolsModalProps) {
+export function WellbeingToolsModal({ isOpen, onClose, onCloseWithSurvey, initialTab = 'breathing' }: WellbeingToolsModalProps) {
   const [activeTab, setActiveTab] = useState<'breathing' | 'soundscape' | 'grounding'>(initialTab)
 
   // Box Breathing State
@@ -178,7 +179,7 @@ export function WellbeingToolsModal({ isOpen, onClose, initialTab = 'breathing' 
               <p className="text-[11px] text-[#a4d7cb]">Immediate Nervous System Regulation for Complainants</p>
             </div>
           </div>
-          <button onClick={() => { stopSynthesizedSound(); onClose(); }} className="text-[#a4d7cb] hover:text-white transition">
+          <button onClick={() => { stopSynthesizedSound(); if (onCloseWithSurvey) { onCloseWithSurvey() } else { onClose() } }} className="text-[#a4d7cb] hover:text-white transition">
             <X size={20} />
           </button>
         </div>

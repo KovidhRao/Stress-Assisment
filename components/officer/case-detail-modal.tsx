@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { 
   X, 
   ShieldCheck, 
@@ -22,6 +22,7 @@ import {
   ArrowUpRight
 } from 'lucide-react'
 import { CaseRecord, RiskLevel } from '@/types'
+import { CaseService } from '@/lib/services/case-service'
 
 interface CaseDetailModalProps {
   caseRecord: CaseRecord | null
@@ -29,6 +30,216 @@ interface CaseDetailModalProps {
   onClose: () => void
   onUpdateCase: (updated: CaseRecord) => void
   currentUserRole?: string
+}
+
+// ─── Follow-Up Tab Sub-Component ─────────────────────────────────────────────
+function FollowUpTabContent({ caseRecord }: { caseRecord: CaseRecord }) {
+  const [followUps, setFollowUps] = useState<Array<{
+    id: string; caseId: string; assignedTo: string; followUpType: string;
+    scheduledAt: string; completedAt: string | null; status: string; notes: string | null
+  }>>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [newFollowUp, setNewFollowUp] = useState({
+    assignedTo: '',
+    followUpType: 'check_in',
+    scheduledDate: '',
+    scheduledTime: '',
+    notes: ''
+  })
+
+  useEffect(() => {
+    if (!caseRecord) return
+    setLoading(true)
+    CaseService.fetchFollowUps(caseRecord.id).then(fups => {
+      setFollowUps(fups)
+      setLoading(false)
+    })
+  }, [caseRecord])
+
+  const handleCreateFollowUp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newFollowUp.scheduledDate || !newFollowUp.assignedTo) return
+
+    const scheduledAt = new Date(`${newFollowUp.scheduledDate}T${newFollowUp.scheduledTime || '10:00'}:00`).toISOString()
+
+    const result = await CaseService.createFollowUp({
+      caseId: caseRecord.id,
+      assignedTo: newFollowUp.assignedTo,
+      assignedRole: 'officer',
+      followUpType: newFollowUp.followUpType,
+      scheduledAt,
+      notes: newFollowUp.notes || undefined
+    })
+
+    if (result) {
+      setFollowUps(prev => [...prev, {
+        id: result.id,
+        caseId: caseRecord.id,
+        assignedTo: newFollowUp.assignedTo,
+        followUpType: newFollowUp.followUpType,
+        scheduledAt,
+        completedAt: null,
+        status: 'pending',
+        notes: newFollowUp.notes || null
+      }])
+      await CaseService.setFollowUpRequired(caseRecord.id, true)
+      setShowForm(false)
+      setNewFollowUp({ assignedTo: '', followUpType: 'check_in', scheduledDate: '', scheduledTime: '', notes: '' })
+    }
+  }
+
+  const handleStatusChange = async (fupId: string, newStatus: string) => {
+    const ok = await CaseService.updateFollowUpStatus(fupId, newStatus)
+    if (ok) {
+      setFollowUps(prev => prev.map(f => f.id === fupId ? { ...f, status: newStatus, completedAt: newStatus === 'completed' ? new Date().toISOString() : f.completedAt } : f))
+    }
+  }
+
+  const statusColors: Record<string, string> = {
+    pending: 'bg-[#fff7ed] text-[#c2410c] border-[#ffedd5]',
+    in_progress: 'bg-[#eff6ff] text-[#1d4ed8] border-[#dbeafe]',
+    completed: 'bg-[#ecfdf5] text-[#065f46] border-[#a7f3d0]',
+    overdue: 'bg-[#fef2f2] text-[#991b1b] border-[#fecaca]',
+    cancelled: 'bg-[#f3f4f6] text-[#6b7280] border-[#e5e7eb]'
+  }
+
+  const typeLabels: Record<string, string> = {
+    check_in: 'Welfare Check-In',
+    medical: 'Medical Follow-Up',
+    legal: 'Legal Aid Follow-Up',
+    welfare: 'Welfare Visit'
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-bold text-[#20433e] uppercase tracking-wider">Follow-Up Schedule</p>
+          <p className="text-[11px] text-[#718b85] mt-0.5">Track check-ins and welfare visits for this case</p>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1d8272] text-white text-xs font-semibold hover:bg-[#186f60] transition"
+        >
+          <Calendar size={13} />
+          <span>{showForm ? 'Cancel' : 'Schedule Follow-Up'}</span>
+        </button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={handleCreateFollowUp} className="p-4 rounded-2xl bg-[#f0f8f5] border border-[#cfe3dc] space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-bold text-[#20433e] block mb-1">Assign To</label>
+              <input
+                type="text"
+                value={newFollowUp.assignedTo}
+                onChange={e => setNewFollowUp(p => ({ ...p, assignedTo: e.target.value }))}
+                placeholder="Officer or counsellor name"
+                className="w-full p-2 rounded-xl border border-[#d6e3df] text-xs text-[#20433e] outline-none bg-white"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-[11px] font-bold text-[#20433e] block mb-1">Type</label>
+              <select
+                value={newFollowUp.followUpType}
+                onChange={e => setNewFollowUp(p => ({ ...p, followUpType: e.target.value }))}
+                className="w-full p-2 rounded-xl border border-[#d6e3df] text-xs text-[#20433e] outline-none bg-white"
+              >
+                <option value="check_in">Welfare Check-In</option>
+                <option value="medical">Medical Follow-Up</option>
+                <option value="legal">Legal Aid Follow-Up</option>
+                <option value="welfare">Welfare Visit</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] font-bold text-[#20433e] block mb-1">Date</label>
+              <input
+                type="date"
+                value={newFollowUp.scheduledDate}
+                onChange={e => setNewFollowUp(p => ({ ...p, scheduledDate: e.target.value }))}
+                className="w-full p-2 rounded-xl border border-[#d6e3df] text-xs text-[#20433e] outline-none bg-white"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-[11px] font-bold text-[#20433e] block mb-1">Time</label>
+              <input
+                type="time"
+                value={newFollowUp.scheduledTime}
+                onChange={e => setNewFollowUp(p => ({ ...p, scheduledTime: e.target.value }))}
+                className="w-full p-2 rounded-xl border border-[#d6e3df] text-xs text-[#20433e] outline-none bg-white"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] font-bold text-[#20433e] block mb-1">Notes</label>
+            <textarea
+              value={newFollowUp.notes}
+              onChange={e => setNewFollowUp(p => ({ ...p, notes: e.target.value }))}
+              placeholder="Optional notes for this follow-up..."
+              className="w-full p-2 rounded-xl border border-[#d6e3df] text-xs text-[#20433e] outline-none bg-white min-h-[50px]"
+            />
+          </div>
+          <div className="flex justify-end">
+            <button type="submit" className="px-4 py-2 rounded-xl bg-[#1d8272] text-white text-xs font-semibold hover:bg-[#186f60] transition">
+              Create Follow-Up
+            </button>
+          </div>
+        </form>
+      )}
+
+      {loading ? (
+        <p className="text-xs text-[#718b85] italic text-center py-6">Loading follow-ups...</p>
+      ) : followUps.length === 0 ? (
+        <div className="text-center py-8">
+          <Calendar size={32} className="mx-auto mb-2 text-[#a2beb7]" />
+          <p className="text-xs text-[#718b85]">No follow-ups scheduled yet.</p>
+          <p className="text-[11px] text-[#a2beb7] mt-1">Click &quot;Schedule Follow-Up&quot; to create one.</p>
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          {followUps.map(fup => (
+            <div key={fup.id} className="p-3.5 rounded-2xl bg-white border border-[#e4ede9] text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-[#1f423d]">{typeLabels[fup.followUpType] || fup.followUpType}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusColors[fup.status] || statusColors.pending}`}>\n                    {fup.status.charAt(0).toUpperCase() + fup.status.slice(1)}
+                  </span>
+                </div>
+                <span className="text-[11px] text-[#718b85]">Assigned to: {fup.assignedTo}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[11px] text-[#557b72]">
+                  <Calendar size={12} />
+                  <span>Scheduled: {new Date(fup.scheduledAt).toLocaleString()}</span>
+                  {fup.completedAt && (
+                    <span className="text-[#059669]">| Completed: {new Date(fup.completedAt).toLocaleString()}</span>
+                  )}
+                </div>
+                <div className="flex gap-1.5">
+                  {fup.status === 'pending' && (
+                    <button onClick={() => handleStatusChange(fup.id, 'in_progress')} className="px-2 py-1 rounded-lg bg-[#eff6ff] text-[#1d4ed8] text-[10px] font-bold hover:bg-[#dbeafe] transition">Start</button>
+                  )}
+                  {(fup.status === 'pending' || fup.status === 'in_progress') && (
+                    <button onClick={() => handleStatusChange(fup.id, 'completed')} className="px-2 py-1 rounded-lg bg-[#ecfdf5] text-[#065f46] text-[10px] font-bold hover:bg-[#d1fae5] transition">Complete</button>
+                  )}
+                  {fup.status !== 'completed' && fup.status !== 'cancelled' && (
+                    <button onClick={() => handleStatusChange(fup.id, 'cancelled')} className="px-2 py-1 rounded-lg bg-[#f3f4f6] text-[#6b7280] text-[10px] font-bold hover:bg-[#e5e7eb] transition">Cancel</button>
+                  )}
+                </div>
+              </div>
+              {fup.notes && (
+                <p className="text-[11px] text-[#557b72] italic bg-[#f8fbfa] p-2 rounded-xl border border-[#e4eee9]">{fup.notes}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 const levelBadges: Record<RiskLevel, { bg: string; text: string; border: string }> = {
@@ -39,9 +250,34 @@ const levelBadges: Record<RiskLevel, { bg: string; text: string; border: string 
 }
 
 export function CaseDetailModal({ caseRecord, isOpen, onClose, onUpdateCase }: CaseDetailModalProps) {
-  const [activeTab, setActiveTab] = useState<'assessment' | 'voice' | 'actions' | 'notes'>('assessment')
+  const [activeTab, setActiveTab] = useState<'assessment' | 'voice' | 'actions' | 'notes' | 'followup'>('assessment')
   const [newNote, setNewNote] = useState('')
   const [dispatchSuccess, setDispatchSuccess] = useState<string | null>(null)
+  const [dbNotes, setDbNotes] = useState<Array<{ id: string; author: string; role: string; text: string; timestamp: string }>>([])
+  const [notesLoading, setNotesLoading] = useState(false)
+  const [escalateReason, setEscalateReason] = useState('')
+  const [showEscalateForm, setShowEscalateForm] = useState(false)
+  const [escalating, setEscalating] = useState(false)
+
+  // Load notes from Supabase when modal opens
+  const loadNotes = useCallback(async () => {
+    if (!caseRecord) return
+    setNotesLoading(true)
+    try {
+      const notes = await CaseService.fetchNotes(caseRecord.id)
+      setDbNotes(notes)
+    } catch (err) {
+      console.warn('Failed to load notes:', err)
+    } finally {
+      setNotesLoading(false)
+    }
+  }, [caseRecord])
+
+  useEffect(() => {
+    if (isOpen && caseRecord) {
+      loadNotes()
+    }
+  }, [isOpen, caseRecord, loadNotes])
 
   if (!isOpen || !caseRecord) return null
 
@@ -80,27 +316,63 @@ export function CaseDetailModal({ caseRecord, isOpen, onClose, onUpdateCase }: C
     setTimeout(() => setDispatchSuccess(null), 4000)
   }
 
-  // Handle Adding Case Note
-  const handleAddNote = (e: React.FormEvent) => {
+  // Handle Mark as Reviewed
+  const handleMarkReviewed = async () => {
+    const ok = await CaseService.markCaseReviewed(caseRecord.id)
+    if (ok) {
+      onUpdateCase({ ...caseRecord, status: 'Reviewed' })
+      setDispatchSuccess('Case marked as Reviewed.')
+      setTimeout(() => setDispatchSuccess(null), 3000)
+    }
+  }
+
+  // Handle Escalate Case
+  const handleEscalate = async () => {
+    if (!escalateReason.trim()) return
+    setEscalating(true)
+    const ok = await CaseService.escalateCase(caseRecord.id, 'Officer', escalateReason.trim())
+    if (ok) {
+      onUpdateCase({ ...caseRecord, status: 'Escalated', priority_tier: 1 })
+      setEscalateReason('')
+      setShowEscalateForm(false)
+      setDispatchSuccess('Case escalated to senior officials with highest priority.')
+      setTimeout(() => setDispatchSuccess(null), 4000)
+    }
+    setEscalating(false)
+  }
+
+  // Handle Adding Case Note (persisted to Supabase)
+  const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newNote.trim()) return
 
-    const updatedNotes = [
-      ...caseRecord.notes,
-      {
-        id: `N-${Date.now()}`,
-        author: 'Dr. Ramesh Chandra',
-        role: 'Psychological Triage',
-        timestamp: 'Just now',
-        text: newNote.trim()
-      }
-    ]
+    const noteText = newNote.trim()
+    const noteAuthor = 'Officer / Psychiatrist'
+    const noteRole = 'Authorized Action'
 
-    onUpdateCase({
-      ...caseRecord,
-      notes: updatedNotes
-    })
+    // Optimistic UI update
+    const tempNote = {
+      id: `N-${Date.now()}`,
+      author: noteAuthor,
+      role: noteRole,
+      text: noteText,
+      timestamp: 'Just now'
+    }
+    setDbNotes(prev => [...prev, tempNote])
     setNewNote('')
+
+    // Persist to Supabase
+    const result = await CaseService.addNote({
+      caseId: caseRecord.id,
+      author: noteAuthor,
+      role: noteRole,
+      text: noteText
+    })
+
+    if (result) {
+      // Replace temp note with real DB note
+      setDbNotes(prev => prev.map(n => n.id === tempNote.id ? { ...n, id: result.id } : n))
+    }
   }
 
   return (
@@ -137,7 +409,7 @@ export function CaseDetailModal({ caseRecord, isOpen, onClose, onUpdateCase }: C
         </div>
 
         {/* Tab Switcher */}
-        <div className="grid grid-cols-4 p-1.5 bg-[#f0f6f3] border-b border-[#e1ece8] text-xs font-semibold">
+        <div className="grid grid-cols-5 p-1.5 bg-[#f0f6f3] border-b border-[#e1ece8] text-xs font-semibold">
           <button
             onClick={() => setActiveTab('assessment')}
             className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition ${
@@ -172,7 +444,16 @@ export function CaseDetailModal({ caseRecord, isOpen, onClose, onUpdateCase }: C
             }`}
           >
             <MessageSquare size={15} />
-            <span>Case Notes ({caseRecord.notes.length})</span>
+            <span>Notes ({dbNotes.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('followup')}
+            className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition ${
+              activeTab === 'followup' ? 'bg-white text-[#1d8272] shadow-xs' : 'text-[#647d77] hover:text-[#20433e]'
+            }`}
+          >
+            <Calendar size={15} />
+            <span>Follow-Up</span>
           </button>
         </div>
 
@@ -525,17 +806,91 @@ export function CaseDetailModal({ caseRecord, isOpen, onClose, onUpdateCase }: C
               </form>
 
               <div className="space-y-2.5 pt-2">
-                {caseRecord.notes.map((note) => (
+                {notesLoading && (
+                  <p className="text-xs text-[#718b85] italic text-center py-4">Loading notes from database...</p>
+                )}
+                {!notesLoading && dbNotes.length === 0 && (
+                  <p className="text-xs text-[#718b85] italic text-center py-4">No notes added yet. Type below to add the first note.</p>
+                )}
+                {dbNotes.map((note) => (
                   <div key={note.id} className="p-3.5 rounded-2xl bg-[#f8faf9] border border-[#e4ede9] text-xs space-y-1">
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="font-semibold text-[#1f423d]">{note.author} ({note.role})</span>
-                      <span className="text-[#8ba29c]">{note.timestamp}</span>
+                      <span className="text-[#8ba29c]">{note.timestamp === 'Just now' ? 'Just now' : new Date(note.timestamp).toLocaleString()}</span>
                     </div>
                     <p className="text-[#3b5b55] leading-relaxed">{note.text}</p>
                   </div>
-                ))}
+                )                )}
+              </div>
+
+              {/* Review & Escalation Actions */}
+              <div className="pt-4 border-t border-[#edf3f0] space-y-3">
+                <p className="text-xs font-bold text-[#20433e] uppercase tracking-wider">Case Review &amp; Escalation</p>
+                <div className="flex flex-wrap gap-2">
+                  {caseRecord.status !== 'Reviewed' && caseRecord.status !== 'Resolved' && (
+                    <button
+                      onClick={handleMarkReviewed}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#ecfdf5] border border-[#a7f3d0] text-[#065f46] text-xs font-semibold hover:bg-[#d1fae5] transition"
+                    >
+                      <CheckCircle2 size={14} />
+                      <span>Mark as Reviewed</span>
+                    </button>
+                  )}
+                  {caseRecord.status !== 'Resolved' && caseRecord.status !== 'Escalated' && (
+                    <button
+                      onClick={() => setShowEscalateForm(!showEscalateForm)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#fef2f2] border border-[#fecaca] text-[#991b1b] text-xs font-semibold hover:bg-[#fee2e2] transition"
+                    >
+                      <AlertTriangle size={14} />
+                      <span>Escalate to Senior Official</span>
+                    </button>
+                  )}
+                  {caseRecord.status === 'Reviewed' && (
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ecfdf5] text-[#065f46] text-xs font-semibold border border-[#a7f3d0]">
+                      <CheckCircle2 size={13} /> Reviewed ✓
+                    </span>
+                  )}
+                  {caseRecord.status === 'Escalated' && (
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#fef2f2] text-[#991b1b] text-xs font-semibold border border-[#fecaca]">
+                      <AlertTriangle size={13} /> Escalated ⚠
+                    </span>
+                  )}
+                </div>
+
+                {showEscalateForm && (
+                  <div className="p-4 rounded-2xl bg-[#fff5f5] border border-[#fecaca] space-y-3">
+                    <p className="text-xs font-bold text-[#991b1b]">Escalation Reason</p>
+                    <textarea
+                      value={escalateReason}
+                      onChange={e => setEscalateReason(e.target.value)}
+                      placeholder="Describe why this case needs escalation (e.g., imminent danger, systemic failure, media attention)..."
+                      className="w-full p-3 rounded-xl border border-[#fecaca] text-xs text-[#991b1b] outline-none bg-white min-h-[60px]"
+                    />
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] text-[#991b1b]/60">This will set priority to Tier 1 (Critical) and notify senior officials.</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { setShowEscalateForm(false); setEscalateReason('') }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[#6b7280] hover:bg-[#f3f4f6]"
+                        >Cancel</button>
+                        <button
+                          onClick={handleEscalate}
+                          disabled={escalating || !escalateReason.trim()}
+                          className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#dc2626] text-white text-xs font-semibold hover:bg-[#b91c1c] transition disabled:opacity-50"
+                        >
+                          <AlertTriangle size={12} />
+                          {escalating ? 'Escalating...' : 'Confirm Escalation'}</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
+          )}
+
+          {/* TAB 5: FOLLOW-UP TRACKING */}
+          {activeTab === 'followup' && (
+            <FollowUpTabContent caseRecord={caseRecord} />
           )}
         </div>
       </div>

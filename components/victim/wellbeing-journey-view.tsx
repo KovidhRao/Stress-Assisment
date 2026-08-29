@@ -32,6 +32,7 @@ import { AVAILABLE_APPOINTMENT_SLOTS } from '@/lib/mock-data'
 import { WellbeingService } from '@/lib/services/wellbeing-service'
 import { AppointmentService } from '@/lib/services/appointment-service'
 import { t } from '@/lib/i18n'
+import { BeforeAfterComparison } from '@/components/victim/before-after-comparison'
 
 interface WellbeingJourneyViewProps {
   currentRiskLevel: RiskLevel
@@ -68,6 +69,7 @@ export function WellbeingJourneyView({
   currentRiskLevel,
   activeCase,
   currentUser,
+  currentLanguage = 'en',
   onScheduleAppointment,
   scheduledAppointments,
   onTriggerSOS,
@@ -253,11 +255,11 @@ export function WellbeingJourneyView({
           <div className="border-b border-[#e2ece7] pb-6">
             <div className="flex items-center gap-2 text-xs font-bold text-[#1d8272] uppercase tracking-wider">
               <Sparkles size={14} />
-              <span>Normal &amp; Stable Emotional Baseline</span>
+              <span>{t('badge_normal', currentLanguage)}</span>
             </div>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#163a34]">Your Wellbeing Journey</h1>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#163a34]">{t('healing_journey_card_title', currentLanguage)}</h1>
             <p className="mt-1.5 text-xs text-[#68857e]">
-              You&apos;re doing well. Let&apos;s continue building healthy habits, positive emotional regulation, and resilience.
+              {t('healing_journey_card_desc', currentLanguage)}
             </p>
           </div>
 
@@ -271,14 +273,14 @@ export function WellbeingJourneyView({
                     <span className="flex size-8 items-center justify-center rounded-xl bg-[#e4f4ef] text-[#1d8272]">
                       <Wind size={17} />
                     </span>
-                    <h3 className="font-bold text-base text-[#183f39]">2-Minute Box Breathing</h3>
+                    <h3 className="font-bold text-base text-[#183f39]">{t('wb_box_breathing_title', currentLanguage)}</h3>
                   </div>
                   <span className="rounded-xl bg-[#eaf6f2] px-2.5 py-1 text-[11px] font-bold text-[#1d8272]">
-                    4-4-4 Rhythm
+                    {t('wb_box_breathing_rhythm', currentLanguage)}
                   </span>
                 </div>
                 <p className="mt-2 text-xs leading-relaxed text-[#6b8881]">
-                  Inhale, hold, exhale, and rest in equal 4-second intervals to maintain autonomic nervous balance.
+                  {t('wb_box_breathing_desc', currentLanguage)}
                 </p>
 
                 {/* Animated Pulsing Breathing Ring */}
@@ -299,14 +301,14 @@ export function WellbeingJourneyView({
                     />
                     <div className="relative z-10 text-center">
                       <p className="text-xs font-bold text-[#1d8272] uppercase tracking-wider">
-                        {breathingActive ? breathPhase : 'Ready'}
+                        {breathingActive ? t(`wb_breath_${breathPhase.toLowerCase()}`, currentLanguage) : t('wb_breath_ready', currentLanguage)}
                       </p>
                       <p className="text-3xl font-extrabold text-[#16443c] mt-0.5">
                         {breathingActive ? `${breathSeconds}s` : '4s'}
                       </p>
                       {breathingActive && (
                         <p className="text-[10px] text-[#6d8a83] mt-1 font-medium">
-                          Cycle {cyclesCompleted + 1}
+                          {t('wb_cycle', currentLanguage)} {cyclesCompleted + 1}
                         </p>
                       )}
                     </div>
@@ -325,7 +327,7 @@ export function WellbeingJourneyView({
                   }`}
                 >
                   <Play size={14} />
-                  <span>{breathingActive ? 'Pause Exercise' : 'Start Box Breathing'}</span>
+                  <span>{breathingActive ? t('wb_pause_breathing', currentLanguage) : t('wb_start_breathing', currentLanguage)}</span>
                 </button>
               </div>
             </div>
@@ -338,14 +340,14 @@ export function WellbeingJourneyView({
                     <span className="flex size-8 items-center justify-center rounded-xl bg-[#e8f1fd] text-[#2563eb]">
                       <Sparkles size={17} />
                     </span>
-                    <h3 className="font-bold text-base text-[#183f39]">Zen Stress-Release Bubbles</h3>
+                    <h3 className="font-bold text-base text-[#183f39]">{t('wb_zen_bubbles_title', currentLanguage)}</h3>
                   </div>
                   <span className="rounded-xl bg-[#eff6ff] px-2.5 py-1 text-[11px] font-bold text-[#2563eb]">
-                    Harmonic 528 Hz Chimes
+                    {t('wb_zen_bubbles_subtitle', currentLanguage)}
                   </span>
                 </div>
                 <p className="mt-2 text-xs leading-relaxed text-[#6b8881]">
-                  Pop the tension bubbles to release stress and hear restorative sound frequencies.
+                  {t('wb_zen_bubbles_desc', currentLanguage)}
                 </p>
 
                 {/* Bubble Game Canvas */}
@@ -375,15 +377,15 @@ export function WellbeingJourneyView({
                   {stressReleasedCount === bubbles.length && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 backdrop-blur-xs p-4 text-center animate-in fade-in">
                       <Award size={32} className="text-[#10b981]" />
-                      <p className="text-xs font-bold text-[#16443c] mt-1">Mind Cleared &bull; Great Job!</p>
-                      <p className="text-[11px] text-[#6d8a83]">You have popped all tension bubbles.</p>
+                      <p className="text-xs font-bold text-[#16443c] mt-1">{t('wb_mind_cleared', currentLanguage)}</p>
+                      <p className="text-[11px] text-[#6d8a83]">{t('wb_popped_all', currentLanguage)}</p>
                       <button
                         type="button"
                         onClick={handleResetBubbles}
                         className="mt-3 flex items-center gap-1.5 rounded-xl bg-[#1d8272] text-white px-4 py-1.5 text-xs font-bold hover:bg-[#186f60] cursor-pointer"
                       >
                         <RotateCcw size={13} />
-                        <span>Play Again</span>
+                        <span>{t('wb_play_again', currentLanguage)}</span>
                       </button>
                     </div>
                   )}
@@ -391,19 +393,27 @@ export function WellbeingJourneyView({
               </div>
 
               <div className="flex items-center justify-between text-xs text-[#6e8f87] pt-2">
-                <span>Bubbles Popped: <strong>{stressReleasedCount}</strong> / {bubbles.length}</span>
+                <span>{t('wb_bubbles_popped', currentLanguage)} <strong>{stressReleasedCount}</strong> / {bubbles.length}</span>
                 <button
                   type="button"
                   onClick={handleResetBubbles}
                   className="flex items-center gap-1 text-[#1d8272] hover:underline font-bold cursor-pointer"
                 >
                   <RotateCcw size={13} />
-                  <span>Reset Bubbles</span>
+                  <span>{t('wb_reset_bubbles', currentLanguage)}</span>
                 </button>
               </div>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Before/After Distress Comparison (shown in Normal flow after exercises) */}
+      {isNormal && activeCase && (
+        <BeforeAfterComparison
+          caseId={activeCase.id}
+          currentLanguage={currentLanguage}
+        />
       )}
 
       {/* ========================================================================= */}
@@ -415,11 +425,11 @@ export function WellbeingJourneyView({
           <div className="border-b border-[#e2ece7] pb-6">
             <div className="flex items-center gap-2 text-xs font-bold text-[#0284c7] uppercase tracking-wider">
               <Brain size={14} />
-              <span>Assigned Clinical Psychiatrist Support Plan</span>
+              <span>{t('wb_mod_header_badge', currentLanguage)}</span>
             </div>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#163a34]">Your Guided Care Journey</h1>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#163a34]">{t('wb_mod_header_title', currentLanguage)}</h1>
             <p className="mt-1.5 text-xs text-[#68857e]">
-              Based on your narrative analysis, we have paired you with a dedicated clinical mental health specialist.
+              {t('wb_mod_header_desc', currentLanguage)}
             </p>
           </div>
 
@@ -434,7 +444,7 @@ export function WellbeingJourneyView({
                   <div className="flex items-center gap-2">
                     <h3 className="text-lg font-bold text-[#0c4a6e]">{journey.assignedPsychiatrist || 'Dr. Ramesh Chandra'}</h3>
                     <span className="rounded-full bg-[#e0f2fe] border border-[#bae6fd] px-2.5 py-0.5 text-[10px] font-extrabold text-[#0369a1]">
-                      Verified Specialist
+                      {t('wb_verified_specialist', currentLanguage)}
                     </span>
                   </div>
                   <p className="text-xs text-[#0369a1] font-semibold mt-0.5">
@@ -453,7 +463,7 @@ export function WellbeingJourneyView({
                   className="flex items-center gap-2 rounded-2xl bg-[#0284c7] hover:bg-[#0369a1] text-white px-5 py-3 text-xs font-bold shadow-md shadow-[#0284c7]/20 transition active:scale-95 cursor-pointer"
                 >
                   <PhoneCall size={15} />
-                  <span>Connect Telephonic Call</span>
+                  <span>{t('wb_connect_call', currentLanguage)}</span>
                 </button>
                 <button
                   type="button"
@@ -461,7 +471,7 @@ export function WellbeingJourneyView({
                   className="flex items-center gap-2 rounded-2xl border border-[#bae6fd] bg-white hover:bg-[#f0f9ff] text-[#0284c7] px-5 py-3 text-xs font-bold transition active:scale-95 shadow-xs cursor-pointer"
                 >
                   <Calendar size={15} />
-                  <span>Book 1-on-1 Session</span>
+                  <span>{t('wb_book_session', currentLanguage)}</span>
                 </button>
               </div>
             </div>
@@ -472,7 +482,7 @@ export function WellbeingJourneyView({
             <div className="rounded-3xl border border-[#d3e5df] bg-white p-6 shadow-xs">
               <h3 className="text-sm font-bold text-[#163a34] mb-3 flex items-center gap-2">
                 <Calendar size={16} className="text-[#0284c7]" />
-                <span>Your Confirmed Tele-Consultations</span>
+                <span>{t('wb_confirmed_consultations', currentLanguage)}</span>
               </h3>
               <div className="grid gap-3 sm:grid-cols-2">
                 {scheduledAppointments.map(apt => (
@@ -499,7 +509,7 @@ export function WellbeingJourneyView({
 
           {/* Dynamic Milestones Roadmap */}
           <div className="rounded-3xl border border-[#d3e5df] bg-white p-6 sm:p-7 shadow-xs">
-            <h3 className="text-sm font-bold text-[#163a34] mb-4">Your Dynamic 4-Stage Redressal Path</h3>
+            <h3 className="text-sm font-bold text-[#163a34] mb-4">{t('wb_dynamic_roadmap', currentLanguage)}</h3>
             <div className="space-y-4">
               {journey.steps.map((step, idx) => (
                 <div key={step.id} className="flex items-start gap-3.5 p-4 rounded-2xl bg-[#fbfdfc] border border-[#e5f0ec]">
@@ -522,6 +532,14 @@ export function WellbeingJourneyView({
         </div>
       )}
 
+      {/* Before/After Distress Comparison (shown in Moderate flow) */}
+      {isModerate && activeCase && (
+        <BeforeAfterComparison
+          caseId={activeCase.id}
+          currentLanguage={currentLanguage}
+        />
+      )}
+
       {/* ========================================================================= */}
       {/* FLOW 3: HIGH & CRITICAL RISK ESCALATION FLOW */}
       {/* ========================================================================= */}
@@ -537,14 +555,14 @@ export function WellbeingJourneyView({
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-xl font-bold text-[#991b1b]">
-                      Priority Protection &amp; Immediate Safeguard Active
+                      {t('wb_high_header_title', currentLanguage)}
                     </h2>
                     <span className="rounded-full bg-[#fecaca] px-2.5 py-0.5 text-[10px] font-extrabold text-[#991b1b]">
-                      TIER-1 ESCALATION
+                      {t('wb_tier1_escalation', currentLanguage)}
                     </span>
                   </div>
                   <p className="text-xs text-[#991b1b] mt-1 max-w-2xl leading-relaxed">
-                    High stress signals and intimidation markers have been verified. Your case is directly routed to the nearest designated SC/ST PoA Nodal Unit.
+                    {t('wb_high_header_desc', currentLanguage)}
                   </p>
                 </div>
               </div>
@@ -556,7 +574,7 @@ export function WellbeingJourneyView({
                   className="flex items-center gap-2 rounded-2xl bg-[#dc2626] hover:bg-[#b91c1c] text-white px-6 py-3.5 text-xs font-extrabold shadow-lg shadow-[#dc2626]/30 transition active:scale-95 cursor-pointer animate-pulse"
                 >
                   <AlertOctagon size={16} />
-                  <span>Call 14566 National Helpline</span>
+                  <span>{t('wb_call_14566', currentLanguage)}</span>
                 </button>
               </div>
             </div>
@@ -573,7 +591,7 @@ export function WellbeingJourneyView({
                   <div className="flex items-center gap-2">
                     <h3 className="text-lg font-bold text-[#9a3412]">{journey.assignedOfficer || 'Insp. Vikram Pratap Singh'}</h3>
                     <span className="rounded-full bg-[#ffedd5] border border-[#fed7aa] px-2.5 py-0.5 text-[10px] font-extrabold text-[#c2410c]">
-                      Station In-Charge
+                      {t('wb_station_incharge', currentLanguage)}
                     </span>
                   </div>
                   <p className="text-xs text-[#c2410c] font-semibold mt-0.5">
@@ -592,7 +610,7 @@ export function WellbeingJourneyView({
                   className="flex items-center gap-2 rounded-2xl bg-[#ea580c] hover:bg-[#c2410c] text-white px-5 py-3 text-xs font-bold shadow-md shadow-[#ea580c]/20 transition active:scale-95 cursor-pointer"
                 >
                   <PhoneCall size={15} />
-                  <span>Call Officer Now</span>
+                  <span>{t('wb_call_officer_now', currentLanguage)}</span>
                 </button>
               </div>
             </div>
@@ -600,7 +618,7 @@ export function WellbeingJourneyView({
 
           {/* High Priority Roadmap */}
           <div className="rounded-3xl border border-[#d3e5df] bg-white p-6 sm:p-7 shadow-xs">
-            <h3 className="text-sm font-bold text-[#163a34] mb-4">Emergency Redressal Roadmap</h3>
+            <h3 className="text-sm font-bold text-[#163a34] mb-4">{t('wb_emergency_roadmap', currentLanguage)}</h3>
             <div className="space-y-4">
               {journey.steps.map((step, idx) => (
                 <div key={step.id} className="flex items-start gap-3.5 p-4 rounded-2xl bg-[#fffbfb] border border-[#fecdd3]">
@@ -629,7 +647,7 @@ export function WellbeingJourneyView({
           <div className="w-full max-w-lg rounded-3xl border border-[#cfe3dc] bg-white p-6 sm:p-8 shadow-2xl space-y-6">
             <div className="flex items-center justify-between border-b border-[#edf4f0] pb-4">
               <div>
-                <h3 className="text-base font-bold text-[#163a34]">Book Clinical Tele-Consultation</h3>
+                <h3 className="text-base font-bold text-[#163a34]">{t('wb_book_modal_title', currentLanguage)}</h3>
                 <p className="text-xs text-[#63877f] mt-0.5">
                   With {journey.assignedPsychiatrist || 'Dr. Ramesh Chandra'} (100% Confidential)
                 </p>
@@ -648,7 +666,7 @@ export function WellbeingJourneyView({
                 <div className="size-14 mx-auto rounded-full bg-[#ecfdf5] border-2 border-[#10b981] flex items-center justify-center text-[#10b981]">
                   <Check size={28} />
                 </div>
-                <h4 className="text-base font-bold text-[#065f46]">Appointment Confirmed!</h4>
+                <h4 className="text-base font-bold text-[#065f46]">{t('wb_apt_confirmed', currentLanguage)}</h4>
                 <p className="text-xs text-[#047857]">
                   Your session has been logged in the database and synced with Dr. Ramesh Chandra&apos;s schedule.
                 </p>
@@ -657,7 +675,7 @@ export function WellbeingJourneyView({
               <div className="space-y-4">
                 {/* Meeting Mode Selector */}
                 <div>
-                  <label className="block text-xs font-bold text-[#163a34] mb-2">Select Consultation Mode</label>
+                  <label className="block text-xs font-bold text-[#163a34] mb-2">{t('wb_select_mode', currentLanguage)}</label>
                   <div className="grid grid-cols-3 gap-2">
                     {(['Secure Video Call', 'Telephonic Audio', 'In-Person Safe Clinic'] as const).map(mode => (
                       <button
@@ -678,7 +696,7 @@ export function WellbeingJourneyView({
 
                 {/* Available Slots */}
                 <div>
-                  <label className="block text-xs font-bold text-[#163a34] mb-2">Choose Time Slot</label>
+                  <label className="block text-xs font-bold text-[#163a34] mb-2">{t('wb_choose_slot', currentLanguage)}</label>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {AVAILABLE_APPOINTMENT_SLOTS.map(slot => (
                       <button
@@ -707,7 +725,7 @@ export function WellbeingJourneyView({
                     onClick={() => setAppointmentModalOpen(false)}
                     className="px-4 py-2.5 rounded-2xl border border-[#cfe2db] text-xs font-semibold text-[#527770] hover:bg-[#f7fbf9] cursor-pointer"
                   >
-                    Cancel
+                    {t('wb_cancel', currentLanguage)}
                   </button>
                   <button
                     type="button"
@@ -715,7 +733,7 @@ export function WellbeingJourneyView({
                     onClick={handleConfirmAppointment}
                     className="px-6 py-2.5 rounded-2xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-bold shadow-md shadow-[#0284c7]/20 transition cursor-pointer disabled:opacity-50"
                   >
-                    {bookingLoading ? 'Confirming in Database...' : 'Confirm Appointment'}
+                    {bookingLoading ? 'Confirming...' : t('wb_confirm_apt', currentLanguage)}
                   </button>
                 </div>
               </div>

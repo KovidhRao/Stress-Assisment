@@ -169,7 +169,7 @@ export interface CaseRecord {
   submission_type?: 'text' | 'audio'
   voice_analysis?: VoiceAnalysisMetrics
   stress_assessment: StressAssessment
-  status: 'New Intake' | 'Under Triage' | 'Action Dispatched' | 'Counselling Active' | 'Resolved'
+  status: 'New Intake' | 'Under Triage' | 'Action Dispatched' | 'Counselling Active' | 'Reviewed' | 'Escalated' | 'Resolved'
   assigned_officer?: string
   assigned_officer_id?: string
   assigned_counsellor?: string
@@ -196,6 +196,7 @@ export interface CaseRecord {
     dispatched_at: string
     reference_id?: string
   }>
+  follow_up_required?: boolean
   created_at?: string
   updated_at?: string
 }

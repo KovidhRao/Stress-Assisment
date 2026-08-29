@@ -89,11 +89,11 @@ export function MyStoriesView({
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-[#1d8272] uppercase tracking-wider">
             <Lock size={13} />
-            <span>Private &amp; Confidential Dossier</span>
+            <span>{t('ms_confidential_dossier', currentLanguage)}</span>
           </div>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#163a34]">Your Submitted Stories &amp; Cases</h1>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#163a34]">{t('ms_title', currentLanguage)}</h1>
           <p className="mt-1.5 text-xs text-[#68857e]">
-            Review your past testimonials, trackable Case IDs, acoustic voice distress records, and active care pathways.
+            {t('ms_desc', currentLanguage)}
           </p>
         </div>
 
@@ -103,7 +103,7 @@ export function MyStoriesView({
           className="flex items-center justify-center gap-2 rounded-2xl bg-[#1d8272] hover:bg-[#186f60] text-white px-5 py-3 text-xs font-bold shadow-md shadow-[#1d8272]/20 transition active:scale-95 shrink-0 cursor-pointer"
         >
           <Plus size={16} />
-          <span>+ Share Another Story</span>
+          <span>{t('ms_share_another', currentLanguage)}</span>
         </button>
       </div>
 
@@ -143,7 +143,7 @@ export function MyStoriesView({
                         )}
                         {isActive && (
                           <span className="text-[10px] font-extrabold text-[#1d8272] bg-[#e4f4ef] px-2 py-0.5 rounded-md">
-                            Active Case
+                            {t('ms_active_case', currentLanguage)}
                           </span>
                         )}
                       </div>
@@ -159,7 +159,7 @@ export function MyStoriesView({
                             <span>•</span>
                             <span className="text-[#dc2626] font-medium flex items-center gap-1">
                               <MapPin size={11} />
-                              <span>Officer: {story.assigned_officer_name}</span>
+                              <span>{t('ms_officer_prefix', currentLanguage)} {story.assigned_officer_name}</span>
                             </span>
                           </>
                         )}
@@ -168,7 +168,7 @@ export function MyStoriesView({
                             <span>•</span>
                             <span className="text-[#0284c7] font-medium flex items-center gap-1">
                               <Brain size={11} />
-                              <span>Psychiatrist: {story.assigned_psychiatrist_name}</span>
+                              <span>{t('ms_psych_prefix', currentLanguage)} {story.assigned_psychiatrist_name}</span>
                             </span>
                           </>
                         )}
@@ -205,12 +205,12 @@ export function MyStoriesView({
                       >
                         {isExpanded ? (
                           <>
-                            <span>Show less</span>
+                            <span>{t('ms_show_less', currentLanguage)}</span>
                             <ChevronUp size={14} />
                           </>
                         ) : (
                           <>
-                            <span>Read full story</span>
+                            <span>{t('ms_read_full', currentLanguage)}</span>
                             <ChevronDown size={14} />
                           </>
                         )}
@@ -235,7 +235,7 @@ export function MyStoriesView({
                         </button>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-[#18453e]">Voice Statement Recording</span>
+                            <span className="text-xs font-bold text-[#18453e]">{t('ms_voice_recording', currentLanguage)}</span>
                             <span className="text-[10px] font-mono text-[#1d8272] bg-white px-2 py-0.5 rounded-md border border-[#cbe4db]">
                               {isPlaying ? `00:${currentProg.toString().padStart(2, '0')}` : `00:${totalDur.toString().padStart(2, '0')}`}
                             </span>
@@ -266,7 +266,7 @@ export function MyStoriesView({
                   {/* Key Trauma Indicators / Support Plan Action */}
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-[11px] font-semibold text-[#73928a]">Identified Signals:</span>
+                      <span className="text-[11px] font-semibold text-[#73928a]">{t('ms_identified_signals', currentLanguage)}</span>
                       {story.key_triggers && story.key_triggers.length > 0 ? (
                         story.key_triggers.map((trigger, i) => (
                           <span
@@ -293,7 +293,7 @@ export function MyStoriesView({
                           }}
                           className="flex items-center gap-1.5 rounded-xl bg-[#e4f3ee] hover:bg-[#d5ece4] px-3 py-1.5 text-xs font-bold text-[#1a6e60] transition cursor-pointer"
                         >
-                          <span>View Support Plan</span>
+                          <span>{t('ms_view_support_plan', currentLanguage)}</span>
                           <ArrowRight size={13} />
                         </button>
                       )}
@@ -306,16 +306,16 @@ export function MyStoriesView({
         ) : (
           <div className="rounded-3xl border border-dashed border-[#cfe0d8] bg-white p-12 text-center">
             <FileText size={36} className="mx-auto text-[#9db7b0]" />
-            <h3 className="mt-3 text-base font-bold text-[#183e38]">No Stories Submitted Yet</h3>
+            <h3 className="mt-3 text-base font-bold text-[#183e38]">{t('ms_no_stories_title', currentLanguage)}</h3>
             <p className="mt-1 text-xs text-[#6e8a83] max-w-sm mx-auto">
-              Your safe space is ready whenever you want to share what happened in your own words.
+              {t('ms_no_stories_desc', currentLanguage)}
             </p>
             <button
               type="button"
               onClick={onShareAnotherStory}
               className="mt-5 rounded-2xl bg-[#1d8272] text-white px-5 py-2.5 text-xs font-bold shadow-md hover:bg-[#186f60] transition cursor-pointer"
             >
-              Share Your First Story
+              {t('ms_share_first', currentLanguage)}
             </button>
           </div>
         )}

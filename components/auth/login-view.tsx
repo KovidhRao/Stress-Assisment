@@ -217,10 +217,10 @@ export function LoginView({
     }
   }
 
-  // Handle Anonymous Access
+  // Handle Anonymous Access (generates a UUID so DB FK constraints are satisfied)
   const handleAnonymousAccess = () => {
     const anonUser: UserProfile = {
-      id: `anon-${Date.now().toString().slice(-6)}`,
+      id: crypto.randomUUID(),
       full_name: 'Anonymous Citizen',
       role: 'victim',
       preferred_language: selectedLang,
@@ -234,7 +234,7 @@ export function LoginView({
     onLoginSuccess(anonUser, null, null)
   }
 
-  // Handle Case Tracking
+  // Handle Case Tracking (generates a UUID so DB FK constraints are satisfied)
   const handleTrackCase = (e: React.FormEvent) => {
     e.preventDefault()
     if (!trackCaseId.trim()) {
@@ -242,7 +242,7 @@ export function LoginView({
       return
     }
     const trackingUser: UserProfile = {
-      id: `track-${Date.now().toString().slice(-6)}`,
+      id: crypto.randomUUID(),
       full_name: `Case Inquirer (${trackCaseId.toUpperCase()})`,
       role: 'victim',
       preferred_language: selectedLang,
@@ -351,7 +351,7 @@ export function LoginView({
               {t('app_title', selectedLang)}
             </h1>
             <p className="text-[11px] text-[#557b72] hidden sm:block">
-              National Helpline Against Atrocities (PoA) Act Redressal
+              {t('login_subtitle', selectedLang)}
             </p>
           </div>
         </div>
@@ -420,7 +420,7 @@ export function LoginView({
               }`}
             >
               <Brain size={17} />
-              <span>Clinical Psychiatrist</span>
+              <span>{t('login_tab_psychiatrist', selectedLang)}</span>
             </button>
           </div>
 
@@ -451,7 +451,7 @@ export function LoginView({
                       victimMode === 'signin' ? 'bg-white text-[#1d8272] shadow-xs' : 'text-[#50766d]'
                     }`}
                   >
-                    Sign In
+                    {t('login_signin', selectedLang)}
                   </button>
                   <button
                     onClick={() => setVictimMode('signup')}
@@ -459,7 +459,7 @@ export function LoginView({
                       victimMode === 'signup' ? 'bg-white text-[#1d8272] shadow-xs' : 'text-[#50766d]'
                     }`}
                   >
-                    Create Account
+                    {t('login_signup', selectedLang)}
                   </button>
                   <button
                     onClick={() => setVictimMode('anonymous')}
@@ -467,7 +467,7 @@ export function LoginView({
                       victimMode === 'anonymous' ? 'bg-white text-[#1d8272] shadow-xs' : 'text-[#50766d]'
                     }`}
                   >
-                    Quick Confidential
+                    {t('login_anonymous', selectedLang)}
                   </button>
                   <button
                     onClick={() => setVictimMode('case_track')}
@@ -475,7 +475,7 @@ export function LoginView({
                       victimMode === 'case_track' ? 'bg-white text-[#1d8272] shadow-xs' : 'text-[#50766d]'
                     }`}
                   >
-                    Track Case
+                    {t('login_track', selectedLang)}
                   </button>
                 </div>
 
@@ -518,7 +518,7 @@ export function LoginView({
 
                       <div>
                         <label className="block text-xs font-bold text-[#163a34] mb-1.5">
-                          Password
+                          {t('login_password', selectedLang)}
                         </label>
                         <div className="relative">
                           <KeyRound size={15} className="absolute left-3.5 top-3 text-[#8ca8a0]" />
@@ -575,7 +575,7 @@ export function LoginView({
                       disabled={loading}
                       className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#1d8272] hover:bg-[#186f60] text-white py-3 text-xs font-bold shadow-md shadow-[#1d8272]/20 transition active:scale-95 disabled:opacity-50 cursor-pointer"
                     >
-                      <span>{loading ? 'Authenticating with NHAA Database...' : victimMode === 'signin' ? 'Sign In to Safe Space' : 'Create Protected Account'}</span>
+                      <span>{loading ? t('login_authenticating', selectedLang) : victimMode === 'signin' ? t('login_signin_btn', selectedLang) : t('login_signup_btn', selectedLang)}</span>
                       <ArrowRight size={15} />
                     </button>
 
@@ -592,7 +592,7 @@ export function LoginView({
                           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                         </svg>
-                        <span>Continue with Google</span>
+                        <span>{t('login_google', selectedLang)}</span>
                       </button>
                     </div>
                   </form>
@@ -603,9 +603,9 @@ export function LoginView({
                   <div className="rounded-2xl border border-[#cfe2db] bg-[#f7fbf9] p-6 text-center space-y-4">
                     <ShieldCheck size={36} className="mx-auto text-[#1d8272]" />
                     <div>
-                      <h3 className="text-sm font-bold text-[#163a34]">100% Confidential Quick Access</h3>
+                      <h3 className="text-sm font-bold text-[#163a34]">{t('login_anon_title', selectedLang)}</h3>
                       <p className="text-xs text-[#557b72] mt-1 max-w-md mx-auto">
-                        No email or personal ID required. Submit your testimony, review AI trauma assessment, and access calming exercises safely.
+                        {t('login_anon_desc', selectedLang)}
                       </p>
                     </div>
                     <button
@@ -613,7 +613,7 @@ export function LoginView({
                       onClick={handleAnonymousAccess}
                       className="rounded-2xl bg-[#1d8272] text-white px-6 py-2.5 text-xs font-bold shadow-md hover:bg-[#186f60] transition cursor-pointer"
                     >
-                      Enter Safe Space Anonymously
+                      {t('login_anon_btn', selectedLang)}
                     </button>
                   </div>
                 )}
@@ -623,7 +623,7 @@ export function LoginView({
                   <form onSubmit={handleTrackCase} className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-[#163a34] mb-1.5">
-                        Enter Case Reference Number
+                        {t('login_track_label', selectedLang)}
                       </label>
                       <input
                         type="text"
@@ -638,7 +638,7 @@ export function LoginView({
                       type="submit"
                       className="w-full rounded-2xl bg-[#1d8272] text-white py-2.5 text-xs font-bold hover:bg-[#186f60] transition cursor-pointer"
                     >
-                      Lookup Case Triage &amp; Support Status
+                      {t('login_track_btn', selectedLang)}
                     </button>
                   </form>
                 )}
@@ -651,14 +651,14 @@ export function LoginView({
                 <div className="rounded-2xl border border-[#fca5a5] bg-[#fffbfb] p-4 flex items-center gap-3 text-xs text-[#991b1b]">
                   <BadgeAlert size={20} className="shrink-0 text-[#dc2626]" />
                   <div>
-                    <strong>Law Enforcement Liaison &amp; Patrol Console:</strong> Authorized access for designated nodal officers and SC/ST PoA special units.
+                    <strong>{t('login_officer_banner', selectedLang)}</strong>
                   </div>
                 </div>
 
                 <form onSubmit={handleOfficerLogin} className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-[#163a34] mb-1.5">
-                      Officer Badge ID or Official Email
+                      {t('login_officer_badge_label', selectedLang)}
                     </label>
                     <input
                       type="text"
@@ -672,7 +672,7 @@ export function LoginView({
 
                   <div>
                     <label className="block text-xs font-bold text-[#163a34] mb-1.5">
-                      Security Passcode / Token
+                      {t('login_officer_passcode', selectedLang)}
                     </label>
                     <input
                       type="password"
@@ -689,14 +689,14 @@ export function LoginView({
                     disabled={loading}
                     className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#dc2626] hover:bg-[#b91c1c] text-white py-3 text-xs font-bold shadow-md shadow-[#dc2626]/20 transition active:scale-95 disabled:opacity-50 cursor-pointer"
                   >
-                    <span>{loading ? 'Verifying Credentials...' : 'Access Police Triage Console'}</span>
+                    <span>{loading ? t('login_officer_verifying', selectedLang) : t('login_officer_btn', selectedLang)}</span>
                     <ArrowRight size={15} />
                   </button>
                 </form>
 
                 {/* Quick Officer Demo Profiles */}
                 <div className="pt-2 border-t border-[#e8f0ec]">
-                  <p className="text-[11px] font-bold text-[#698881] uppercase mb-2">Available Nodal Officers in DB:</p>
+                  <p className="text-[11px] font-bold text-[#698881] uppercase mb-2">{t('login_officer_available', selectedLang)}</p>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {officersList.slice(0, 4).map(off => (
                       <button
@@ -729,14 +729,14 @@ export function LoginView({
                 <div className="rounded-2xl border border-[#bfdbfe] bg-[#f8faff] p-4 flex items-center gap-3 text-xs text-[#1e40af]">
                   <Stethoscope size={20} className="shrink-0 text-[#2563eb]" />
                   <div>
-                    <strong>Psychological Triage &amp; Clinical Redressal Portal:</strong> Authorized access for NIMHANS-trained psychiatrists, psychologists, and crisis responders.
+                    <strong>{t('login_psych_banner', selectedLang)}</strong>
                   </div>
                 </div>
 
                 <form onSubmit={handlePsychiatristLogin} className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-[#163a34] mb-1.5">
-                      Clinical Specialist ID or Hospital Email
+                      {t('login_psych_id_label', selectedLang)}
                     </label>
                     <input
                       type="text"
@@ -750,7 +750,7 @@ export function LoginView({
 
                   <div>
                     <label className="block text-xs font-bold text-[#163a34] mb-1.5">
-                      Clinical Passcode
+                      {t('login_psych_passcode', selectedLang)}
                     </label>
                     <input
                       type="password"
@@ -767,14 +767,14 @@ export function LoginView({
                     disabled={loading}
                     className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#2563eb] hover:bg-[#1d4ed8] text-white py-3 text-xs font-bold shadow-md shadow-[#2563eb]/20 transition active:scale-95 disabled:opacity-50 cursor-pointer"
                   >
-                    <span>{loading ? 'Accessing Clinical Records...' : 'Access Psychiatrist Dashboard'}</span>
+                    <span>{loading ? t('login_psych_accessing', selectedLang) : t('login_psych_btn', selectedLang)}</span>
                     <ArrowRight size={15} />
                   </button>
                 </form>
 
                 {/* Quick Psychiatrist Demo Profiles */}
                 <div className="pt-2 border-t border-[#e8f0ec]">
-                  <p className="text-[11px] font-bold text-[#698881] uppercase mb-2">Available Clinical Psychiatrists:</p>
+                  <p className="text-[11px] font-bold text-[#698881] uppercase mb-2">{t('login_psych_available', selectedLang)}</p>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {(psychiatristsList.length > 0 ? psychiatristsList : [
                       {
@@ -819,7 +819,7 @@ export function LoginView({
 
       {/* Footer */}
       <footer className="text-center text-[11px] text-[#6b8c84] py-2">
-        National Helpline Against Atrocities (PoA) 14566 &bull; Ministry of Social Justice &amp; Empowerment
+        {t('login_footer', selectedLang)}
       </footer>
     </div>
   )

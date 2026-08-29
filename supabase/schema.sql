@@ -19,15 +19,18 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   preferred_language  TEXT DEFAULT 'en',
   is_profile_complete BOOLEAN DEFAULT false,
   is_active           BOOLEAN DEFAULT true,
+  anonymous           BOOLEAN DEFAULT false,
   avatar_url          TEXT,
   created_at          TIMESTAMPTZ DEFAULT NOW(),
   updated_at          TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Ensure columns exist for idempotent re-runs
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS preferred_language TEXT DEFAULT 'en';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS anonymous BOOLEAN DEFAULT false;
 
 -- 3. Addresses Table (Linked to User Profiles)
 CREATE TABLE IF NOT EXISTS public.addresses (
@@ -90,8 +93,8 @@ CREATE TABLE IF NOT EXISTS public.cases (
   id                    TEXT PRIMARY KEY,       -- e.g. NHAA-2026-8891 or CASE-2026-0001
   session_id            TEXT,                   -- e.g. SESS-928471
   user_id               UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
-  victim_name           TEXT,
-  initials              TEXT,
+  victim_name           TEXT,                   -- display name / alias
+  initials              TEXT,                   -- avatar initials
   is_anonymous          BOOLEAN DEFAULT false,
   contact_number        TEXT,
   incident_category     TEXT DEFAULT 'Caste-based Discrimination',
@@ -104,9 +107,9 @@ CREATE TABLE IF NOT EXISTS public.cases (
   voice_analysis        JSONB,
   stress_assessment     JSONB,
   status                TEXT DEFAULT 'New Intake', -- 'New Intake', 'Under Triage', 'Action Dispatched', 'Counselling Active', 'Resolved'
-  assigned_officer      TEXT,
+  assigned_officer      TEXT,                    -- officer display name
   assigned_officer_id   UUID REFERENCES public.officers(id) ON DELETE SET NULL,
-  assigned_counsellor   TEXT,
+  assigned_counsellor   TEXT,                    -- counsellor display name
   assigned_counsellor_id UUID REFERENCES public.psychiatrists(id) ON DELETE SET NULL,
   proximity_routing     TEXT,
   priority_tier         INT DEFAULT 3,
@@ -115,6 +118,30 @@ CREATE TABLE IF NOT EXISTS public.cases (
   created_at            TIMESTAMPTZ DEFAULT NOW(),
   updated_at            TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure all expected columns exist (for idempotent re-runs on existing DBs)
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS victim_name TEXT;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS initials TEXT;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS is_anonymous BOOLEAN DEFAULT false;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS contact_number TEXT;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS incident_category TEXT DEFAULT 'Caste-based Discrimination';
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS submission_type TEXT DEFAULT 'text';
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS voice_analysis JSONB;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS stress_assessment JSONB;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'New Intake';
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS assigned_officer TEXT;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS assigned_officer_id UUID REFERENCES public.officers(id) ON DELETE SET NULL;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS assigned_counsellor TEXT;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS assigned_counsellor_id UUID REFERENCES public.psychiatrists(id) ON DELETE SET NULL;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS proximity_routing TEXT;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS priority_tier INT DEFAULT 3;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS notes JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS dispatched_actions JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS narrative_text TEXT;
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS channel TEXT DEFAULT 'integrated_portal';
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'en';
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS reported_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.cases ADD COLUMN IF NOT EXISTS incident_location JSONB DEFAULT '{"village_town_city": "", "district": "", "state": "", "pincode": ""}'::jsonb;
 
 -- 7. Case Stories Table (Stores submitted narrative / voice per case)
 CREATE TABLE IF NOT EXISTS public.case_stories (
@@ -185,8 +212,12 @@ CREATE TABLE IF NOT EXISTS public.case_activity (
   title       TEXT NOT NULL,
   description TEXT,
   type        TEXT DEFAULT 'story', -- 'story', 'mood', 'exercise', 'appointment', 'support', 'triage'
+  timestamp   TEXT,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure timestamp column exists
+ALTER TABLE public.case_activity ADD COLUMN IF NOT EXISTS timestamp TEXT;
 
 -- 12. Trusted Contacts Table
 CREATE TABLE IF NOT EXISTS public.trusted_contacts (
@@ -216,39 +247,56 @@ ALTER TABLE public.appointments     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.case_activity    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.trusted_contacts ENABLE ROW LEVEL SECURITY;
 
--- 14. Permissive Access Policies for Active Redressal Flow
-DROP POLICY IF EXISTS "Public profiles access" ON public.profiles;
-CREATE POLICY "Public profiles access" ON public.profiles FOR ALL USING (true);
+-- 14. Permissive Access Policies (for development / active redressal flow)
+-- NOTE: For production, replace these with role-based policies using JWT claims.
 
-DROP POLICY IF EXISTS "Public addresses access" ON public.addresses;
-CREATE POLICY "Public addresses access" ON public.addresses FOR ALL USING (true);
+-- Profiles: users can read all (for officer/psychiatrist lookup), write own
+DROP POLICY IF EXISTS "Public profiles read" ON public.profiles;
+CREATE POLICY "Public profiles read" ON public.profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Profiles insert own" ON public.profiles;
+CREATE POLICY "Profiles insert own" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+DROP POLICY IF EXISTS "Profiles update own" ON public.profiles;
+CREATE POLICY "Profiles update own" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Profiles service role all" ON public.profiles;
+CREATE POLICY "Profiles service role all" ON public.profiles FOR ALL USING (auth.role() = 'service_role');
 
-DROP POLICY IF EXISTS "Public officers access" ON public.officers;
-CREATE POLICY "Public officers access" ON public.officers FOR ALL USING (true);
+-- Addresses: users can read all, write own
+DROP POLICY IF EXISTS "Addresses read" ON public.addresses;
+CREATE POLICY "Addresses read" ON public.addresses FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Addresses write own" ON public.addresses;
+CREATE POLICY "Addresses write own" ON public.addresses FOR ALL USING (user_id = auth.uid() OR auth.role() = 'service_role');
 
-DROP POLICY IF EXISTS "Public psychiatrists access" ON public.psychiatrists;
-CREATE POLICY "Public psychiatrists access" ON public.psychiatrists FOR ALL USING (true);
+-- Officers & Psychiatrists: public read
+DROP POLICY IF EXISTS "Officers read" ON public.officers;
+CREATE POLICY "Officers read" ON public.officers FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Officers write" ON public.officers;
+CREATE POLICY "Officers write" ON public.officers FOR ALL USING (auth.role() = 'service_role');
+DROP POLICY IF EXISTS "Psychiatrists read" ON public.psychiatrists;
+CREATE POLICY "Psychiatrists read" ON public.psychiatrists FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Psychiatrists write" ON public.psychiatrists;
+CREATE POLICY "Psychiatrists write" ON public.psychiatrists FOR ALL USING (auth.role() = 'service_role');
 
-DROP POLICY IF EXISTS "Public cases access" ON public.cases;
-CREATE POLICY "Public cases access" ON public.cases FOR ALL USING (true);
+-- Cases: authenticated users can read/write (needed for victim + officer + psychiatrist views)
+DROP POLICY IF EXISTS "Cases read" ON public.cases;
+CREATE POLICY "Cases read" ON public.cases FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Cases insert" ON public.cases;
+CREATE POLICY "Cases insert" ON public.cases FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Cases update" ON public.cases;
+CREATE POLICY "Cases update" ON public.cases FOR UPDATE USING (true);
 
-DROP POLICY IF EXISTS "Public case stories access" ON public.case_stories;
-CREATE POLICY "Public case stories access" ON public.case_stories FOR ALL USING (true);
-
-DROP POLICY IF EXISTS "Public case analysis access" ON public.case_analysis;
-CREATE POLICY "Public case analysis access" ON public.case_analysis FOR ALL USING (true);
-
-DROP POLICY IF EXISTS "Public case assignments access" ON public.case_assignments;
-CREATE POLICY "Public case assignments access" ON public.case_assignments FOR ALL USING (true);
-
-DROP POLICY IF EXISTS "Public appointments access" ON public.appointments;
-CREATE POLICY "Public appointments access" ON public.appointments FOR ALL USING (true);
-
-DROP POLICY IF EXISTS "Public case activity access" ON public.case_activity;
-CREATE POLICY "Public case activity access" ON public.case_activity FOR ALL USING (true);
-
-DROP POLICY IF EXISTS "Public trusted contacts access" ON public.trusted_contacts;
-CREATE POLICY "Public trusted contacts access" ON public.trusted_contacts FOR ALL USING (true);
+-- Case Stories, Analysis, Assignments, Activity, Appointments: open for insert/read/update
+DROP POLICY IF EXISTS "Case stories access" ON public.case_stories;
+CREATE POLICY "Case stories access" ON public.case_stories FOR ALL USING (true);
+DROP POLICY IF EXISTS "Case analysis access" ON public.case_analysis;
+CREATE POLICY "Case analysis access" ON public.case_analysis FOR ALL USING (true);
+DROP POLICY IF EXISTS "Case assignments access" ON public.case_assignments;
+CREATE POLICY "Case assignments access" ON public.case_assignments FOR ALL USING (true);
+DROP POLICY IF EXISTS "Appointments access" ON public.appointments;
+CREATE POLICY "Appointments access" ON public.appointments FOR ALL USING (true);
+DROP POLICY IF EXISTS "Case activity access" ON public.case_activity;
+CREATE POLICY "Case activity access" ON public.case_activity FOR ALL USING (true);
+DROP POLICY IF EXISTS "Trusted contacts access" ON public.trusted_contacts;
+CREATE POLICY "Trusted contacts access" ON public.trusted_contacts FOR ALL USING (true);
 
 -- 15. Auth Signup Trigger (Auto create profile)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -306,7 +354,7 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
--- 17. Consents Table (As defined in database schema diagram)
+-- 17. Consents Table
 CREATE TABLE IF NOT EXISTS public.consents (
   id              UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   case_id         TEXT REFERENCES public.cases(id) ON DELETE CASCADE,
@@ -318,7 +366,7 @@ CREATE TABLE IF NOT EXISTS public.consents (
   withdrawn_at    TIMESTAMPTZ
 );
 
--- 18. Officer Locations Table (As defined in database schema diagram)
+-- 18. Officer Locations Table
 CREATE TABLE IF NOT EXISTS public.officer_locations (
   id              UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   officer_id      UUID REFERENCES public.officers(id) ON DELETE CASCADE,
@@ -331,7 +379,23 @@ CREATE TABLE IF NOT EXISTS public.officer_locations (
   updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 19. Seed 4 Regional Police Officers
+-- 19. Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_cases_user_id ON public.cases(user_id);
+CREATE INDEX IF NOT EXISTS idx_cases_status ON public.cases(status);
+CREATE INDEX IF NOT EXISTS idx_cases_reported_at ON public.cases(reported_at DESC);
+CREATE INDEX IF NOT EXISTS idx_cases_assigned_officer_id ON public.cases(assigned_officer_id);
+CREATE INDEX IF NOT EXISTS idx_cases_assigned_counsellor_id ON public.cases(assigned_counsellor_id);
+CREATE INDEX IF NOT EXISTS idx_case_stories_case_id ON public.case_stories(case_id);
+CREATE INDEX IF NOT EXISTS idx_case_analysis_case_id ON public.case_analysis(case_id);
+CREATE INDEX IF NOT EXISTS idx_case_assignments_case_id ON public.case_assignments(case_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_victim_user_id ON public.appointments(victim_user_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_psychiatrist_id ON public.appointments(psychiatrist_id);
+CREATE INDEX IF NOT EXISTS idx_case_activity_case_id ON public.case_activity(case_id);
+CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON public.addresses(user_id);
+CREATE INDEX IF NOT EXISTS idx_trusted_contacts_user_id ON public.trusted_contacts(user_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
+
+-- 20. Seed 4 Regional Police Officers
 INSERT INTO public.officers (id, officer_badge_id, full_name, department, role, assigned_state, assigned_district, station_name, jurisdiction_pincodes, active_cases_count, email, phone, is_available)
 VALUES
   ('c0a80121-0001-4000-8000-000000000001', 'AP-GNT-8821', 'Insp. K. Venkatesh Naidu', 'Special Atrocities Protection Cell', 'officer', 'Andhra Pradesh', 'Guntur', 'Guntur Urban Special PoA Police Station', ARRAY['522001', '522002', '522003', '522004', '522006', '522019', '522501'], 2, 'insp.venkatesh@ap.police.gov.in', '+91 94407 98821', true),
@@ -345,7 +409,7 @@ ON CONFLICT (officer_badge_id) DO UPDATE SET
   station_name = EXCLUDED.station_name,
   jurisdiction_pincodes = EXCLUDED.jurisdiction_pincodes;
 
--- 20. Seed 4 Regional Clinical Psychiatrists
+-- 21. Seed 4 Regional Clinical Psychiatrists
 INSERT INTO public.psychiatrists (id, full_name, title, specialization, hospital_clinic, assigned_state, assigned_district, email, phone, is_available, active_patients_count)
 VALUES
   ('d0a80121-0002-4000-8000-000000000001', 'Dr. P. Srikanth Reddy', 'Senior Clinical Psychiatrist', 'Trauma Triage & Crisis Intervention', 'Guntur GGH & AP Tele-Care Desk', 'Andhra Pradesh', 'Guntur', 'dr.srikanth@nhaa.gov.in', '+91 98480 12345', true, 3),
@@ -357,4 +421,3 @@ ON CONFLICT (id) DO UPDATE SET
   hospital_clinic = EXCLUDED.hospital_clinic,
   assigned_state = EXCLUDED.assigned_state,
   assigned_district = EXCLUDED.assigned_district;
-

@@ -41,7 +41,6 @@ import {
 import {
   INITIAL_CASES,
   DEFAULT_OFFICERS,
-  INITIAL_STORIES,
   INITIAL_CONTACTS,
   INITIAL_ACTIVITIES
 } from '@/lib/mock-data'
@@ -83,6 +82,7 @@ import { VoiceRecorderModal } from '@/components/victim/voice-recorder-modal'
 import { WellbeingToolsModal } from '@/components/victim/wellbeing-tools-modal'
 import { SOSModal } from '@/components/victim/sos-modal'
 import { ScreeningModal } from '@/components/victim/screening-modal'
+import { DistressSurveyModal } from '@/components/victim/distress-survey-modal'
 import { ConsentModal } from '@/components/victim/consent-modal'
 import { CaseDetailModal } from '@/components/officer/case-detail-modal'
 import { IntakeModal } from '@/components/officer/intake-modal'
@@ -117,7 +117,7 @@ export default function Home() {
 
   // ─── Data Collections ───────────────────────────────────────────────────────
   const [casesList, setCasesList] = useState<CaseRecord[]>(INITIAL_CASES)
-  const [storiesList, setStoriesList] = useState<UserStory[]>(INITIAL_STORIES)
+  const [storiesList, setStoriesList] = useState<UserStory[]>([])
   const [activeCaseId, setActiveCaseId] = useState<string>(INITIAL_CASES[0]?.id || 'NHAA-2026-9041')
   const [contactsList, setContactsList] = useState<TrustedContact[]>(INITIAL_CONTACTS)
   const [scheduledAppointments, setScheduledAppointments] = useState<AppointmentRecord[]>([])
@@ -139,6 +139,8 @@ export default function Home() {
   const [consentModalOpen, setConsentModalOpen] = useState(false)
   const [intakeModalOpen, setIntakeModalOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [preDistressSurveyOpen, setPreDistressSurveyOpen] = useState(false)
+  const [postDistressSurveyOpen, setPostDistressSurveyOpen] = useState(false)
 
   // Quick Panic Exit (Redirects immediately)
   const handleQuickExit = () => {
@@ -265,6 +267,11 @@ export default function Home() {
           if (userCases && userCases.length > 0) {
             setCasesList(userCases)
             setActiveCaseId(userCases[0].id)
+          }
+          // Load real stories from Supabase
+          const userStories = await CaseService.fetchVictimStories(currentUser.id)
+          if (userStories && userStories.length > 0) {
+            setStoriesList(userStories)
           }
         }
 
@@ -664,7 +671,7 @@ export default function Home() {
                 <span>Safe Space</span>
                 <span>/</span>
                 <span className="text-[#204a43]">
-                  {isOfficer ? t('portal_officer', selectedLanguage) : isPsychiatrist ? t('portal_psychiatrist', selectedLanguage) : t(`tab_${activeTab.toLowerCase().replace(/ & /g, '_').replace(/ /g, '_')}`, selectedLanguage) || activeTab}
+                  {isOfficer ? t('portal_officer', selectedLanguage) : isPsychiatrist ? t('portal_psychiatrist', selectedLanguage) : (activeTab === 'My story & Audio' ? t('tab_my_story', selectedLanguage) : activeTab === 'Wellbeing journey' ? t('tab_wellbeing', selectedLanguage) : activeTab === 'Support circle' ? t('tab_support_circle', selectedLanguage) : t('tab_my_space', selectedLanguage))}
                 </span>
               </div>
             </div>
@@ -842,7 +849,11 @@ export default function Home() {
                                 type="button"
                                 onClick={() => {
                                   setWellbeingModalTab('breathing')
-                                  setWellbeingModalOpen(true)
+                                  if (activeCaseRecord) {
+                                    setPreDistressSurveyOpen(true)
+                                  } else {
+                                    setWellbeingModalOpen(true)
+                                  }
                                 }}
                                 className="flex items-center gap-2 p-2.5 rounded-xl bg-[#eef8f4] hover:bg-[#e0f1eb] text-left text-xs font-semibold text-[#1a5e52] transition cursor-pointer border border-[#d2e8df]"
                               >
@@ -857,7 +868,11 @@ export default function Home() {
                                 type="button"
                                 onClick={() => {
                                   setWellbeingModalTab('grounding')
-                                  setWellbeingModalOpen(true)
+                                  if (activeCaseRecord) {
+                                    setPreDistressSurveyOpen(true)
+                                  } else {
+                                    setWellbeingModalOpen(true)
+                                  }
                                 }}
                                 className="flex items-center gap-2 p-2.5 rounded-xl bg-[#f0f4f8] hover:bg-[#e2ebf3] text-left text-xs font-semibold text-[#294c6e] transition cursor-pointer border border-[#d3e0ec]"
                               >
@@ -1148,6 +1163,12 @@ export default function Home() {
       <WellbeingToolsModal
         isOpen={wellbeingModalOpen}
         onClose={() => setWellbeingModalOpen(false)}
+        onCloseWithSurvey={() => {
+          setWellbeingModalOpen(false)
+          if (activeCaseRecord && !isOfficer && !isPsychiatrist) {
+            setPostDistressSurveyOpen(true)
+          }
+        }}
         initialTab={wellbeingModalTab}
       />
 
@@ -1200,6 +1221,30 @@ export default function Home() {
         onClose={() => setIntakeModalOpen(false)}
         onAddCase={handleAddIntake}
       />
+
+      {/* Pre/Post Distress Survey Modals */}
+      {!isOfficer && !isPsychiatrist && activeCaseRecord && (
+        <>
+          <DistressSurveyModal
+            isOpen={preDistressSurveyOpen}
+            onClose={() => setPreDistressSurveyOpen(false)}
+            surveyType="pre_intervention"
+            caseId={activeCaseRecord.id}
+            userId={currentUser.id}
+            onComplete={() => {
+              setPreDistressSurveyOpen(false)
+              setWellbeingModalOpen(true)
+            }}
+          />
+          <DistressSurveyModal
+            isOpen={postDistressSurveyOpen}
+            onClose={() => setPostDistressSurveyOpen(false)}
+            surveyType="post_intervention"
+            caseId={activeCaseRecord.id}
+            userId={currentUser.id}
+          />
+        </>
+      )}
     </div>
   )
 }

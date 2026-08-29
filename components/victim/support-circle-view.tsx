@@ -113,11 +113,11 @@ export function SupportCircleView({
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-[#1d8272] uppercase tracking-wider">
             <HeartHandshake size={14} />
-            <span>Encrypted Support Network</span>
+            <span>{t('support_network_badge', currentLanguage)}</span>
           </div>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#163a34]">Your Support Circle</h1>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#163a34]">{t('support_circle_title', currentLanguage)}</h1>
           <p className="mt-1.5 text-xs text-[#68857e]">
-            Your trusted advocates, clinical counsellors, and emergency guardians available with one-touch secure communication.
+            {t('support_circle_desc', currentLanguage)}
           </p>
         </div>
 
@@ -127,7 +127,7 @@ export function SupportCircleView({
           className="flex items-center justify-center gap-2 rounded-2xl bg-[#1d8272] hover:bg-[#186f60] text-white px-5 py-3 text-xs font-bold shadow-md shadow-[#1d8272]/20 transition active:scale-95 shrink-0"
         >
           <UserPlus size={16} />
-          <span>+ Add Trusted Contact</span>
+          <span>{t('add_trusted_contact', currentLanguage)}</span>
         </button>
       </div>
 
@@ -136,9 +136,9 @@ export function SupportCircleView({
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-[#183e38] flex items-center gap-2">
             <ShieldCheck size={18} className="text-[#1d8272]" />
-            <span>Assigned Professional &amp; Legal Support</span>
+            <span>{t('professional_legal_support', currentLanguage)}</span>
           </h2>
-          <span className="text-xs text-[#6d8a83]">{professionalContacts.length} verified officers</span>
+          <span className="text-xs text-[#6d8a83]">{professionalContacts.length} {t('verified_officers', currentLanguage)}</span>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -177,7 +177,7 @@ export function SupportCircleView({
                   className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-[#1d8272] hover:bg-[#186f60] text-white py-2 text-xs font-bold transition shadow-xs"
                 >
                   <PhoneCall size={13} />
-                  <span>Call</span>
+                  <span>{t('call_btn', currentLanguage)}</span>
                 </button>
                 <button
                   type="button"
@@ -185,7 +185,7 @@ export function SupportCircleView({
                   className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-[#cfe3db] bg-[#f2f8f5] hover:bg-[#e4f2ec] text-[#1b5d52] py-2 text-xs font-bold transition"
                 >
                   <MessageSquare size={13} />
-                  <span>Message</span>
+                  <span>{t('message_btn', currentLanguage)}</span>
                 </button>
               </div>
             </div>
@@ -198,9 +198,9 @@ export function SupportCircleView({
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-[#183e38] flex items-center gap-2">
             <Users size={18} className="text-[#3b82f6]" />
-            <span>Trusted Circle (Family &amp; Friends)</span>
+            <span>{t('trusted_circle', currentLanguage)}</span>
           </h2>
-          <span className="text-xs text-[#6d8a83]">{trustedContacts.length} people</span>
+          <span className="text-xs text-[#6d8a83]">{trustedContacts.length} {t('people', currentLanguage)}</span>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -232,7 +232,7 @@ export function SupportCircleView({
                   className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-[#1d8272] hover:bg-[#186f60] text-white py-2 text-xs font-bold transition shadow-xs"
                 >
                   <PhoneCall size={13} />
-                  <span>Call</span>
+                  <span>{t('call_btn', currentLanguage)}</span>
                 </button>
                 <button
                   type="button"
@@ -240,7 +240,7 @@ export function SupportCircleView({
                   className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-[#cfe3db] bg-[#f2f8f5] hover:bg-[#e4f2ec] text-[#1b5d52] py-2 text-xs font-bold transition"
                 >
                   <MessageSquare size={13} />
-                  <span>Message</span>
+                  <span>{t('message_btn', currentLanguage)}</span>
                 </button>
               </div>
             </div>
@@ -265,9 +265,9 @@ export function SupportCircleView({
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-[#991b1b] flex items-center gap-2">
             <ShieldAlert size={18} className="text-[#dc2626]" />
-            <span>National Emergency &amp; Crisis Escalation</span>
+            <span>{t('national_emergency', currentLanguage)}</span>
           </h2>
-          <span className="text-xs text-[#991b1b] font-semibold">24x7 Priority Response</span>
+          <span className="text-xs text-[#991b1b] font-semibold">{t('priority_response', currentLanguage)}</span>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -307,7 +307,7 @@ export function SupportCircleView({
                   className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-[#fca5a5] bg-white hover:bg-[#fee2e2] text-[#991b1b] py-2 text-xs font-bold transition"
                 >
                   <ShieldAlert size={13} />
-                  <span>SOS Alert</span>
+                  <span>{t('sos_alert_btn', currentLanguage)}</span>
                 </button>
               </div>
             </div>
@@ -324,7 +324,7 @@ export function SupportCircleView({
                 <span className="flex size-7 items-center justify-center rounded-xl bg-[#e4f4ef] text-[#1d8272]">
                   <UserPlus size={16} />
                 </span>
-                <h3 className="font-bold text-base text-[#183e38]">Add Trusted Contact</h3>
+                <h3 className="font-bold text-base text-[#183e38]">{t('add_contact_modal_title', currentLanguage)}</h3>
               </div>
               <button onClick={() => setAddModalOpen(false)} className="text-[#718f88] hover:text-[#183e38]">
                 <X size={18} />
@@ -333,7 +333,7 @@ export function SupportCircleView({
 
             <form onSubmit={handleCreateContact} className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-[#274f48]">Full Name</label>
+                <label className="text-xs font-bold text-[#274f48]">{t('full_name_label', currentLanguage)}</label>
                 <input
                   type="text"
                   required
@@ -345,7 +345,7 @@ export function SupportCircleView({
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#274f48]">Relationship</label>
+                <label className="text-xs font-bold text-[#274f48]">{t('relationship_label', currentLanguage)}</label>
                 <input
                   type="text"
                   value={newRelationship}
@@ -356,7 +356,7 @@ export function SupportCircleView({
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#274f48]">Phone / Mobile Number</label>
+                <label className="text-xs font-bold text-[#274f48]">{t('phone_label', currentLanguage)}</label>
                 <input
                   type="tel"
                   required
@@ -368,15 +368,15 @@ export function SupportCircleView({
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#274f48]">Support Category</label>
+                <label className="text-xs font-bold text-[#274f48]">{t('support_category_label', currentLanguage)}</label>
                 <select
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value as 'trusted' | 'professional' | 'emergency')}
                   className="mt-1 w-full rounded-xl border border-[#cfe0d8] bg-[#fbfdfc] p-2.5 text-xs text-[#1c403a] outline-none focus:border-[#1d8272]"
                 >
-                  <option value="trusted">Trusted Circle (Family / Friend)</option>
-                  <option value="professional">Professional / Legal Ally</option>
-                  <option value="emergency">Emergency Escalation Contact</option>
+                  <option value="trusted">{t('category_trusted', currentLanguage)}</option>
+                  <option value="professional">{t('category_professional', currentLanguage)}</option>
+                  <option value="emergency">{t('category_emergency', currentLanguage)}</option>
                 </select>
               </div>
 
@@ -392,7 +392,7 @@ export function SupportCircleView({
                   type="submit"
                   className="px-5 py-2.5 rounded-2xl bg-[#1d8272] hover:bg-[#186f60] text-white text-xs font-bold shadow-md transition"
                 >
-                  Save to Support Circle
+                  {t('save_to_circle', currentLanguage)}
                 </button>
               </div>
             </form>
@@ -406,7 +406,7 @@ export function SupportCircleView({
           <div className="bg-white w-full max-w-md rounded-3xl border border-[#d6e5df] shadow-2xl p-6 sm:p-7 space-y-4">
             <div className="flex items-center justify-between border-b border-[#edf4f0] pb-3">
               <div>
-                <h3 className="font-bold text-base text-[#183e38]">Secure Message to {activeContact.name}</h3>
+                <h3 className="font-bold text-base text-[#183e38]">{t('secure_message_to', currentLanguage).replace('{name}', activeContact.name)}</h3>
                 <p className="text-[11px] text-[#6d8a83]">{activeContact.role}</p>
               </div>
               <button onClick={() => setMessageModalOpen(false)} className="text-[#718f88]">
@@ -417,7 +417,7 @@ export function SupportCircleView({
             {messageSent ? (
               <div className="py-6 text-center space-y-2">
                 <CheckCircle2 size={32} className="mx-auto text-[#10b981]" />
-                <p className="text-xs font-bold text-[#183e38]">Encrypted message dispatched safely.</p>
+                <p className="text-xs font-bold text-[#183e38]">{t('message_sent', currentLanguage)}</p>
               </div>
             ) : (
               <form onSubmit={handleSendMessage} className="space-y-3">
@@ -425,7 +425,7 @@ export function SupportCircleView({
                   rows={4}
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
-                  placeholder="Type a confidential message or request for support..."
+                  placeholder={t('message_placeholder', currentLanguage)}
                   className="w-full rounded-2xl border border-[#cfe0d8] bg-[#fbfdfc] p-3 text-xs text-[#1a433d] outline-none resize-none focus:border-[#1d8272]"
                 />
                 <div className="flex items-center justify-between pt-1">
@@ -435,7 +435,7 @@ export function SupportCircleView({
                     className="flex items-center gap-1.5 rounded-xl bg-[#1d8272] text-white px-4 py-2 text-xs font-bold hover:bg-[#186f60]"
                   >
                     <Send size={13} />
-                    <span>Send Message</span>
+                    <span>{t('send_message', currentLanguage)}</span>
                   </button>
                 </div>
               </form>

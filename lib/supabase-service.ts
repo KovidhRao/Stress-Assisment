@@ -444,10 +444,10 @@ export async function createCaseInDb(
     const isUuid = (v?: string | null) =>
       typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
 
-    const dbCaseId = isUuid(caseRecord.id) ? caseRecord.id : crypto.randomUUID()
-    const caseNumber = caseRecord.id && caseRecord.id.startsWith('NHAA-') 
-      ? caseRecord.id 
-      : `NHAA-2026-${Math.floor(1000 + Math.random() * 9000)}`
+    // Generate NHAA display number — stored in case_number, NOT in id (which is UUID)
+    const caseNumber = caseRecord.id && caseRecord.id.startsWith('NHAA-')
+      ? caseRecord.id
+      : `NHAA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
 
     let safeUserId: string | null = null
     if (isUuid(userId)) {
@@ -466,46 +466,64 @@ export async function createCaseInDb(
       }
     }
 
-    if (!safeUserId) {
-      console.warn('createCaseInDb: no valid profile user_id available — skipping DB insert')
-      return { success: false, error: 'No authenticated user ID or fallback profile', data: caseRecord }
-    }
-
     const sa = caseRecord.stress_assessment
     const loc = caseRecord.incident_location || {}
 
+    // Do NOT set `id` — let DB auto-generate UUID. Store NHAA number in case_number.
     const casePayload = {
-      id: dbCaseId,
       case_number: caseNumber,
       user_id: safeUserId,
       session_id: caseRecord.session_id || `SESS-${Date.now().toString().slice(-6)}`,
-      channel: toDbChannel(caseRecord.channel),
-      status: toDbCaseStatus(caseRecord.status),
+      victim_name: caseRecord.victim_name || 'Citizen User',
+      initials: caseRecord.initials || 'CU',
+      is_anonymous: caseRecord.is_anonymous || false,
+      contact_number: caseRecord.contact_number || null,
+      incident_category: caseRecord.incident_category || 'Caste-based Discrimination',
       incident_location: loc,
       incident_district: (loc as Record<string, string>).district || null,
       incident_state: (loc as Record<string, string>).state || null,
       incident_city: (loc as Record<string, string>).village_town_city || null,
       incident_pincode: (loc as Record<string, string>).pincode || null,
+      channel: toDbChannel(caseRecord.channel),
+      language: caseRecord.language || 'en',
+      narrative_text: caseRecord.narrative_text || null,
+      submission_type: caseRecord.submission_type || 'text',
+      voice_analysis: caseRecord.voice_analysis || null,
+      stress_assessment: sa || null,
+      status: toDbCaseStatus(caseRecord.status),
+      assigned_officer: caseRecord.assigned_officer || null,
       assigned_officer_id: isUuid(caseRecord.assigned_officer_id) ? caseRecord.assigned_officer_id : null,
+      assigned_counsellor: caseRecord.assigned_counsellor || null,
       assigned_counsellor_id: isUuid(caseRecord.assigned_counsellor_id) ? caseRecord.assigned_counsellor_id : null,
-      proximity_routing: typeof caseRecord.proximity_routing === 'object'
-        ? ((caseRecord.proximity_routing as any)?.nearest_station || (caseRecord.proximity_routing as any)?.routing_reason || null)
-        : (caseRecord.proximity_routing || null),
+      proximity_routing: typeof caseRecord.proximity_routing === 'string'
+        ? caseRecord.proximity_routing
+        : (caseRecord.proximity_routing as Record<string, string>)?.nearest_station || (caseRecord.proximity_routing as Record<string, string>)?.routing_reason || null,
       primary_situation: sa?.situation || null,
       current_risk_level: toDbRiskLevel(sa?.risk_level),
-      current_svi: sa?.svi_score ?? null
+      current_svi: sa?.svi_score ?? null,
+      priority_tier: caseRecord.priority_tier || 3,
+      notes: caseRecord.notes || [],
+      dispatched_actions: caseRecord.dispatched_actions || [],
+      created_at: caseRecord.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
 
-    const { error: caseErr } = await supabase.from('cases').insert(casePayload)
+    const { data: insertedCase, error: caseErr } = await supabase
+      .from('cases')
+      .insert(casePayload)
+      .select('id')
+      .single()
+
     if (caseErr) {
-      console.warn('Supabase createCase error:', caseErr.message)
+      console.error('[supabase-service] createCaseInDb error:', caseErr.message, caseErr)
       return { success: false, error: caseErr.message, data: caseRecord }
     }
 
+    console.log(`[supabase-service] Case ${caseNumber} created with DB id: ${insertedCase?.id}`)
     return { success: true, data: { ...caseRecord, id: caseNumber } }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to create case'
-    console.error('createCaseInDb exception:', msg)
+    console.error('[supabase-service] createCaseInDb exception:', msg)
     return { success: false, error: msg, data: caseRecord }
   }
 }
@@ -539,16 +557,24 @@ export function subscribeToRealtimeCases(
 ) {
   const channel = supabase
     .channel('realtime_cases_channel')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'cases' }, async () => {
-      const freshCases = await fetchCasesFromDb()
-      if (freshCases && freshCases.length > 0) {
-        onInsert(freshCases[0])
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'cases' }, async (payload) => {
+      const caseId = payload.new?.id
+      if (!caseId) return
+      try {
+        const found = await CaseService.fetchCaseById(caseId)
+        if (found) onInsert(found)
+      } catch (err) {
+        console.warn('[Realtime] INSERT fetch error:', err)
       }
     })
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'cases' }, async () => {
-      const freshCases = await fetchCasesFromDb()
-      if (freshCases && freshCases.length > 0) {
-        onUpdate(freshCases[0])
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'cases' }, async (payload) => {
+      const caseId = payload.new?.id
+      if (!caseId) return
+      try {
+        const found = await CaseService.fetchCaseById(caseId)
+        if (found) onUpdate(found)
+      } catch (err) {
+        console.warn('[Realtime] UPDATE fetch error:', err)
       }
     })
     .subscribe()
