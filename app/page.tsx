@@ -401,6 +401,9 @@ export default function Home() {
       setActiveCaseId(generatedCase.id)
     }
 
+    // Auto-redirect to Wellbeing Journey tab so the user lands in their specific gate mode
+    setActiveTab('Wellbeing journey')
+
     // Log Activity
     const newAct: UserActivity = {
       id: `ACT-${Date.now()}`,
@@ -1035,7 +1038,7 @@ export default function Home() {
                 {/* 3. WELLBEING JOURNEY TAB */}
                 {activeTab === 'Wellbeing journey' && (
                   <div className="mx-auto max-w-[1160px] animate-in fade-in duration-200">
-                    <WellbeingJourneyView
+                                    <WellbeingJourneyView
                       currentRiskLevel={activeRiskLevel}
                       activeCase={activeCaseRecord}
                       currentUser={currentUser}
@@ -1045,6 +1048,10 @@ export default function Home() {
                       onTriggerSOS={() => setSosModalOpen(true)}
                       onOpenAudioTools={() => {
                         setWellbeingModalTab('soundscape')
+                        setWellbeingModalOpen(true)
+                      }}
+                      onOpenGroundingTool={() => {
+                        setWellbeingModalTab('grounding')
                         setWellbeingModalOpen(true)
                       }}
                     />
@@ -1160,6 +1167,7 @@ export default function Home() {
       />
 
       {/* Wellbeing Tools Modal */}
+      {/* gameAllowed: reads from the pre-computed gate decision stamped on the case */}
       <WellbeingToolsModal
         isOpen={wellbeingModalOpen}
         onClose={() => setWellbeingModalOpen(false)}
@@ -1170,6 +1178,10 @@ export default function Home() {
           }
         }}
         initialTab={wellbeingModalTab}
+        gameAllowed={
+          activeCaseRecord?.game_allowed ??
+          (activeRiskLevel === 'Low' || activeRiskLevel === 'Moderate')
+        }
       />
 
       {/* Emergency SOS Modal */}

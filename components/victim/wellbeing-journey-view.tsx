@@ -26,13 +26,18 @@ import {
   Lock,
   Stethoscope
 } from 'lucide-react'
-import { RiskLevel, AppointmentRecord, CaseRecord, UserProfile } from '@/types'
+import { RiskLevel, AppointmentRecord, CaseRecord, UserProfile, InterventionSession } from '@/types'
+import { safetyGateFromRiskLevel } from '@/lib/safety-gate'
+import { recommendIntervention, INTERVENTION_META } from '@/lib/recommendation-engine'
+import { AdaptiveInterventionModal } from '@/components/victim/adaptive-intervention-modal'
 import { TeleCallModal } from '@/components/victim/tele-call-modal'
 import { AVAILABLE_APPOINTMENT_SLOTS } from '@/lib/mock-data'
 import { WellbeingService } from '@/lib/services/wellbeing-service'
 import { AppointmentService } from '@/lib/services/appointment-service'
 import { t } from '@/lib/i18n'
 import { BeforeAfterComparison } from '@/components/victim/before-after-comparison'
+import { MindfulMemoryGame } from '@/components/victim/interventions/mindful-memory-game'
+import { PhysicalExerciseActivity } from '@/components/victim/interventions/physical-exercise-activity'
 
 interface WellbeingJourneyViewProps {
   currentRiskLevel: RiskLevel
@@ -43,6 +48,8 @@ interface WellbeingJourneyViewProps {
   scheduledAppointments: AppointmentRecord[]
   onTriggerSOS: () => void
   onOpenAudioTools: () => void
+  /** Day 4: opens WellbeingToolsModal pinned to the 5-4-3-2-1 grounding tab */
+  onOpenGroundingTool?: () => void
 }
 
 interface BubbleItem {
@@ -73,7 +80,8 @@ export function WellbeingJourneyView({
   onScheduleAppointment,
   scheduledAppointments,
   onTriggerSOS,
-  onOpenAudioTools
+  onOpenAudioTools,
+  onOpenGroundingTool
 }: WellbeingJourneyViewProps) {
   // Dynamic journey computed from active case state
   const journey = WellbeingService.getJourneyForCase(activeCase)
@@ -88,6 +96,10 @@ export function WellbeingJourneyView({
   const [meetingMode, setMeetingMode] = useState<'Secure Video Call' | 'Telephonic Audio' | 'In-Person Safe Clinic'>('Secure Video Call')
   const [bookingSuccess, setBookingSuccess] = useState(false)
   const [bookingLoading, setBookingLoading] = useState(false)
+
+  // ── Day 4: Adaptive Intervention Modal ─────────────────────────────────────
+  const [adaptiveModalOpen, setAdaptiveModalOpen] = useState(false)
+  const [completedSessions, setCompletedSessions] = useState<InterventionSession[]>([])
 
   // Box Breathing Interactive State
   const [breathingActive, setBreathingActive] = useState(false)
@@ -198,9 +210,47 @@ export function WellbeingJourneyView({
     }
   }
 
-  const isNormal = currentRiskLevel === 'Low'
-  const isModerate = currentRiskLevel === 'Moderate'
-  const isHigh = currentRiskLevel === 'High' || currentRiskLevel === 'Critical'
+  // ── Day 4: Safety Gate flags ─────────────────────────────────────────
+  // UI components MUST read these flags — never re-check risk_level locally.
+  const gateResult = safetyGateFromRiskLevel(currentRiskLevel)
+  const isWellbeing    = gateResult.gate === 'WELLBEING'      // Low
+  const isSupport      = gateResult.gate === 'SUPPORT'        // Moderate
+  const isHumanReview  = gateResult.gate === 'HUMAN_REVIEW'   // High
+  const isSafetyPathway = gateResult.gate === 'SAFETY_PATHWAY' // Critical
+  // ──────────────────────────────────────────────────────────────────────
+
+  // ── Day 4: Recommendation Engine ────────────────────────────────────────────
+  // Compute recommended intervention path from gate + case assessment.
+  // Falls back to gate-only if no active case (demo mode).
+  const recommendation = (() => {
+    if (activeCase?.stress_assessment) {
+      return recommendIntervention(gateResult.gate, activeCase.stress_assessment)
+    }
+    // Fallback for demo / no case context
+    return recommendIntervention(gateResult.gate, {
+      id: 'DEMO',
+      case_id: '',
+      svi_score: currentRiskLevel === 'Low' ? 12 : currentRiskLevel === 'Moderate' ? 38 : 62,
+      risk_level: currentRiskLevel,
+      trauma_score: 0,
+      fear_score: 0,
+      anxiety_score: 0,
+      depression_indicator: false,
+      suicidal_ideation_flag: false,
+      intimidation_flag: false,
+      social_isolation_flag: false,
+      speech_stress_detected: false,
+      key_trauma_triggers: [],
+      recommended_actions: [],
+      assessed_at: new Date().toISOString()
+    })
+  })()
+  const recMeta = INTERVENTION_META[recommendation.path]
+  // ────────────────────────────────────────────────────────────────────────────
+
+  // Legacy aliases used in the active-case bar coloring below
+  const isModerate = isSupport
+  const isHigh     = isHumanReview || isSafetyPathway
 
   return (
     <div className="mx-auto max-w-[1160px] space-y-8 animate-in fade-in duration-200">
@@ -247,9 +297,9 @@ export function WellbeingJourneyView({
       )}
 
       {/* ========================================================================= */}
-      {/* FLOW 1: NORMAL CONDITION FLOW */}
+      {/* FLOW 1: WELLBEING (Low risk) */}
       {/* ========================================================================= */}
-      {isNormal && (
+      {isWellbeing && (
         <div className="space-y-8">
           {/* Header */}
           <div className="border-b border-[#e2ece7] pb-6">
@@ -261,6 +311,31 @@ export function WellbeingJourneyView({
             <p className="mt-1.5 text-xs text-[#68857e]">
               {t('healing_journey_card_desc', currentLanguage)}
             </p>
+
+            {/* Day 4: Recommendation Chip + CTA */}
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <div
+                className="flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-semibold border"
+                style={{ backgroundColor: recMeta.bgColor, borderColor: recMeta.borderColor, color: recMeta.color }}
+              >
+                <span>{recMeta.icon}</span>
+                <span>Recommended: <strong>{recommendation.label}</strong></span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdaptiveModalOpen(true)}
+                className="flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold text-white shadow-md transition active:scale-95 cursor-pointer"
+                style={{ backgroundColor: recMeta.color, boxShadow: `0 4px 12px ${recMeta.color}30` }}
+              >
+                <span>{recMeta.icon}</span>
+                <span>Start {recommendation.label}</span>
+              </button>
+              {completedSessions.length > 0 && (
+                <span className="text-[10px] text-[#059669] font-bold">
+                  ✓ {completedSessions.length} session{completedSessions.length !== 1 ? 's' : ''} completed today
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Calming Activities Grid */}
@@ -405,11 +480,14 @@ export function WellbeingJourneyView({
               </div>
             </div>
           </div>
+
+          {/* Mindful Memory Flip Game — Wellbeing Mode Interactive Game */}
+          <MindfulMemoryGame />
         </div>
       )}
 
-      {/* Before/After Distress Comparison (shown in Normal flow after exercises) */}
-      {isNormal && activeCase && (
+      {/* Before/After Distress Comparison (shown in Wellbeing flow after exercises) */}
+      {isWellbeing && activeCase && (
         <BeforeAfterComparison
           caseId={activeCase.id}
           currentLanguage={currentLanguage}
@@ -417,9 +495,9 @@ export function WellbeingJourneyView({
       )}
 
       {/* ========================================================================= */}
-      {/* FLOW 2: MODERATE STRESS CONDITION FLOW */}
+      {/* FLOW 2: SUPPORT (Moderate risk) — grounding exercise + psychiatrist */}
       {/* ========================================================================= */}
-      {isModerate && (
+      {isSupport && (
         <div className="space-y-8">
           {/* Header */}
           <div className="border-b border-[#e2ece7] pb-6">
@@ -431,7 +509,47 @@ export function WellbeingJourneyView({
             <p className="mt-1.5 text-xs text-[#68857e]">
               {t('wb_mod_header_desc', currentLanguage)}
             </p>
+
+            {/* Day 4: Grounding Exercise CTA — prominent entry point for the modal */}
+            {onOpenGroundingTool && (
+              <button
+                type="button"
+                onClick={onOpenGroundingTool}
+                className="mt-4 flex items-center gap-2 rounded-2xl bg-[#0284c7] hover:bg-[#0369a1] text-white px-5 py-3 text-xs font-bold shadow-md shadow-[#0284c7]/20 transition active:scale-95 cursor-pointer"
+              >
+                <Compass size={15} />
+                <span>Start Grounding Exercise (5-4-3-2-1)</span>
+              </button>
+            )}
+
+            {/* Day 4: Adaptive Intervention CTA for SUPPORT gate */}
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <div
+                className="flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-semibold border"
+                style={{ backgroundColor: recMeta.bgColor, borderColor: recMeta.borderColor, color: recMeta.color }}
+              >
+                <span>{recMeta.icon}</span>
+                <span>Recommended: <strong>{recommendation.label}</strong></span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdaptiveModalOpen(true)}
+                className="flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold text-white shadow-md transition active:scale-95 cursor-pointer"
+                style={{ backgroundColor: recMeta.color }}
+              >
+                <span>{recMeta.icon}</span>
+                <span>Start {recommendation.label}</span>
+              </button>
+              {completedSessions.length > 0 && (
+                <span className="text-[10px] text-[#0284c7] font-bold">
+                  ✓ {completedSessions.length} session{completedSessions.length !== 1 ? 's' : ''} completed today
+                </span>
+              )}
+            </div>
           </div>
+
+          {/* Somatic Movement & Physical Tension Release Suite — Support Mode */}
+          <PhysicalExerciseActivity />
 
           {/* Assigned Psychiatrist Profile & Booking Card */}
           <div className="rounded-3xl border-2 border-[#bae6fd] bg-gradient-to-r from-[#f0f9ff] via-[#f8fbff] to-white p-6 sm:p-8 shadow-sm">
@@ -532,8 +650,8 @@ export function WellbeingJourneyView({
         </div>
       )}
 
-      {/* Before/After Distress Comparison (shown in Moderate flow) */}
-      {isModerate && activeCase && (
+      {/* Before/After Distress Comparison (shown in Support/Moderate flow) */}
+      {isSupport && activeCase && (
         <BeforeAfterComparison
           caseId={activeCase.id}
           currentLanguage={currentLanguage}
@@ -541,28 +659,28 @@ export function WellbeingJourneyView({
       )}
 
       {/* ========================================================================= */}
-      {/* FLOW 3: HIGH & CRITICAL RISK ESCALATION FLOW */}
+      {/* FLOW 3: HUMAN REVIEW (High risk) — psychiatrist + officer, game blocked */}
       {/* ========================================================================= */}
-      {isHigh && (
+      {isHumanReview && (
         <div className="space-y-8">
-          {/* Critical Priority Alert Banner */}
-          <div className="rounded-3xl border-2 border-[#fca5a5] bg-[#fff5f5] p-6 sm:p-8 shadow-sm">
+          {/* Priority Human Review Banner */}
+          <div className="rounded-3xl border-2 border-[#fbbf24] bg-[#fffbeb] p-6 sm:p-8 shadow-sm">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <div className="flex items-start gap-4">
-                <div className="flex size-14 items-center justify-center rounded-2xl bg-[#dc2626] text-white shadow-md shadow-[#dc2626]/20 shrink-0">
+                <div className="flex size-14 items-center justify-center rounded-2xl bg-[#f59e0b] text-white shadow-md shadow-[#f59e0b]/20 shrink-0">
                   <ShieldAlert size={28} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold text-[#991b1b]">
-                      {t('wb_high_header_title', currentLanguage)}
+                    <h2 className="text-xl font-bold text-[#92400e]">
+                      Priority Human Review
                     </h2>
-                    <span className="rounded-full bg-[#fecaca] px-2.5 py-0.5 text-[10px] font-extrabold text-[#991b1b]">
+                    <span className="rounded-full bg-[#fef3c7] border border-[#fbbf24] px-2.5 py-0.5 text-[10px] font-extrabold text-[#92400e]">
                       {t('wb_tier1_escalation', currentLanguage)}
                     </span>
                   </div>
-                  <p className="text-xs text-[#991b1b] mt-1 max-w-2xl leading-relaxed">
-                    {t('wb_high_header_desc', currentLanguage)}
+                  <p className="text-xs text-[#92400e] mt-1 max-w-2xl leading-relaxed">
+                    Your case has been flagged for priority human review. A psychiatrist and officer have been notified. The wellbeing game is paused pending clinical clearance.
                   </p>
                 </div>
               </div>
@@ -571,10 +689,54 @@ export function WellbeingJourneyView({
                 <button
                   type="button"
                   onClick={onTriggerSOS}
-                  className="flex items-center gap-2 rounded-2xl bg-[#dc2626] hover:bg-[#b91c1c] text-white px-6 py-3.5 text-xs font-extrabold shadow-lg shadow-[#dc2626]/30 transition active:scale-95 cursor-pointer animate-pulse"
+                  className="flex items-center gap-2 rounded-2xl bg-[#dc2626] hover:bg-[#b91c1c] text-white px-6 py-3.5 text-xs font-extrabold shadow-lg shadow-[#dc2626]/30 transition active:scale-95 cursor-pointer"
                 >
                   <AlertOctagon size={16} />
                   <span>{t('wb_call_14566', currentLanguage)}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Assigned Psychiatrist Profile & Booking Card */}
+          <div className="rounded-3xl border-2 border-[#bae6fd] bg-gradient-to-r from-[#f0f9ff] via-[#f8fbff] to-white p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="flex items-start gap-4">
+                <div className="flex size-16 items-center justify-center rounded-2xl bg-[#0284c7] text-white text-xl font-bold shadow-md shadow-[#0284c7]/20 shrink-0">
+                  {((journey.assignedPsychiatrist || 'RC').split(' ').map(w => w[0]).join('').slice(0, 2)).toUpperCase()}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-[#0c4a6e]">{journey.assignedPsychiatrist || 'Dr. Ramesh Chandra'}</h3>
+                    <span className="rounded-full bg-[#e0f2fe] border border-[#bae6fd] px-2.5 py-0.5 text-[10px] font-extrabold text-[#0369a1]">
+                      {t('wb_verified_specialist', currentLanguage)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#0369a1] font-semibold mt-0.5">
+                    Senior Clinical Psychiatrist &bull; Trauma Triage Desk (NIMHANS)
+                  </p>
+                  <p className="text-xs text-[#527770] mt-2 max-w-xl leading-relaxed">
+                    Specialized in acute stress debriefing, caste atrocity trauma care, cognitive somatic grounding, and safe rehabilitation.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleOpenCall(journey.assignedPsychiatrist || 'Dr. Ramesh Chandra', 'Lead Clinical Psychiatrist', '+91 98101 23456')}
+                  className="flex items-center gap-2 rounded-2xl bg-[#0284c7] hover:bg-[#0369a1] text-white px-5 py-3 text-xs font-bold shadow-md shadow-[#0284c7]/20 transition active:scale-95 cursor-pointer"
+                >
+                  <PhoneCall size={15} />
+                  <span>{t('wb_connect_call', currentLanguage)}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAppointmentModalOpen(true)}
+                  className="flex items-center gap-2 rounded-2xl border border-[#bae6fd] bg-white hover:bg-[#f0f9ff] text-[#0284c7] px-5 py-3 text-xs font-bold transition active:scale-95 shadow-xs cursor-pointer"
+                >
+                  <Calendar size={15} />
+                  <span>{t('wb_book_session', currentLanguage)}</span>
                 </button>
               </div>
             </div>
@@ -636,6 +798,116 @@ export function WellbeingJourneyView({
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* FLOW 4: SAFETY PATHWAY (Critical) — game hard-blocked, SOS assertive */}
+      {/* ========================================================================= */}
+      {isSafetyPathway && (
+        <div className="space-y-8">
+          {/* Safety Pathway Alert — game is fully removed from this branch */}
+          <div className="rounded-3xl border-2 border-[#fca5a5] bg-[#fff5f5] p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="flex items-start gap-4">
+                <div className="flex size-14 items-center justify-center rounded-2xl bg-[#dc2626] text-white shadow-md shadow-[#dc2626]/20 shrink-0">
+                  <ShieldAlert size={28} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-[#991b1b]">
+                      Safety Pathway — Immediate Escalation
+                    </h2>
+                    <span className="rounded-full bg-[#fecaca] px-2.5 py-0.5 text-[10px] font-extrabold text-[#991b1b]">
+                      {t('wb_tier1_escalation', currentLanguage)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#991b1b] mt-1 max-w-2xl leading-relaxed">
+                    Your case has been escalated for immediate review. An on-call psychiatrist and nodal officer have been notified. Please use the emergency helpline or SOS button below right now.
+                  </p>
+                </div>
+              </div>
+
+              {/* SOS — auto-expanded, assertive */}
+              <div className="flex flex-col items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onTriggerSOS}
+                  className="flex items-center gap-2 rounded-2xl bg-[#dc2626] hover:bg-[#b91c1c] text-white px-6 py-4 text-sm font-extrabold shadow-xl shadow-[#dc2626]/40 transition active:scale-95 cursor-pointer animate-pulse"
+                >
+                  <AlertOctagon size={18} />
+                  <span>SOS — {t('wb_call_14566', currentLanguage)}</span>
+                </button>
+                <p className="text-[10px] text-[#b91c1c] font-semibold">Toll-free 24×7 emergency helpline</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Assigned Nearest Officer */}
+          <div className="rounded-3xl border border-[#fca5a5] bg-gradient-to-r from-[#fffbf5] to-white p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="flex items-start gap-4">
+                <div className="flex size-16 items-center justify-center rounded-2xl bg-[#dc2626] text-white text-xl font-bold shadow-md shadow-[#dc2626]/20 shrink-0">
+                  {((journey.assignedOfficer || 'VS').split(' ').map(w => w[0]).join('').slice(0, 2)).toUpperCase()}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-[#9a3412]">{journey.assignedOfficer || 'Insp. Vikram Pratap Singh'}</h3>
+                    <span className="rounded-full bg-[#fecaca] border border-[#fca5a5] px-2.5 py-0.5 text-[10px] font-extrabold text-[#991b1b]">
+                      Emergency Contact
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#dc2626] font-semibold mt-0.5">
+                    {journey.stationName || 'District Special Atrocities Redressal Cell'}
+                  </p>
+                  <p className="text-xs text-[#6b8c84] mt-2 max-w-xl leading-relaxed">
+                    Dispatched for immediate physical escort, emergency FIR filing under PoA Act, and safe-house coordination.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleOpenCall(journey.assignedOfficer || 'Insp. Vikram Pratap Singh', 'Emergency Escort Officer', '+91 94220 98765')}
+                  className="flex items-center gap-2 rounded-2xl bg-[#dc2626] hover:bg-[#b91c1c] text-white px-5 py-3 text-xs font-bold shadow-md shadow-[#dc2626]/20 transition active:scale-95 cursor-pointer"
+                >
+                  <PhoneCall size={15} />
+                  <span>{t('wb_call_officer_now', currentLanguage)}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Emergency Roadmap */}
+          <div className="rounded-3xl border border-[#fca5a5] bg-white p-6 sm:p-7 shadow-xs">
+            <h3 className="text-sm font-bold text-[#991b1b] mb-4 flex items-center gap-2">
+              <Lock size={14} />
+              {t('wb_emergency_roadmap', currentLanguage)}
+            </h3>
+            <div className="space-y-4">
+              {journey.steps.map((step, idx) => (
+                <div key={step.id} className="flex items-start gap-3.5 p-4 rounded-2xl bg-[#fff5f5] border border-[#fecaca]">
+                  <div className="flex size-7 items-center justify-center rounded-xl bg-[#fecaca] text-[#dc2626] font-bold text-xs shrink-0">
+                    {idx + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h4 className="text-xs font-bold text-[#7f1d1d]">{step.title}</h4>
+                      <span className="text-[10px] font-bold bg-[#fecaca] text-[#dc2626] px-2 py-0.5 rounded">
+                        {step.timeframe}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#6b8c84] mt-0.5">{step.subtitle}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Explicit game-block notice */}
+            <div className="mt-4 flex items-center gap-2 rounded-xl bg-[#fef2f2] border border-[#fca5a5] px-4 py-3 text-xs text-[#991b1b] font-semibold">
+              <Lock size={13} className="shrink-0" />
+              <span>Wellbeing tools are paused during a Safety Pathway — your care team will re-enable them after your first session.</span>
             </div>
           </div>
         </div>
@@ -752,6 +1024,19 @@ export function WellbeingJourneyView({
           onClose={() => setTeleModalOpen(false)}
         />
       )}
+
+      {/* Adaptive Intervention Modal */}
+      <AdaptiveInterventionModal
+        isOpen={adaptiveModalOpen}
+        onClose={() => setAdaptiveModalOpen(false)}
+        recommendation={recommendation}
+        caseId={activeCase?.id}
+        userId={currentUser?.id}
+        onSessionComplete={(session) => {
+          setCompletedSessions(prev => [session, ...prev])
+        }}
+        onTriggerSOS={onTriggerSOS}
+      />
     </div>
   )
 }

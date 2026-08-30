@@ -1,5 +1,48 @@
 export type RiskLevel = 'Low' | 'Moderate' | 'High' | 'Critical'
 
+/**
+ * SafetyGateDecision — the 4 routing states produced by lib/safety-gate.ts.
+ * Stored on UserStory and CaseRecord so officer dashboards (Day 5) can read
+ * the gate result directly without re-deriving it from risk_level.
+ */
+export type SafetyGateDecision =
+  | 'WELLBEING'
+  | 'SUPPORT'
+  | 'HUMAN_REVIEW'
+  | 'SAFETY_PATHWAY'
+
+/**
+ * InterventionPath — the specific adaptive journey recommended by the
+ * Recommendation Engine, based on situation + gate + indicators.
+ */
+export type InterventionPath =
+  | 'FOCUS_JOURNEY'      // Academic / work stress, Low gate
+  | 'CALM_GARDEN'        // General anxiety / grief / emotional distress, Low gate
+  | 'GROUNDING_JOURNEY'  // Moderate distress, Support gate
+  | 'HUMAN_REVIEW'       // High — no game, redirects to professional
+  | 'SAFETY_PATHWAY'     // Critical — no game, immediate escalation
+
+/** A self-reported distress rating 0–10 captured before/after an intervention. */
+export interface DistressRating {
+  score: number          // 0 (none) to 10 (extreme)
+  captured_at: string    // ISO timestamp
+  label?: string         // e.g. "Before" | "After"
+}
+
+/** Session record for one completed adaptive intervention. */
+export interface InterventionSession {
+  id: string
+  case_id?: string
+  user_id?: string
+  intervention_path: InterventionPath
+  before_rating: DistressRating
+  after_rating?: DistressRating
+  delta?: number           // before.score - after.score (positive = improvement)
+  started_at: string
+  completed_at?: string
+  completed: boolean
+}
+
 export type ChannelType = 'helpline_14566' | 'integrated_portal' | 'chatbot' | 'ivrs' | 'mobile_app'
 
 export type SupportedLanguage = 
@@ -199,6 +242,9 @@ export interface CaseRecord {
   follow_up_required?: boolean
   created_at?: string
   updated_at?: string
+  /** Day 4 Safety Gate — persisted so officer dashboards don't re-derive it */
+  safety_gate?: SafetyGateDecision
+  game_allowed?: boolean
 }
 
 export interface UserStory {
@@ -228,6 +274,9 @@ export interface UserStory {
   assigned_psychiatrist_name?: string
   assigned_psychiatrist_id?: string
   nearest_station?: string
+  /** Day 4 Safety Gate — persisted so officer dashboards don't re-derive it */
+  safety_gate?: SafetyGateDecision
+  game_allowed?: boolean
 }
 
 export interface CaseStory {

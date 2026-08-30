@@ -19,6 +19,8 @@ import {
 } from 'lucide-react'
 import { CaseRecord, OfficerProfile, PsychiatristProfile, UserProfile, UserStory, VoiceAnalysisMetrics } from '@/types'
 import { CaseService } from '@/lib/services/case-service'
+import { safetyGate } from '@/lib/safety-gate'
+import { computeSVI } from '@/lib/svi-engine'
 import { DEFAULT_OFFICERS } from '@/lib/mock-data'
 import { t } from '@/lib/i18n'
 
@@ -69,6 +71,15 @@ export function StoryInputCard({
     detectedLanguage?: string
     copied: boolean
   } | null>(null)
+
+  // Real-time live AI analysis as the user types
+  const liveAssessment = React.useMemo(() => {
+    const text = narrativeText.trim()
+    if (!text || text.length < 5) return null
+    const assessment = computeSVI(text)
+    const gateResult = safetyGate(assessment)
+    return { assessment, gateResult }
+  }, [narrativeText])
 
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -215,6 +226,30 @@ export function StoryInputCard({
         allOfficers: officersList,
         allPsychiatrists: psychiatristsList
       })
+
+      // ── Day 4: Safety Gate ──────────────────────────────────────────────
+      const gateResult = safetyGate(caseRecord.stress_assessment)
+
+      // Stamp gate decision onto the story
+      story.safety_gate = gateResult.gate
+      story.game_allowed = gateResult.gameAllowed
+
+      // Stamp gate decision onto the case record
+      caseRecord.safety_gate = gateResult.gate
+      caseRecord.game_allowed = gateResult.gameAllowed
+
+      // Append triage note so officers see the routing reason (Day 5 explainability)
+      caseRecord.notes = [
+        ...(caseRecord.notes || []),
+        {
+          id: `NOTE-GATE-${Date.now()}`,
+          author: 'System — Safety Gate',
+          role: 'system',
+          timestamp: new Date().toISOString(),
+          text: gateResult.reason
+        }
+      ]
+      // ───────────────────────────────────────────────────────────────────
 
       onStorySubmitted(story, metrics, caseRecord)
 
@@ -373,6 +408,69 @@ export function StoryInputCard({
               </button>
             ))}
           </div>
+
+          {/* Real-time Live AI Detection Card */}
+          {liveAssessment && (
+            <div className="mt-3 rounded-2xl p-3.5 border text-xs animate-in fade-in duration-200 shadow-2xs space-y-1.5"
+              style={{
+                backgroundColor:
+                  liveAssessment.assessment.risk_level === 'Critical' ? '#fff5f5' :
+                  liveAssessment.assessment.risk_level === 'High' ? '#fffbeb' :
+                  liveAssessment.assessment.risk_level === 'Moderate' ? '#f0f9ff' :
+                  '#f0fdf4',
+                borderColor:
+                  liveAssessment.assessment.risk_level === 'Critical' ? '#fca5a5' :
+                  liveAssessment.assessment.risk_level === 'High' ? '#fde68a' :
+                  liveAssessment.assessment.risk_level === 'Moderate' ? '#bae6fd' :
+                  '#bbf7d0'
+              }}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex size-6 items-center justify-center rounded-lg bg-white shadow-2xs font-bold text-[10px]">
+                    {liveAssessment.assessment.risk_level === 'Critical' ? '🔴' :
+                     liveAssessment.assessment.risk_level === 'High' ? '🟡' :
+                     liveAssessment.assessment.risk_level === 'Moderate' ? '🔵' : '🟢'}
+                  </span>
+                  <span className="font-extrabold uppercase tracking-wider text-[11px]" style={{
+                    color:
+                      liveAssessment.assessment.risk_level === 'Critical' ? '#991b1b' :
+                      liveAssessment.assessment.risk_level === 'High' ? '#92400e' :
+                      liveAssessment.assessment.risk_level === 'Moderate' ? '#0369a1' :
+                      '#15803d'
+                  }}>
+                    Live AI Classification: {liveAssessment.assessment.risk_level} Risk
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-[11px] px-2 py-0.5 rounded bg-white shadow-2xs">
+                    SVI {liveAssessment.assessment.svi_score}/100
+                  </span>
+                  {liveAssessment.assessment.situation && (
+                    <span className="font-semibold text-[10px] px-2 py-0.5 rounded bg-white/80 border">
+                      {liveAssessment.assessment.situation}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <p className="text-[11px] leading-relaxed font-medium" style={{
+                color:
+                  liveAssessment.assessment.risk_level === 'Critical' ? '#7f1d1d' :
+                  liveAssessment.assessment.risk_level === 'High' ? '#78350f' :
+                  liveAssessment.assessment.risk_level === 'Moderate' ? '#0c4a6e' :
+                  '#14532d'
+              }}>
+                👉 <strong>Destination Mode:</strong> {
+                  liveAssessment.gateResult.gate === 'SAFETY_PATHWAY' ? 'Safety Pathway (Immediate Escalation & SOS 14566 • Games Hard-Blocked)' :
+                  liveAssessment.gateResult.gate === 'HUMAN_REVIEW' ? 'Priority Human Review (Officer & Psychiatrist Dispatched • Games Blocked)' :
+                  liveAssessment.gateResult.gate === 'SUPPORT' ? 'Support Mode (Grounding Journey & Doctor Booking Unlocked)' :
+                  'Wellbeing Mode (Focus/Calm Journeys & Mindful Games Unlocked)'
+                }
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Audio Recording Section */}
