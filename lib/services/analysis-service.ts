@@ -1,4 +1,5 @@
 import { CaseAnalysisResult, RiskLevel, VoiceAnalysisMetrics } from '@/types'
+import { computeSVI, computeComprehensiveNLP } from '@/lib/svi-engine'
 
 /**
  * Interface definition for pluggable ML/NLP Mental Condition Analysis Providers.
@@ -14,7 +15,48 @@ export interface IAnalysisProvider {
   ): Promise<CaseAnalysisResult>
 }
 
-// ─── 1. Mock Analysis Provider (Current Development / NLP Baseline) ──────────
+// ─── 1. Real NLP + SVI Engine Provider (Production) ─────────────────────────
+
+export class RealNLPAnalysisProvider implements IAnalysisProvider {
+  name = 'NHAA-Multilingual-NLP-SVI-Engine'
+  version = 'v2.0.0'
+
+  async analyze(
+    narrativeText: string,
+    voiceMetrics?: VoiceAnalysisMetrics | null,
+    clinicalScore: number = 0
+  ): Promise<CaseAnalysisResult> {
+    // Use the real SVI engine with full NLP + voice integration
+    const assessment = computeSVI(narrativeText, voiceMetrics, clinicalScore)
+    const nlpDetail = computeComprehensiveNLP(narrativeText, assessment.speech_stress_detected ? 50 : 0)
+
+    // Map NLP contributing factors to detected conditions
+    const detectedConditions: string[] = []
+    if (assessment.suicidal_ideation_flag) detectedConditions.push('Acute Suicidal Risk')
+    if (assessment.intimidation_flag) detectedConditions.push('Severe Intimidation')
+    if (assessment.social_isolation_flag) detectedConditions.push('Social Boycott / Ostracization')
+    if (assessment.speech_stress_detected) detectedConditions.push('Acoustic Vocal Tremor & Speech Distress')
+    if (assessment.depression_indicator) detectedConditions.push('Depression / Severe Helplessness')
+    if (assessment.trauma_score > 50) detectedConditions.push('Acute Trauma & Shock Response')
+    if (detectedConditions.length === 0) detectedConditions.push('General Stress')
+
+    return {
+      svi_score: assessment.svi_score,
+      risk_level: assessment.risk_level,
+      detected_conditions: detectedConditions,
+      confidence: nlpDetail.confidence,
+      fear_score: assessment.fear_score,
+      trauma_score: assessment.trauma_score,
+      anxiety_score: assessment.anxiety_score,
+      key_triggers: assessment.key_trauma_triggers,
+      recommendations: assessment.recommended_actions,
+      model_version: this.version,
+      analyzed_at: new Date().toISOString()
+    }
+  }
+}
+
+// ─── 2. Mock Fallback Provider (Development / Offline) ──────────────────────
 
 const CRITICAL_KEYWORDS = [
   'kill', 'murder', 'suicide', 'die', 'threat to life', 'mar denge', 'jaan se marne',
@@ -171,7 +213,7 @@ export class MockAnalysisProvider implements IAnalysisProvider {
   }
 }
 
-// ─── 2. Future ML/NLP Microservice Adapter (Ready for plug-in) ───────────────
+// ─── 3. Future ML/NLP Microservice Adapter (Ready for plug-in) ───────────────
 
 export class FutureMLAnalysisProvider implements IAnalysisProvider {
   name = 'DistilBERT-Trauma-NLP-Server'
@@ -213,16 +255,16 @@ export class FutureMLAnalysisProvider implements IAnalysisProvider {
         analyzed_at: new Date().toISOString()
       }
     } catch (err) {
-      console.warn('ML Service unreachable, falling back to local NLP provider:', err)
-      return new MockAnalysisProvider().analyze(narrativeText, voiceMetrics, clinicalScore)
+      console.warn('ML Service unreachable, falling back to real NLP provider:', err)
+      return new RealNLPAnalysisProvider().analyze(narrativeText, voiceMetrics, clinicalScore)
     }
   }
 }
 
-// ─── 3. Unified Analysis Service ─────────────────────────────────────────────
+// ─── 4. Unified Analysis Service ─────────────────────────────────────────────
 
 class AnalysisServiceManager {
-  private activeProvider: IAnalysisProvider = new MockAnalysisProvider()
+  private activeProvider: IAnalysisProvider = new RealNLPAnalysisProvider()
 
   public setProvider(provider: IAnalysisProvider) {
     this.activeProvider = provider

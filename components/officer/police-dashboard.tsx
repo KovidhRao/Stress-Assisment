@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   ShieldAlert,
   Radio,
@@ -15,10 +15,14 @@ import {
   Car,
   FileCheck,
   BadgeAlert,
-  Sparkles
+  Sparkles,
+  Calendar,
+  Clock,
+  UserCheck
 } from 'lucide-react'
 import { CaseRecord, OfficerProfile, RiskLevel } from '@/types'
 import { TeleCallModal } from '@/components/victim/tele-call-modal'
+import { CaseService } from '@/lib/services/case-service'
 import { t } from '@/lib/i18n'
 
 interface PoliceDashboardProps {
@@ -43,6 +47,22 @@ export function PoliceDashboard({
 }: PoliceDashboardProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [dispatchedIds, setDispatchedIds] = useState<string[]>([])
+  const [followUpsList, setFollowUpsList] = useState<Array<{
+    id: string
+    caseId: string
+    victimName?: string
+    assignedTo: string
+    assignedRole: string
+    followUpType: string
+    scheduledAt: string
+    completedAt: string | null
+    status: string
+    notes: string | null
+    district?: string
+    state?: string
+    contactNumber?: string
+  }>>([])
+  const [followUpsLoading, setFollowUpsLoading] = useState(false)
 
   // Tele-call modal state
   const [teleModalOpen, setTeleModalOpen] = useState(false)
@@ -51,6 +71,30 @@ export function PoliceDashboard({
   // Escalated cases
   const escalatedCases = cases.filter(c => c.status === 'Escalated')
 
+  // Load real follow-ups from DB
+  const loadFollowUps = useCallback(async () => {
+    setFollowUpsLoading(true)
+    try {
+      const data = await CaseService.fetchAllFollowUps()
+      setFollowUpsList(data)
+    } catch {
+      setFollowUpsList([])
+    } finally {
+      setFollowUpsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadFollowUps()
+  }, [loadFollowUps])
+
+  const handleUpdateFollowUp = async (id: string, status: string, caseId: string) => {
+    const ok = await CaseService.updateFollowUpStatus(id, status, caseId)
+    if (ok) {
+      loadFollowUps()
+    }
+  }
+
   // ── Computed real-time stats ────────────────────────────────
   const totalCases = cases.length
   const highCases = cases.filter(c => c.stress_assessment.risk_level === 'High').length
@@ -58,6 +102,7 @@ export function PoliceDashboard({
   const reviewedCases = cases.filter(c => c.status === 'Reviewed' || c.status === 'Resolved').length
   const dispatchedCases = cases.filter(c => c.dispatched_actions && c.dispatched_actions.length > 0).length
   const zeroFirRate = totalCases > 0 ? Math.round((dispatchedCases / totalCases) * 100) : 0
+  const pendingFollowUps = followUpsList.filter(f => f.status === 'pending' || f.status === 'in_progress')
 
   // Proximity & Severity filtering:
   // Shows high/critical cases routed to this officer or in this officer's district / state
@@ -96,6 +141,22 @@ export function PoliceDashboard({
     setTeleModalOpen(true)
   }
 
+  const handleCallFollowUpVictim = (fup: typeof followUpsList[0]) => {
+    setTeleRecipient({
+      name: fup.victimName || 'Complainant',
+      role: `Follow-Up Visit · Case ${fup.caseId}`,
+      phone: fup.contactNumber || '+91 98765 43210'
+    })
+    setTeleModalOpen(true)
+  }
+
+  const followUpTypeLabels: Record<string, string> = {
+    check_in: 'Welfare Check-In',
+    medical: 'Medical Follow-Up',
+    legal: 'Legal Aid Follow-Up',
+    welfare: 'Welfare Visit'
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
       {/* Officer Station & Jurisdiction Banner */}
@@ -129,37 +190,91 @@ export function PoliceDashboard({
       )}
 
       {/* Police KPI Banner — all values computed from real case data */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <div className="rounded-2xl border border-[#fca5a5] bg-[#fffbfb] p-4.5 shadow-xs">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
+        <div className="rounded-2xl border border-[#fca5a5] bg-[#fffbfb] p-4 shadow-xs">
           <p className="text-xs text-[#991b1b] font-semibold">{t('high_svi_alert', currentLanguage)}</p>
           <p className="mt-2 text-2xl font-bold text-[#991b1b]">{policeCases.length}</p>
           <p className="mt-1 text-[11px] text-[#dc2626] font-semibold">{t('pd_priority_tier', currentLanguage)}</p>
         </div>
 
-        <div className="rounded-2xl border border-[#dcebe5] bg-white p-4.5 shadow-xs">
+        <div className="rounded-2xl border border-[#dcebe5] bg-white p-4 shadow-xs">
           <p className="text-xs text-[#698881] font-semibold">{t('pd_total_cases', currentLanguage)}</p>
           <p className="mt-2 text-2xl font-bold text-[#173a34]">{totalCases}</p>
           <p className="mt-1 text-[11px] text-[#1d8272] font-semibold">{t('pd_across', currentLanguage)} {currentOfficer?.assigned_district || 'District'}</p>
         </div>
 
-        <div className="rounded-2xl border border-[#dcebe5] bg-white p-4.5 shadow-xs">
+        <div className="rounded-2xl border border-[#dcebe5] bg-white p-4 shadow-xs">
           <p className="text-xs text-[#698881] font-semibold">{t('pd_zero_fir', currentLanguage)}</p>
           <p className="mt-2 text-2xl font-bold text-[#173a34]">{zeroFirRate}%</p>
           <p className="mt-1 text-[11px] text-[#1d8272] font-semibold">{t('pd_sco_sta', currentLanguage)}</p>
         </div>
 
-        <div className="rounded-2xl border border-[#dcebe5] bg-white p-4.5 shadow-xs">
+        <div className="rounded-2xl border border-[#dcebe5] bg-white p-4 shadow-xs">
           <p className="text-xs text-[#698881] font-semibold">{t('pd_dispatched_escorts', currentLanguage)}</p>
           <p className="mt-2 text-2xl font-bold text-[#173a34]">{dispatchedCases}</p>
           <p className="mt-1 text-[11px] text-[#698881]">{t('pd_active_field', currentLanguage)}</p>
         </div>
 
-        <div className="rounded-2xl border border-[#fef2f2] bg-[#fff5f5] p-4.5 shadow-xs">
+        <div className="rounded-2xl border border-[#d8b4fe] bg-[#faf5ff] p-4 shadow-xs">
+          <p className="text-xs text-[#7e22ce] font-semibold">Scheduled Follow-Ups</p>
+          <p className="mt-2 text-2xl font-bold text-[#7e22ce]">{pendingFollowUps.length}</p>
+          <p className="mt-1 text-[11px] text-[#9333ea] font-semibold">Active Check-Ins</p>
+        </div>
+
+        <div className="rounded-2xl border border-[#fef2f2] bg-[#fff5f5] p-4 shadow-xs">
           <p className="text-xs text-[#991b1b] font-semibold">{t('pd_escalated_cases', currentLanguage)}</p>
           <p className="mt-2 text-2xl font-bold text-[#dc2626]">{escalatedCases.length}</p>
           <p className="mt-1 text-[11px] text-[#991b1b] font-semibold">{t('pd_senior_review', currentLanguage)}</p>
         </div>
       </div>
+
+      {/* ── Compact Follow-Ups Overview ── */}
+      <div className="rounded-3xl border border-[#d8b4fe] bg-gradient-to-r from-[#faf5ff] to-[#f3e8ff] p-5 shadow-xs">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="flex size-7 items-center justify-center rounded-xl bg-[#7e22ce] text-white shadow-xs">
+                <Calendar size={14} />
+              </span>
+              <h3 className="text-sm font-bold text-[#1f2937]">Upcoming Follow-Ups</h3>
+              <span className="rounded-full bg-[#f3e8ff] text-[#7e22ce] px-2 py-0.5 text-[10px] font-bold border border-[#d8b4fe]">
+                {pendingFollowUps.length} pending
+              </span>
+            </div>
+            <button
+              onClick={loadFollowUps}
+              className="text-[11px] font-bold text-[#7e22ce] hover:text-[#581c87] bg-white px-2.5 py-1 rounded-lg border border-[#ddd6fe] transition"
+            >
+              Refresh
+            </button>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {pendingFollowUps.length === 0 && (
+              <div className="col-span-full py-4 text-center">
+                <Calendar size={20} className="mx-auto text-[#c084fc] mb-1" />
+                <p className="text-[11px] text-[#6b7280] font-medium">No pending follow-ups — all check-ins are up to date.</p>
+              </div>
+            )}
+            {pendingFollowUps.slice(0, 6).map(fup => {
+              const matchedCase = cases.find(c => c.id === fup.caseId)
+              return (
+                <div key={fup.id} className="flex items-center gap-3 p-3 rounded-xl bg-white border border-[#ede9fe] text-xs">
+                  <div className="size-8 rounded-lg bg-[#f3e8ff] text-[#7e22ce] flex items-center justify-center shrink-0">
+                    <Calendar size={14} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-[#1f2937] truncate">{fup.victimName || (matchedCase ? matchedCase.victim_name : 'Complainant')}</p>
+                    <p className="text-[10px] text-[#6b7280] truncate">{followUpTypeLabels[fup.followUpType] || fup.followUpType} · {new Date(fup.scheduledAt).toLocaleDateString()}</p>
+                  </div>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${
+                    fup.status === 'pending' ? 'bg-[#fff7ed] text-[#c2410c] border border-[#ffedd5]' : 'bg-[#eff6ff] text-[#1d4ed8] border border-[#dbeafe]'
+                  }`}>{fup.status.replace('_', ' ')}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
 
       {/* Main High Priority Dispatch Queue */}
       <div className="rounded-3xl border border-[#fca5a5] bg-white p-6 shadow-xs space-y-4">
@@ -281,6 +396,147 @@ export function PoliceDashboard({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Follow-Ups & Welfare Check-Ins Section */}
+      <div className="rounded-3xl border border-[#d8b4fe] bg-white p-6 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-9 items-center justify-center rounded-2xl bg-[#7e22ce] text-white shadow-xs">
+              <Calendar size={18} />
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-[#1f2937]">Scheduled Follow-Ups &amp; Welfare Visits</h2>
+                <span className="rounded-full bg-[#f3e8ff] text-[#7e22ce] px-2.5 py-0.5 text-xs font-bold border border-[#d8b4fe]">
+                  {followUpsList.length} Active
+                </span>
+              </div>
+              <p className="text-xs text-[#6b7280]">
+                Scheduled welfare check-ins, medical follow-ups, and victim protection monitoring
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={loadFollowUps}
+            className="text-xs font-bold text-[#7e22ce] hover:text-[#581c87] bg-[#f5f3ff] px-3 py-1.5 rounded-xl border border-[#ddd6fe] transition"
+          >
+            Refresh Follow-Ups
+          </button>
+        </div>
+
+        {followUpsLoading ? (
+          <p className="text-xs text-[#718b85] italic text-center py-6">Loading scheduled visits...</p>
+        ) : followUpsList.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-[#e9d5ff] p-8 text-center bg-[#faf5ff]">
+            <Calendar size={32} className="mx-auto text-[#c084fc]" />
+            <h4 className="mt-2 text-xs font-bold text-[#1f2937]">No Pending Follow-Up Visits</h4>
+            <p className="mt-1 text-[11px] text-[#6b7280]">
+              All scheduled welfare check-ins and victim monitoring tasks are up to date.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {followUpsList.map((fup) => {
+              const matchedCase = cases.find(c => c.id === fup.caseId)
+              const statusColors: Record<string, string> = {
+                pending: 'bg-[#fff7ed] text-[#c2410c] border-[#ffedd5]',
+                in_progress: 'bg-[#eff6ff] text-[#1d4ed8] border-[#dbeafe]',
+                completed: 'bg-[#ecfdf5] text-[#065f46] border-[#a7f3d0]',
+                cancelled: 'bg-[#f3f4f6] text-[#6b7280] border-[#e5e7eb]'
+              }
+
+              return (
+                <div
+                  key={fup.id}
+                  className="p-4 rounded-2xl border border-[#ede9fe] bg-[#fcfbfe] hover:border-[#c084fc] transition shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3"
+                >
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-xs font-extrabold text-[#7e22ce] bg-[#f5f3ff] px-2 py-0.5 rounded-md border border-[#ddd6fe]">
+                        {fup.caseId}
+                      </span>
+                      <h4 className="font-bold text-sm text-[#1e1b4b]">
+                        {fup.victimName || (matchedCase ? matchedCase.victim_name : 'Complainant')}
+                      </h4>
+                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#f3e8ff] text-[#6b21a8] border border-[#d8b4fe]">
+                        {followUpTypeLabels[fup.followUpType] || fup.followUpType}
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border capitalize ${statusColors[fup.status] || statusColors.pending}`}>
+                        {fup.status.replace('_', ' ')}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-[11px] text-[#6b7280] flex-wrap">
+                      <span className="flex items-center gap-1 font-medium">
+                        <Clock size={12} className="text-[#7e22ce]" />
+                        Scheduled: {new Date(fup.scheduledAt).toLocaleString()}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <UserCheck size={12} className="text-[#7e22ce]" />
+                        Assigned: {fup.assignedTo}
+                      </span>
+                      {(fup.district || matchedCase?.incident_location.district) && (
+                        <span className="flex items-center gap-1">
+                          <MapPin size={12} className="text-[#7e22ce]" />
+                          {fup.district || matchedCase?.incident_location.district}, {fup.state || matchedCase?.incident_location.state}
+                        </span>
+                      )}
+                    </div>
+
+                    {fup.notes && (
+                      <p className="text-[11px] text-[#4b5563] italic bg-white p-2 rounded-xl border border-[#ede9fe]">
+                        &quot;{fup.notes}&quot;
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Actions for Follow-Up */}
+                  <div className="flex items-center gap-2 flex-wrap shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleCallFollowUpVictim(fup)}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-[#d8b4fe] bg-white text-xs font-bold text-[#7e22ce] hover:bg-[#faf5ff] transition cursor-pointer"
+                    >
+                      <PhoneCall size={13} />
+                      <span>Tele-Call</span>
+                    </button>
+
+                    {fup.status === 'pending' && (
+                      <button
+                        onClick={() => handleUpdateFollowUp(fup.id, 'in_progress', fup.caseId)}
+                        className="px-3 py-1.5 rounded-xl bg-[#eff6ff] text-[#1d4ed8] text-xs font-bold hover:bg-[#dbeafe] transition"
+                      >
+                        Start Visit
+                      </button>
+                    )}
+
+                    {(fup.status === 'pending' || fup.status === 'in_progress') && (
+                      <button
+                        onClick={() => handleUpdateFollowUp(fup.id, 'completed', fup.caseId)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#ecfdf5] text-[#065f46] text-xs font-bold hover:bg-[#d1fae5] transition"
+                      >
+                        <CheckCircle2 size={13} />
+                        <span>Complete</span>
+                      </button>
+                    )}
+
+                    {matchedCase && (
+                      <button
+                        onClick={() => onOpenCaseModal(matchedCase)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#1d8272] text-white text-xs font-bold hover:bg-[#166558] transition"
+                      >
+                        <span>Review</span>
+                        <ArrowRight size={13} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Escalated Cases Queue */}
