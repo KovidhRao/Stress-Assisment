@@ -77,6 +77,13 @@ export function LoginView({
   const [psychiatristPassword, setPsychiatristPassword] = useState('')
   const [selectedDemoPsych, setSelectedDemoPsych] = useState<PsychiatristProfile | null>(null)
 
+  // Sync initialLanguage prop
+  useEffect(() => {
+    if (initialLanguage) {
+      setSelectedLang(initialLanguage)
+    }
+  }, [initialLanguage])
+
   // Load real officers & psychiatrists from Supabase
   useEffect(() => {
     fetchOfficersFromDb().then(officers => {
@@ -360,6 +367,7 @@ export function LoginView({
         <div className="flex items-center gap-2 rounded-2xl bg-white/90 border border-[#cfe3dc] px-3 py-1.5 shadow-sm">
           <Globe2 size={15} className="text-[#1d8272]" />
           <select
+            suppressHydrationWarning
             value={selectedLang}
             onChange={e => handleLanguageSelect(e.target.value)}
             className="bg-transparent text-xs font-semibold text-[#163a34] outline-none cursor-pointer"

@@ -682,6 +682,7 @@ export default function Home() {
               <div className="flex items-center gap-1.5 rounded-xl bg-white border border-[#cfe3dc] px-2.5 py-1 text-xs shadow-xs">
                 <Globe2 size={14} className="text-[#1d8272]" />
                 <select
+                  suppressHydrationWarning
                   value={selectedLanguage}
                   onChange={e => handleLanguageChange(e.target.value)}
                   className="bg-transparent text-xs font-semibold text-[#163a34] outline-none cursor-pointer"
@@ -712,31 +713,6 @@ export default function Home() {
                 <PhoneCall size={13} />
                 <span>{t('helpline_btn', selectedLanguage)}</span>
               </a>
-
-              {/* Calming Audio Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  setWellbeingModalTab('soundscape')
-                  setWellbeingModalOpen(true)
-                }}
-                className="flex items-center gap-1.5 rounded-xl border border-[#cfe3dc] bg-[#eef8f4] hover:bg-[#dff1ea] text-[#185a4f] px-3 py-1.5 text-xs font-semibold shadow-xs transition cursor-pointer"
-                title={t('calming_audio', selectedLanguage)}
-              >
-                <Headphones size={14} className="text-[#1d8272]" />
-                <span className="hidden md:inline">{t('calming_audio', selectedLanguage)}</span>
-              </button>
-
-              {/* SOS Emergency Button */}
-              <button
-                type="button"
-                onClick={() => setSosModalOpen(true)}
-                className="flex items-center gap-1.5 rounded-xl bg-[#fee2e2] hover:bg-[#fecaca] text-[#991b1b] border border-[#fca5a5] px-3 py-1.5 text-xs font-bold transition shadow-xs animate-pulse cursor-pointer"
-                title={t('emergency_sos_btn', selectedLanguage)}
-              >
-                <AlertTriangle size={14} className="text-[#dc2626]" />
-                <span className="hidden xs:inline sm:inline">{t('emergency_sos_btn', selectedLanguage)}</span>
-              </button>
             </div>
           </header>
 
@@ -749,7 +725,7 @@ export default function Home() {
               <>
                 {/* 1. MY SPACE TAB (MAIN DASHBOARD) */}
                 {activeTab === 'My space' && (
-                  <div className="mx-auto max-w-[1160px] space-y-8 animate-in fade-in duration-200">
+                  <div className="mx-auto max-w-[1160px] space-y-7 animate-in fade-in duration-200">
                     {/* Greeting & Subtitle */}
                     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                       <div>
@@ -759,7 +735,7 @@ export default function Home() {
                         <h1 className="mt-1 text-3xl font-bold tracking-tight text-[#173a34] sm:text-4xl">
                           {t('welcome_user', selectedLanguage)}, {currentUser.full_name}
                         </h1>
-                        <p className="mt-1.5 text-xs text-[#718d86]">
+                        <p className="mt-1.5 text-xs sm:text-sm text-[#718d86]">
                           {t('safe_space_subtitle', selectedLanguage)}
                         </p>
                       </div>
@@ -770,6 +746,7 @@ export default function Home() {
                           <Layers size={15} className="text-[#1d8272]" />
                           <span className="text-xs font-bold text-[#163a34]">{t('viewing_case', selectedLanguage)}</span>
                           <select
+                            suppressHydrationWarning
                             value={activeCaseId}
                             onChange={e => setActiveCaseId(e.target.value)}
                             className="bg-[#f0f9f6] text-xs font-mono font-bold text-[#1d8272] px-2.5 py-1 rounded-xl outline-none border border-[#cfe2db] cursor-pointer"
@@ -784,123 +761,73 @@ export default function Home() {
                       )}
                     </div>
 
-                    {/* SVI Snapshot Card & Wellbeing Journey Quick Card */}
-                    <div className="grid gap-6 lg:grid-cols-[1.3fr_.85fr]">
-                      {/* Left: Dynamic SVI Snapshot Card */}
-                      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#174840] via-[#1d6b5e] to-[#1e8574] p-6 sm:p-7 text-white shadow-lg flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-center justify-between">
+                    {/* SVI Hero Snapshot Card (Full-width, balanced & beautifully styled) */}
+                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#174840] via-[#1d6b5e] to-[#1e8574] p-6 sm:p-8 text-white shadow-xl border border-[#23685c]">
+                      <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                        {/* Left Info Column */}
+                        <div className="space-y-3 max-w-2xl">
+                          <div className="flex flex-wrap items-center gap-2.5">
                             <span className="text-xs font-bold tracking-wider text-[#a7e8db] uppercase flex items-center gap-1.5">
                               <Sparkles size={14} /> {t('svi_snapshot_title', selectedLanguage)}
                             </span>
-                            <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/20">
+                            <span className="text-xs font-bold px-3 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/20">
                               {t(dynamicSnapshotKeys.badgeKey, selectedLanguage)}
+                            </span>
+                            <span className="text-xs text-[#b6eadf] bg-black/20 px-2.5 py-0.5 rounded-full font-mono">
+                              Case #{activeCaseRecord?.id || 'Active'}
                             </span>
                           </div>
 
-                          <h2 className="mt-4 text-2xl sm:text-3xl font-bold leading-tight">
+                          <h2 className="text-2xl sm:text-3xl font-bold leading-tight tracking-tight">
                             {t(dynamicSnapshotKeys.titleKey, selectedLanguage)}
                           </h2>
-                          <p className="mt-2 text-xs leading-relaxed text-[#d0ede7] max-w-lg">
+                          <p className="text-xs sm:text-sm leading-relaxed text-[#d0ede7]">
                             {t(dynamicSnapshotKeys.descKey, selectedLanguage)}
                           </p>
+
+                          {/* Live Triage Status Indicators */}
+                          <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-[#bdece2]">
+                            <span className="inline-flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-xl border border-white/10">
+                              <ShieldCheck size={12} className="text-[#a7e8db]" />
+                              Real-Time Protection Active
+                            </span>
+                            <span className="inline-flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-xl border border-white/10">
+                              <Globe2 size={12} className="text-[#a7e8db]" />
+                              Multilingual Telemetry
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="mt-8 pt-5 border-t border-white/20 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                          <div>
-                            <p className="text-[11px] font-semibold text-[#a7e8db] uppercase tracking-wider">
+                        {/* Right Score & Action Column */}
+                        <div className="w-full md:w-auto shrink-0 flex flex-row md:flex-col items-center md:items-end justify-between gap-4 p-5 rounded-2xl bg-black/20 backdrop-blur-md border border-white/15 min-w-[200px]">
+                          <div className="text-left md:text-right">
+                            <p className="text-[11px] font-bold text-[#a7e8db] uppercase tracking-wider">
                               {t('svi_score_full', selectedLanguage)}
                             </p>
-                            <div className="flex items-baseline gap-2 mt-1">
-                              <span className="text-4xl font-extrabold">{activeSviScore}</span>
-                              <span className="text-sm text-[#a7e8db]">/ 100</span>
+                            <div className="flex items-baseline gap-1.5 mt-0.5">
+                              <span className="text-4xl sm:text-5xl font-black text-white">{activeSviScore}</span>
+                              <span className="text-sm font-semibold text-[#a7e8db]">/ 100</span>
                             </div>
                           </div>
 
                           <button
                             type="button"
                             onClick={() => setActiveTab('Wellbeing journey')}
-                            className="flex items-center justify-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-[#185a4f] hover:bg-[#eef8f4] transition shadow-xs cursor-pointer"
+                            className="flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-xs font-bold text-[#185a4f] hover:bg-[#eef8f4] transition shadow-md cursor-pointer active:scale-95"
                           >
                             <span>{t(dynamicSnapshotKeys.actionKey, selectedLanguage)}</span>
                             <ArrowRight size={14} />
                           </button>
                         </div>
-
-                        <div className="absolute -right-8 -top-10 size-48 rounded-full border-[24px] border-white/10 pointer-events-none" />
                       </div>
 
-                      {/* Right: Wellbeing Tracker & Quick Wellness Tools */}
-                      <div className="rounded-3xl border border-[#dcebe5] bg-white p-6 shadow-xs flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs font-bold tracking-wider text-[#698881] uppercase">{t('healing_journey_card_title', selectedLanguage)}</p>
-                            <span className="text-xs font-bold text-[#1d8272]">Case #{activeCaseRecord?.id || 'Active'}</span>
-                          </div>
-
-                          <p className="mt-3 text-xs leading-relaxed text-[#6d8a83]">
-                            {t('healing_journey_card_desc', selectedLanguage)}
-                          </p>
-
-                          <div className="mt-5 space-y-2">
-                            <p className="text-[11px] font-bold text-[#325851] uppercase">{t('quick_wellness_tools', selectedLanguage)}</p>
-                            <div className="grid grid-cols-2 gap-2">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setWellbeingModalTab('breathing')
-                                  if (activeCaseRecord) {
-                                    setPreDistressSurveyOpen(true)
-                                  } else {
-                                    setWellbeingModalOpen(true)
-                                  }
-                                }}
-                                className="flex items-center gap-2 p-2.5 rounded-xl bg-[#eef8f4] hover:bg-[#e0f1eb] text-left text-xs font-semibold text-[#1a5e52] transition cursor-pointer border border-[#d2e8df]"
-                              >
-                                <Wind size={16} className="text-[#1d8272] shrink-0" />
-                                <div>
-                                  <span className="block font-bold">{t('tool_box_breathing', selectedLanguage)}</span>
-                                  <span className="text-[10px] text-[#60857c]">{t('tool_box_desc', selectedLanguage)}</span>
-                                </div>
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setWellbeingModalTab('grounding')
-                                  if (activeCaseRecord) {
-                                    setPreDistressSurveyOpen(true)
-                                  } else {
-                                    setWellbeingModalOpen(true)
-                                  }
-                                }}
-                                className="flex items-center gap-2 p-2.5 rounded-xl bg-[#f0f4f8] hover:bg-[#e2ebf3] text-left text-xs font-semibold text-[#294c6e] transition cursor-pointer border border-[#d3e0ec]"
-                              >
-                                <Compass size={16} className="text-[#3b82f6] shrink-0" />
-                                <div>
-                                  <span className="block font-bold">{t('tool_grounding', selectedLanguage)}</span>
-                                  <span className="text-[10px] text-[#6b8299]">{t('tool_grounding_desc', selectedLanguage)}</span>
-                                </div>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-5 pt-4 border-t border-[#edf3f0]">
-                          <button
-                            type="button"
-                            onClick={() => setScreeningModalOpen(true)}
-                            className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1d8272] hover:bg-[#186f60] text-white py-2.5 text-xs font-bold transition shadow-xs cursor-pointer"
-                          >
-                            <Sparkles size={14} />
-                            <span>{t('take_full_assessment', selectedLanguage)}</span>
-                          </button>
-                        </div>
-                      </div>
+                      {/* Decorative Background Glow Rings */}
+                      <div className="absolute -right-12 -top-12 size-60 rounded-full border-[28px] border-white/10 pointer-events-none" />
+                      <div className="absolute -left-16 -bottom-16 size-48 rounded-full border-[20px] border-white/5 pointer-events-none" />
                     </div>
 
                     {/* Section: Share Your Story (StoryInputCard) */}
-                    <div className="space-y-3">
+                    <div className="space-y-3 pt-1">
                       <div className="flex items-center justify-between">
                         <div>
                           <h2 className="text-xl font-bold tracking-tight text-[#173a34]">
@@ -928,86 +855,6 @@ export default function Home() {
                         onStorySubmitted={handleStorySubmitted}
                         onOpenVoiceModal={() => setVoiceModalOpen(true)}
                       />
-                    </div>
-
-                    {/* Section: Mood Tracker & Recent Activity Grid */}
-                    <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-                      {/* Left: How are you feeling right now */}
-                      <div className="rounded-3xl border border-[#dcebe5] bg-white p-6 shadow-xs flex flex-col justify-between">
-                        <div>
-                          <h3 className="text-base font-bold text-[#1a3f39]">{t('mood_question', selectedLanguage)}</h3>
-                          <p className="mt-1 text-xs text-[#6f8c85]">
-                            {t('mood_subtitle', selectedLanguage)}
-                          </p>
-
-                          <div className="mt-5 grid grid-cols-5 gap-2">
-                            {(
-                              [
-                                { label: 'Calm', key: 'mood_calm', icon: Smile, color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
-                                { label: 'Okay', key: 'mood_okay', icon: Smile, color: 'text-teal-600 bg-teal-50 border-teal-200' },
-                                { label: 'Stressed', key: 'mood_stressed', icon: Meh, color: 'text-amber-600 bg-amber-50 border-amber-200' },
-                                { label: 'Anxious', key: 'mood_anxious', icon: Frown, color: 'text-orange-600 bg-orange-50 border-orange-200' },
-                                { label: 'Overwhelmed', key: 'mood_overwhelmed', icon: Zap, color: 'text-rose-600 bg-rose-50 border-rose-200' }
-                              ] as const
-                            ).map(({ label, key, icon: MoodIcon, color }) => {
-                              const isSelected = selectedMood === label
-                              return (
-                                <button
-                                  key={label}
-                                  type="button"
-                                  onClick={() => handleMoodSelect(label)}
-                                  className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border text-xs font-bold transition cursor-pointer ${
-                                    isSelected
-                                      ? `${color} ring-2 ring-[#1d8272] shadow-sm`
-                                      : 'border-[#e0ebe6] bg-[#fafcfb] hover:bg-[#edf5f1] text-[#55776f]'
-                                  }`}
-                                >
-                                  <MoodIcon size={22} />
-                                  <span className="text-[11px]">{t(key, selectedLanguage)}</span>
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </div>
-
-                        <div className="mt-6 p-3 rounded-2xl bg-[#eef8f4] border border-[#cfe3dc] text-xs text-[#1c5f54] flex items-center gap-2">
-                          <CheckCircle2 size={16} className="text-[#1d8272] shrink-0" />
-                          <span>
-                            {selectedMood === 'Calm' || selectedMood === 'Okay'
-                              ? t('mood_msg_calm', selectedLanguage)
-                              : t('mood_msg_stressed', selectedLanguage)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Right: Recent Timeline / Activity */}
-                      <div className="rounded-3xl border border-[#dcebe5] bg-white p-6 shadow-xs">
-                        <h3 className="text-base font-bold text-[#1a3f39]">{t('recent_activity', selectedLanguage)}</h3>
-                        <p className="mt-1 text-xs text-[#6f8c85]">{t('recent_activity_desc', selectedLanguage)}</p>
-
-                        <div className="mt-4 space-y-3">
-                          {activitiesList.slice(0, 3).map((rawAct) => {
-                            const act = translateActivity(rawAct, selectedLanguage)
-                            return (
-                              <div
-                                key={rawAct.id}
-                                className="flex items-start gap-3 p-3 rounded-2xl bg-[#f8fbfa] border border-[#e4eee9]"
-                              >
-                                <div className="flex size-7 items-center justify-center rounded-xl bg-[#e3f2ed] text-[#1d8272] text-xs font-bold shrink-0 mt-0.5">
-                                  ✓
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center justify-between">
-                                    <p className="text-xs font-bold text-[#1f4740]">{act.title}</p>
-                                    <span className="text-[10px] text-[#7d9992]">{act.timestamp}</span>
-                                  </div>
-                                  <p className="text-[11px] text-[#69857e] mt-0.5">{act.description}</p>
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
                     </div>
                   </div>
                 )}

@@ -605,6 +605,23 @@ export class CaseService {
         console.error('[CaseService] updateCase error:', error.message)
         return false
       }
+
+      // Log status change to case_activity audit trail
+      if (dbUpdates.status && typeof dbUpdates.status === 'string') {
+        try {
+          await supabase.from('case_activity').insert({
+            case_id: dbId,
+            title: `Case Status Updated: ${dbUpdates.status}`,
+            description: `Status changed to "${dbUpdates.status}" by authorized officer.`,
+            type: 'status_change',
+            timestamp: 'Just now',
+            created_at: new Date().toISOString()
+          })
+        } catch (actErr) {
+          console.warn('[CaseService] activity insert on updateCase error:', actErr)
+        }
+      }
+
       return true
     } catch (err) {
       console.error('[CaseService] updateCase exception:', err)
@@ -714,6 +731,21 @@ export class CaseService {
         console.warn('[CaseService] addNote error:', error.message)
         return null
       }
+
+      // Also record activity event
+      try {
+        await supabase.from('case_activity').insert({
+          case_id: params.caseId,
+          title: `Note Added by ${params.author}`,
+          description: params.text.length > 80 ? params.text.slice(0, 77) + '...' : params.text,
+          type: 'note',
+          timestamp: 'Just now',
+          created_at: new Date().toISOString()
+        })
+      } catch (actErr) {
+        console.warn('[CaseService] activity insert note error:', actErr)
+      }
+
       return data ? { id: data.id } : null
     } catch (err) {
       console.error('[CaseService] addNote exception:', err)
@@ -780,7 +812,7 @@ export class CaseService {
     assignedTo: string
     assignedRole: string
     followUpType: string
-    scheduledAt: string
+    scheduledAt: string
     notes?: string
   }): Promise<{ id: string } | null> {
     try {
@@ -803,6 +835,19 @@ export class CaseService {
         console.warn('[CaseService] createFollowUp error:', error.message)
         return null
       }
+
+      // Log activity event
+      try {
+        await supabase.from('case_activity').insert({
+          case_id: params.caseId,
+          title: `Follow-Up Scheduled (${params.followUpType.replace('_', ' ')})`,
+          description: `Assigned to ${params.assignedTo} for ${new Date(params.scheduledAt).toLocaleString()}${params.notes ? ` — ${params.notes}` : ''}`,
+          type: 'followup',
+          timestamp: 'Just now',
+          created_at: new Date().toISOString()
+        })
+      } catch {}
+
       return data ? { id: data.id } : null
     } catch {
       return null
@@ -843,7 +888,82 @@ export class CaseService {
     }
   }
 
-  static async updateFollowUpStatus(followUpId: string, status: string): Promise<boolean> {
+  /**
+   * Fetch all follow-ups across cases for officer / psychiatrist dashboards
+   */
+  static async fetchAllFollowUps(filter?: {
+    assignedTo?: string
+    role?: string
+    status?: string
+  }): Promise<Array<{
+    id: string
+    caseId: string
+    victimName?: string
+    assignedTo: string
+    assignedRole: string
+    followUpType: string
+    scheduledAt: string
+    completedAt: string | null
+    status: string
+    notes: string | null
+    district?: string
+    state?: string
+    contactNumber?: string
+  }>> {
+    try {
+      let query = supabase
+        .from('follow_ups')
+        .select(`
+          id,
+          case_id,
+          assigned_to,
+          assigned_role,
+          follow_up_type,
+          scheduled_at,
+          completed_at,
+          status,
+          notes,
+          cases (
+            victim_name,
+            incident_district,
+            incident_state,
+            contact_number
+          )
+        `)
+        .order('scheduled_at', { ascending: true })
+
+      if (filter?.status) {
+        query = query.eq('status', filter.status)
+      }
+
+      const { data, error } = await query
+
+      if (error || !data) return []
+
+      return data.map((row: any) => {
+        const c = Array.isArray(row.cases) ? row.cases[0] : row.cases
+        return {
+          id: row.id as string,
+          caseId: row.case_id as string,
+          assignedTo: row.assigned_to || '',
+          assignedRole: row.assigned_role || 'officer',
+          followUpType: row.follow_up_type || 'check_in',
+          scheduledAt: row.scheduled_at || '',
+          completedAt: row.completed_at || null,
+          status: row.status || 'pending',
+          notes: row.notes || null,
+          victimName: c?.victim_name || 'Complainant',
+          district: c?.incident_district || '',
+          state: c?.incident_state || '',
+          contactNumber: c?.contact_number || ''
+        }
+      })
+    } catch {
+      return []
+    }
+  }
+
+  static async updateFollowUpStatus(followUpId: string, status: string, caseId?: string): Promise<boolean> {
     try {
       const updateData: Record<string, unknown> = { status }
       if (status === 'completed') {
@@ -853,7 +973,137 @@ export class CaseService {
         .from('follow_ups')
         .update(updateData)
         .eq('id', followUpId)
+
+      if (caseId && !error) {
+        try {
+          await supabase.from('case_activity').insert({
+            case_id: caseId,
+            title: `Follow-Up Status Updated to ${status.toUpperCase()}`,
+            description: `Welfare check-in marked as ${status}`,
+            type: 'followup',
+            timestamp: 'Just now',
+            created_at: new Date().toISOString()
+          })
+        } catch {}
+      }
+
       return !error
+    } catch {
+      return false
+    }
+  }
+
+  // ─── Case Activity & Audit Log ──────────────────────────────────────────
+
+  /**
+   * Fetch all chronological activity & audit events for a case
+   */
+  static async fetchActivities(caseId: string): Promise<Array<{
+    id: string
+    case_id: string
+    title: string
+    description: string
+    type: string
+    timestamp: string
+    created_at: string
+  }>> {
+    try {
+      const { data, error } = await supabase
+        .from('case_activity')
+        .select('*')
+        .eq('case_id', caseId)
+        .order('created_at', { ascending: false })
+
+      if (error || !data) return []
+
+      return data.map((row: Record<string, unknown>) => ({
+        id: row.id as string,
+        case_id: (row.case_id as string) || caseId,
+        title: (row.title as string) || '',
+        description: (row.description as string) || '',
+        type: (row.type as string) || 'triage',
+        timestamp: (row.timestamp as string) || 'Just now',
+        created_at: (row.created_at as string) || new Date().toISOString()
+      }))
+    } catch {
+      return []
+    }
+  }
+
+  /**
+   * Add a custom audit activity log for a case
+   */
+  static async addActivity(params: {
+    caseId: string
+    title: string
+    description: string
+    type?: 'intake' | 'triage' | 'dispatch' | 'note' | 'review' | 'escalation' | 'followup' | 'survey' | 'status_change'
+  }): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('case_activity')
+        .insert({
+          case_id: params.caseId,
+          title: params.title,
+          description: params.description,
+          type: params.type || 'triage',
+          timestamp: 'Just now',
+          created_at: new Date().toISOString()
+        })
+      return !error
+    } catch {
+      return false
+    }
+  }
+
+  // ─── Case Actions Dispatch ─────────────────────────────────────────────
+
+  /**
+   * Dispatch an official emergency/support action and record audit log
+   */
+  static async dispatchAction(params: {
+    caseId: string
+    actionType: 'Police Protection' | 'Legal Aid (NALSA)' | 'Mental Health Counsellor' | 'Medical Hospitalization' | 'Witness Protection' | 'District Collector Notice'
+    referenceId: string
+    officerName?: string
+  }): Promise<boolean> {
+    try {
+      // 1. Fetch current dispatched_actions
+      const { data: caseRow } = await supabase
+        .from('cases')
+        .select('dispatched_actions')
+        .eq('id', params.caseId)
+        .single()
+
+      const currentDispatches = Array.isArray(caseRow?.dispatched_actions) ? caseRow.dispatched_actions : []
+      const newDispatch = {
+        id: `DA-${Date.now().toString().slice(-4)}`,
+        action_type: params.actionType,
+        status: 'Dispatched',
+        dispatched_at: new Date().toISOString(),
+        reference_id: params.referenceId
+      }
+
+      // 2. Update case table
+      await supabase
+        .from('cases')
+        .update({
+          status: 'Action Dispatched',
+          dispatched_actions: [...currentDispatches, newDispatch]
+        })
+        .eq('id', params.caseId)
+
+      // 3. Record in case_activity
+      await supabase.from('case_activity').insert({
+        case_id: params.caseId,
+        title: `Action Dispatched: ${params.actionType}`,
+        description: `Official redressal action dispatched with Reference ${params.referenceId} by ${params.officerName || 'Authorized Officer'}.`,
+        type: 'dispatch',
+        timestamp: 'Just now',
+        created_at: new Date().toISOString()
+      })
+
+      return true
     } catch {
       return false
     }
@@ -864,12 +1114,26 @@ export class CaseService {
   /**
    * Mark a case as Reviewed by an officer/psychiatrist.
    */
-  static async markCaseReviewed(caseId: string): Promise<boolean> {
+  static async markCaseReviewed(caseId: string, officerName?: string): Promise<boolean> {
     try {
       const { error } = await supabase
         .from('cases')
         .update({ status: 'Reviewed' })
         .eq('id', caseId)
+
+      if (!error) {
+        try {
+          await supabase.from('case_activity').insert({
+            case_id: caseId,
+            title: `Case Marked Reviewed`,
+            description: `Case reviewed and validated by ${officerName || 'Assigned Officer'}.`,
+            type: 'review',
+            timestamp: 'Just now',
+            created_at: new Date().toISOString()
+          })
+        } catch {}
+      }
+
       return !error
     } catch {
       return false
@@ -899,8 +1163,8 @@ export class CaseService {
       // 2. Log escalation activity
       await supabase.from('case_activity').insert({
         case_id: caseId,
-        title: `Case Escalated by ${escalatedBy}`,
-        description: reason,
+        title: `Case Escalated to Senior Officials (Tier 1)`,
+        description: `Escalated by ${escalatedBy}. Reason: ${reason}`,
         type: 'escalation',
         timestamp: 'Just now',
         created_at: new Date().toISOString()
@@ -934,7 +1198,7 @@ export class CaseService {
 
   static async submitDistressSurvey(params: {
     caseId: string
-    userId: string
+    userId: string
     surveyType: 'pre_intervention' | 'post_intervention'
     stressLevel: number
     anxietyLevel?: number
@@ -954,6 +1218,20 @@ export class CaseService {
           notes: params.notes || null,
           created_at: new Date().toISOString()
         })
+
+      if (!error) {
+        try {
+          await supabase.from('case_activity').insert({
+            case_id: params.caseId,
+            title: `${params.surveyType === 'pre_intervention' ? 'Pre-Intervention' : 'Post-Intervention'} Distress Survey Logged`,
+            description: `Stress Level: ${params.stressLevel}/10, Anxiety: ${params.anxietyLevel ?? 'N/A'}/10, Safety Sense: ${params.safetyFeeling ?? 'N/A'}/10`,
+            type: 'survey',
+            timestamp: 'Just now',
+            created_at: new Date().toISOString()
+          })
+        } catch {}
+      }
+
       return !error
     } catch {
       return false
@@ -992,3 +1270,4 @@ export class CaseService {
     }
   }
 }
+

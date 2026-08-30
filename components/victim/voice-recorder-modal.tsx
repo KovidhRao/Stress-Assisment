@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Mic, Square, Play, RotateCcw, Sparkles, AlertTriangle, CheckCircle2, X, Volume2, Activity } from 'lucide-react'
+import { Mic, Square, Play, RotateCcw, Sparkles, AlertTriangle, CheckCircle2, X, Volume2, Activity, Radio } from 'lucide-react'
 import { VoiceAnalysisMetrics } from '@/types'
 
 interface VoiceRecorderModalProps {
@@ -11,6 +11,16 @@ interface VoiceRecorderModalProps {
   language?: string
 }
 
+const langCodes: Record<string, string> = {
+  Hindi: 'hi-IN',
+  English: 'en-IN',
+  Marathi: 'mr-IN',
+  Tamil: 'ta-IN',
+  Telugu: 'te-IN',
+  Bengali: 'bn-IN',
+  Kannada: 'kn-IN'
+}
+
 export function VoiceRecorderModal({ isOpen, onClose, onComplete, language = 'Hindi' }: VoiceRecorderModalProps) {
   const [isRecording, setIsRecording] = useState(false)
   const [recordingSeconds, setRecordingSeconds] = useState(0)
@@ -18,15 +28,26 @@ export function VoiceRecorderModal({ isOpen, onClose, onComplete, language = 'Hi
   const [analyzing, setAnalyzing] = useState(false)
   const [liveVolume, setLiveVolume] = useState(0)
   const [transcript, setTranscript] = useState('')
+  const [interimText, setInterimText] = useState('')
   const [selectedLanguage, setSelectedLanguage] = useState(language)
+  const [livePitchHz, setLivePitchHz] = useState(210)
+  const [liveJitter, setLiveJitter] = useState(12)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
+  const audioBlobRef = useRef<Blob | null>(null)
   const animationFrameRef = useRef<number | null>(null)
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
+  const recognitionRef = useRef<any>(null)
+  const audioStatsRef = useRef<{ pitches: number[]; volumes: number[]; silentFrames: number; totalFrames: number }>({
+    pitches: [],
+    volumes: [],
+    silentFrames: 0,
+    totalFrames: 0
+  })
 
   useEffect(() => {
     return () => {
@@ -35,17 +56,59 @@ export function VoiceRecorderModal({ isOpen, onClose, onComplete, language = 'Hi
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         audioContextRef.current.close()
       }
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop() } catch {}
+      }
     }
   }, [])
 
   if (!isOpen) return null
 
-  // Start Real Microphone Recording with Live Canvas Visualizer
+  // Autocorrelation pitch detector from audio buffer
+  const detectPitch = (buffer: Float32Array, sampleRate: number): number => {
+    let size = buffer.length
+    let maxSamples = Math.floor(size / 2)
+    let bestOffset = -1
+    let bestCorrelation = 0
+    let rms = 0
+
+    for (let i = 0; i < size; i++) {
+      let val = buffer[i]
+      rms += val * val
+    }
+    rms = Math.sqrt(rms / size)
+    if (rms < 0.01) return -1 // Too quiet
+
+    let lastCorrelation = 1
+    for (let offset = 0; offset < maxSamples; offset++) {
+      let correlation = 0
+      for (let i = 0; i < maxSamples; i++) {
+        correlation += Math.abs(buffer[i] - buffer[i + offset])
+      }
+      correlation = 1 - correlation / maxSamples
+      if (correlation > 0.9 && correlation > lastCorrelation) {
+        if (correlation > bestCorrelation) {
+          bestCorrelation = correlation
+          bestOffset = offset
+        }
+      }
+      lastCorrelation = correlation
+    }
+
+    if (bestCorrelation > 0.01 && bestOffset > 0) {
+      return sampleRate / bestOffset
+    }
+    return -1
+  }
+
+  // Start Real Microphone Recording with Live Canvas & Speech Recognition
   const startRecording = async () => {
     setAudioUrl(null)
     setTranscript('')
+    setInterimText('')
     setRecordingSeconds(0)
     audioChunksRef.current = []
+    audioStatsRef.current = { pitches: [], volumes: [], silentFrames: 0, totalFrames: 0 }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -56,7 +119,7 @@ export function VoiceRecorderModal({ isOpen, onClose, onComplete, language = 'Hi
       audioContextRef.current = audioCtx
       const source = audioCtx.createMediaStreamSource(stream)
       const analyser = audioCtx.createAnalyser()
-      analyser.fftSize = 256
+      analyser.fftSize = 1024
       source.connect(analyser)
       analyserRef.current = analyser
 
@@ -70,24 +133,55 @@ export function VoiceRecorderModal({ isOpen, onClose, onComplete, language = 'Hi
 
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        audioBlobRef.current = audioBlob
         const url = URL.createObjectURL(audioBlob)
         setAudioUrl(url)
         stream.getTracks().forEach(track => track.stop())
       }
 
-      mediaRecorder.start()
+      mediaRecorder.start(250)
       setIsRecording(true)
+
+      // Start Web Speech API Speech Recognition
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition()
+        recognition.continuous = true
+        recognition.interimResults = true
+        recognition.lang = langCodes[selectedLanguage] || 'hi-IN'
+
+        recognition.onresult = (event: any) => {
+          let final = ''
+          let interim = ''
+          for (let i = 0; i < event.results.length; i++) {
+            const transcriptChunk = event.results[i][0].transcript
+            if (event.results[i].isFinal) {
+              final += transcriptChunk + ' '
+            } else {
+              interim += transcriptChunk
+            }
+          }
+          if (final) setTranscript(prev => (prev ? `${prev} ${final}` : final).trim())
+          setInterimText(interim)
+        }
+
+        recognition.onerror = (e: any) => {
+          console.warn('Speech recognition notice:', e?.error)
+        }
+
+        recognitionRef.current = recognition
+        try { recognition.start() } catch {}
+      }
 
       // Start timer
       timerIntervalRef.current = setInterval(() => {
         setRecordingSeconds(prev => prev + 1)
       }, 1000)
 
-      // Start live canvas rendering
+      // Start live canvas rendering & DSP
       drawWaveform()
     } catch (err) {
       console.warn('Microphone permission not granted or available, running simulated acoustic stream:', err)
-      // Run simulated recording mode
       setIsRecording(true)
       timerIntervalRef.current = setInterval(() => {
         setRecordingSeconds(prev => prev + 1)
@@ -105,16 +199,43 @@ export function VoiceRecorderModal({ isOpen, onClose, onComplete, language = 'Hi
     const analyser = analyserRef.current
     const bufferLength = analyser.frequencyBinCount
     const dataArray = new Uint8Array(bufferLength)
+    const timeDomainArray = new Float32Array(analyser.fftSize)
 
     const render = () => {
       animationFrameRef.current = requestAnimationFrame(render)
       analyser.getByteFrequencyData(dataArray)
+      analyser.getFloatTimeDomainData(timeDomainArray)
 
       // Compute average volume
       let sum = 0
       for (let i = 0; i < bufferLength; i++) sum += dataArray[i]
       const avg = sum / bufferLength
-      setLiveVolume(Math.round((avg / 255) * 100))
+      const volPct = Math.round((avg / 255) * 100)
+      setLiveVolume(volPct)
+
+      // Pitch calculation
+      if (audioContextRef.current) {
+        const pitch = detectPitch(timeDomainArray, audioContextRef.current.sampleRate)
+        if (pitch > 60 && pitch < 500) {
+          audioStatsRef.current.pitches.push(pitch)
+          setLivePitchHz(Math.round(pitch))
+        }
+      }
+
+      audioStatsRef.current.volumes.push(volPct)
+      audioStatsRef.current.totalFrames++
+      if (volPct < 5) audioStatsRef.current.silentFrames++
+
+      // Jitter estimation
+      if (audioStatsRef.current.pitches.length > 5) {
+        const pLen = audioStatsRef.current.pitches.length
+        const slice = audioStatsRef.current.pitches.slice(pLen - 6)
+        let diff = 0
+        for (let i = 1; i < slice.length; i++) {
+          diff += Math.abs(slice[i] - slice[i - 1])
+        }
+        setLiveJitter(Math.round(diff / (slice.length - 1)))
+      }
 
       ctx.fillStyle = '#173f39'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
@@ -170,39 +291,95 @@ export function VoiceRecorderModal({ isOpen, onClose, onComplete, language = 'Hi
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop()
     }
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop() } catch {}
+    }
     setIsRecording(false)
   }
 
-  const processAndSubmit = () => {
+  const processAndSubmit = async () => {
     setAnalyzing(true)
-    setTimeout(() => {
-      // Generate realistic acoustic metrics based on recording
-      const defaultTranscripts: Record<string, string> = {
-        Hindi: 'Hume gaon me paani lene se roka ja raha hai aur raat ko dhamki di ja rahi hai. Hum bohot dare hue hain.',
-        English: 'We are facing severe intimidation and isolation. They threatened us yesterday night and we fear for our safety.',
-        Marathi: 'Amhala gavat trass dila jat ahe, amhi khup ghabarlo ahot.',
-        Tamil: 'Engalukku thodarndhu bayamum mirattalum irukku, unavum thanneerum kidaikka thadaigal seiyapadugirathu.'
+
+    // Compute browser-side acoustic metrics from live audio DSP
+    const stats = audioStatsRef.current
+    const avgPitch = stats.pitches.length > 0
+      ? Math.round(stats.pitches.reduce((a, b) => a + b, 0) / stats.pitches.length)
+      : 228
+
+    const pitchVariance = stats.pitches.length > 2
+      ? Math.round(
+          Math.sqrt(
+            stats.pitches.map(x => Math.pow(x - avgPitch, 2)).reduce((a, b) => a + b, 0) / stats.pitches.length
+          )
+        )
+      : 44
+
+    const pauseRatio = stats.totalFrames > 0
+      ? parseFloat((stats.silentFrames / stats.totalFrames).toFixed(2))
+      : 0.38
+
+    const fullTranscript = (transcript + (interimText ? ` ${interimText}` : '')).trim()
+    const wordCount = (fullTranscript || '').split(/\s+/).filter(Boolean).length
+    const durationMin = Math.max(recordingSeconds, 15) / 60
+    const speechRate = Math.min(180, Math.max(60, Math.round(wordCount / durationMin)))
+
+    let acousticScore = 40
+    if (avgPitch > 210) acousticScore += 15
+    if (pitchVariance > 35) acousticScore += 20
+    if (speechRate < 95) acousticScore += 15
+    if (pauseRatio > 0.3) acousticScore += 10
+    acousticScore = Math.min(95, Math.max(30, acousticScore))
+
+    // Browser-side fallback metrics (used if server API is unreachable)
+    const fallbackMetrics: VoiceAnalysisMetrics = {
+      duration_seconds: Math.max(recordingSeconds, 15),
+      transcript: fullTranscript || 'Voice statement recorded.',
+      language: selectedLanguage,
+      speech_rate_wpm: speechRate,
+      average_pitch_hz: avgPitch,
+      pitch_variation_hz: pitchVariance,
+      energy_level: Math.round(liveVolume),
+      pause_duration_ratio: pauseRatio,
+      acoustic_distress_score: acousticScore,
+      mfcc_indicators: [
+        avgPitch > 210 ? 'elevated_fundamental_pitch' : 'normal_pitch',
+        pitchVariance > 30 ? 'vocal_tremor_high' : 'stable_modulation',
+        pauseRatio > 0.3 ? 'respiratory_dysrhythmia' : 'continuous_flow'
+      ]
+    }
+
+    let metrics = fallbackMetrics
+
+    // ── Call server-side Whisper → NLP → SVI voice pipeline ──
+    if (audioBlobRef.current) {
+      try {
+        const fd = new FormData()
+        fd.append('audio', audioBlobRef.current, 'recording.webm')
+        fd.append('language', selectedLanguage)
+        fd.append('metrics', JSON.stringify({
+          ...fallbackMetrics,
+          // Ensure browser transcript overrides empty Whisper transcript
+          transcript: fullTranscript || undefined,
+        }))
+
+        const resp = await fetch('/api/voice/analyze', { method: 'POST', body: fd })
+        if (resp.ok) {
+          const result = await resp.json()
+          if (result.success && result.voiceMetrics) {
+            metrics = result.voiceMetrics
+            console.log(`[VoicePipeline] Server analysis OK — SVI: ${result.assessment?.svi_score}, Whisper: ${result.whisperUsed}`)
+          }
+        } else {
+          console.warn(`[VoicePipeline] API ${resp.status}, using browser fallback`)
+        }
+      } catch (apiErr) {
+        console.warn('[VoicePipeline] API unreachable, using browser fallback:', apiErr)
       }
+    }
 
-      const generatedTranscript = transcript.trim() || defaultTranscripts[selectedLanguage] || defaultTranscripts['Hindi']
-
-      const metrics: VoiceAnalysisMetrics = {
-        duration_seconds: Math.max(recordingSeconds, 15),
-        transcript: generatedTranscript,
-        language: selectedLanguage,
-        speech_rate_wpm: 88, // low speech rate indicating distress
-        average_pitch_hz: 228,
-        pitch_variation_hz: 44, // high micro-tremors
-        energy_level: 32,
-        pause_duration_ratio: 0.38,
-        acoustic_distress_score: 79,
-        mfcc_indicators: ['vocal_tremor_high', 'respiratory_dysrhythmia', 'pitch_jitter_elevated']
-      }
-
-      setAnalyzing(false)
-      onComplete(metrics)
-      onClose()
-    }, 1200)
+    setAnalyzing(false)
+    onComplete(metrics)
+    onClose()
   }
 
   return (
@@ -248,18 +425,42 @@ export function VoiceRecorderModal({ isOpen, onClose, onComplete, language = 'Hi
           <div className="relative rounded-2xl overflow-hidden bg-[#173f39] border border-[#235850]">
             <canvas ref={canvasRef} width={450} height={140} className="w-full h-36 block" />
             
-            <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] text-white">
+            <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] text-white">
               <span className={`size-2 rounded-full ${isRecording ? 'bg-[#ff5a52] animate-ping' : 'bg-[#9ae1d3]'}`} />
               <span>{isRecording ? `Recording: ${recordingSeconds}s` : recordingSeconds > 0 ? `Captured: ${recordingSeconds}s` : 'Ready to record'}</span>
             </div>
 
             {isRecording && (
-              <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] text-[#8ce0d0]">
+              <div className="absolute top-3 right-3 flex items-center gap-2">
+                <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-[#9ae7d8] font-mono">
+                  <span>Pitch: {livePitchHz} Hz</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-[#fed7aa] font-mono">
+                  <span>Jitter: ±{liveJitter} Hz</span>
+                </div>
+              </div>
+            )}
+
+            {isRecording && (
+              <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] text-[#8ce0d0]">
                 <Activity size={13} />
-                <span>Distress Band Monitor Active</span>
+                <span>Distress Band Monitor Active ({liveVolume}%)</span>
               </div>
             )}
           </div>
+
+          {/* Live speech recognition streaming indicator */}
+          {isRecording && (
+            <div className="p-3 bg-[#f0f8f5] rounded-xl border border-[#cfe3dc] space-y-1">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#1d8272] uppercase">
+                <Radio size={12} className="animate-pulse text-[#ef4444]" />
+                <span>Live Speech Recognition:</span>
+              </div>
+              <p className="text-xs text-[#20433e] italic min-h-[20px]">
+                {transcript || interimText ? `${transcript} ${interimText}` : 'Listening for victim speech...'}
+              </p>
+            </div>
+          )}
 
           {/* Controls */}
           <div className="flex items-center justify-center gap-4 py-2">
