@@ -14,7 +14,8 @@ import {
   Volume2, 
   VolumeX,
   Compass,
-  ArrowRight
+  ArrowRight,
+  Lock
 } from 'lucide-react'
 
 interface WellbeingToolsModalProps {
@@ -22,9 +23,16 @@ interface WellbeingToolsModalProps {
   onClose: () => void
   onCloseWithSurvey?: () => void
   initialTab?: 'breathing' | 'soundscape' | 'grounding'
+  /**
+   * Day 4 Safety Gate defense-in-depth check.
+   * When false the modal renders a redirect notice instead of tool content
+   * — prevents game/tool access on unexpected code paths for High/Critical cases.
+   * Defaults to true (safe for Low/Moderate).
+   */
+  gameAllowed?: boolean
 }
 
-export function WellbeingToolsModal({ isOpen, onClose, onCloseWithSurvey, initialTab = 'breathing' }: WellbeingToolsModalProps) {
+export function WellbeingToolsModal({ isOpen, onClose, onCloseWithSurvey, initialTab = 'breathing', gameAllowed = true }: WellbeingToolsModalProps) {
   const [activeTab, setActiveTab] = useState<'breathing' | 'soundscape' | 'grounding'>(initialTab)
 
   // Box Breathing State
@@ -155,6 +163,53 @@ export function WellbeingToolsModal({ isOpen, onClose, onCloseWithSurvey, initia
   }, [stopSynthesizedSound])
 
   if (!isOpen) return null
+
+  // ── Day 4: Defense-in-depth guard ─────────────────────────────────────────
+  // If this modal is opened from an unexpected code path while the game is
+  // blocked (High / Critical gate), render a redirect notice instead of tool
+  // content. The primary gate enforcement lives in wellbeing-journey-view.tsx;
+  // this is a fallback so the modal is never a bypass vector.
+  if (!gameAllowed) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+        <div className="bg-white w-full max-w-sm rounded-3xl border border-[#fca5a5] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="p-5 bg-gradient-to-r from-[#991b1b] to-[#dc2626] text-white flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="size-9 rounded-xl bg-white/15 flex items-center justify-center">
+                <Lock size={18} className="text-[#fca5a5]" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-base">Tool Unavailable</h3>
+                <p className="text-[11px] text-[#fca5a5]">Safety Pathway active</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="text-[#fca5a5] hover:text-white transition">
+              <X size={20} />
+            </button>
+          </div>
+          <div className="p-6 space-y-4 text-center">
+            <p className="text-sm font-semibold text-[#7f1d1d]">
+              This tool isn&apos;t available for your current support level.
+            </p>
+            <p className="text-xs text-[#6b7280] leading-relaxed">
+              You&apos;re in a Safety Pathway or Priority Human Review. Your care team will unlock wellbeing tools after your first clinical session.
+            </p>
+            <p className="text-xs font-bold text-[#dc2626]">
+              Please use the SOS button or call <span className="underline">14566</span> for immediate support.
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#dc2626] hover:bg-[#b91c1c] text-white px-4 py-3 text-xs font-bold transition cursor-pointer"
+            >
+              Return to Priority Review Options
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  // ── End guard ──────────────────────────────────────────────────────────────
 
   const toggleSound = (track: 'rain' | 'binaural' | 'bells') => {
     if (isPlayingAudio && selectedTrack === track) {
