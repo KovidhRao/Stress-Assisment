@@ -8,3 +8,4 @@ optimum>=1.14.0
 onnxruntime>=1.16.0
 librosa>=0.10.0
 tqdm>=4.66.0
+faster-whisper>=1.0.0

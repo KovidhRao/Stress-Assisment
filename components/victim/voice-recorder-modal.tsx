@@ -1,7 +1,21 @@
-'use client'
-
 import React, { useState, useRef, useEffect } from 'react'
-import { Mic, Square, Play, RotateCcw, Sparkles, AlertTriangle, CheckCircle2, X, Volume2, Activity, Radio } from 'lucide-react'
+import {
+  Mic,
+  Square,
+  Play,
+  Pause,
+  RotateCcw,
+  Sparkles,
+  AlertTriangle,
+  CheckCircle2,
+  X,
+  Volume2,
+  Activity,
+  Radio,
+  Upload,
+  FileAudio,
+  Info
+} from 'lucide-react'
 import { VoiceAnalysisMetrics } from '@/types'
 
 interface VoiceRecorderModalProps {
@@ -22,16 +36,25 @@ const langCodes: Record<string, string> = {
 }
 
 export function VoiceRecorderModal({ isOpen, onClose, onComplete, language = 'Hindi' }: VoiceRecorderModalProps) {
+  // Input mode: 'mic' for live recording, 'upload' for audio file upload
+  const [inputMode, setInputMode] = useState<'mic' | 'upload'>('mic')
   const [isRecording, setIsRecording] = useState(false)
   const [recordingSeconds, setRecordingSeconds] = useState(0)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
+  const [transcribing, setTranscribing] = useState(false)
   const [liveVolume, setLiveVolume] = useState(0)
   const [transcript, setTranscript] = useState('')
   const [interimText, setInterimText] = useState('')
   const [selectedLanguage, setSelectedLanguage] = useState(language)
   const [livePitchHz, setLivePitchHz] = useState(210)
   const [liveJitter, setLiveJitter] = useState(12)
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false)
+
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
@@ -101,6 +124,80 @@ export function VoiceRecorderModal({ isOpen, onClose, onComplete, language = 'Hi
     return -1
   }
 
+  // Faster-Whisper Speech-to-Text Pipeline (Phase 1)
+  const triggerFasterWhisper = async (audioBlob: Blob) => {
+    setTranscribing(true)
+    try {
+      const fd = new FormData()
+      fd.append('audio', audioBlob, uploadedFile?.name || 'recording.webm')
+      fd.append('language', selectedLanguage)
+
+      const resp = await fetch('/api/voice/transcribe', {
+        method: 'POST',
+        body: fd
+      })
+
+      if (resp.ok) {
+        const data = await resp.json()
+        if (data.success && data.transcript) {
+          setTranscript(data.transcript)
+          if (data.duration_seconds && (!recordingSeconds || recordingSeconds < 1)) {
+            setRecordingSeconds(Math.round(data.duration_seconds))
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[VoiceRecorderModal] Faster-Whisper request error:', err)
+    } finally {
+      setTranscribing(false)
+    }
+  }
+
+  // Audio file upload handler with validation
+  const handleFileSelected = (file: File) => {
+    setUploadError(null)
+    const MAX_SIZE = 25 * 1024 * 1024
+    if (file.size > MAX_SIZE) {
+      setUploadError(`Audio file exceeds 25MB limit (${(file.size / (1024 * 1024)).toFixed(1)}MB).`)
+      return
+    }
+
+    const validExtensions = ['.wav', '.mp3', '.m4a', '.webm', '.ogg', '.flac']
+    const nameLower = file.name.toLowerCase()
+    const isValid = validExtensions.some(ext => nameLower.endsWith(ext)) || file.type.startsWith('audio/')
+    if (!isValid) {
+      setUploadError('Unsupported format. Please upload .wav, .mp3, .m4a, .webm, .ogg, or .flac.')
+      return
+    }
+
+    setUploadedFile(file)
+    audioBlobRef.current = file
+    const url = URL.createObjectURL(file)
+    setAudioUrl(url)
+
+    // Read audio duration
+    const tempAudio = new Audio(url)
+    tempAudio.onloadedmetadata = () => {
+      if (tempAudio.duration && !isNaN(tempAudio.duration)) {
+        setRecordingSeconds(Math.round(tempAudio.duration))
+      }
+    }
+
+    // Trigger Faster-Whisper transcription immediately
+    triggerFasterWhisper(file)
+  }
+
+  const togglePlayback = () => {
+    if (!audioPlayerRef.current || !audioUrl) return
+    if (isPlayingAudio) {
+      audioPlayerRef.current.pause()
+      setIsPlayingAudio(false)
+    } else {
+      audioPlayerRef.current.play()
+      setIsPlayingAudio(true)
+    }
+  }
+
   // Start Real Microphone Recording with Live Canvas & Speech Recognition
   const startRecording = async () => {
     setAudioUrl(null)
@@ -137,6 +234,8 @@ export function VoiceRecorderModal({ isOpen, onClose, onComplete, language = 'Hi
         const url = URL.createObjectURL(audioBlob)
         setAudioUrl(url)
         stream.getTracks().forEach(track => track.stop())
+        // Trigger Faster-Whisper transcription for live preview
+        triggerFasterWhisper(audioBlob)
       }
 
       mediaRecorder.start(250)
@@ -401,15 +500,56 @@ export function VoiceRecorderModal({ isOpen, onClose, onComplete, language = 'Hi
           </button>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+          {/* Mode Selector Tabs (Live Microphone vs Audio File Upload) */}
+          <div className="flex items-center rounded-2xl bg-[#edf4f1] p-1 border border-[#cfe2db]">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isRecording) {
+                  setInputMode('mic')
+                  setUploadError(null)
+                }
+              }}
+              disabled={isRecording}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                inputMode === 'mic'
+                  ? 'bg-white text-[#173f39] shadow-xs'
+                  : 'text-[#628079] hover:text-[#173f39]'
+              }`}
+            >
+              <Mic size={14} />
+              <span>Record Live Microphone</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!isRecording) {
+                  setInputMode('upload')
+                  setUploadError(null)
+                }
+              }}
+              disabled={isRecording}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                inputMode === 'upload'
+                  ? 'bg-white text-[#173f39] shadow-xs'
+                  : 'text-[#628079] hover:text-[#173f39]'
+              }`}
+            >
+              <Upload size={14} />
+              <span>Upload Audio File</span>
+            </button>
+          </div>
+
           {/* Language Selector */}
           <div className="flex items-center justify-between text-xs">
-            <label className="font-semibold text-[#30524c]">Interaction Language:</label>
+            <label className="font-semibold text-[#30524c]">Spoken Language:</label>
             <select
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
               disabled={isRecording}
-              className="px-3 py-1.5 rounded-xl border border-[#d6e3df] bg-[#fbfdfc] text-[#21433e] font-medium outline-none"
+              className="px-3 py-1.5 rounded-xl border border-[#d6e3df] bg-[#fbfdfc] text-[#21433e] font-medium outline-none cursor-pointer"
             >
               <option value="Hindi">हिन्दी (Hindi)</option>
               <option value="English">English</option>
@@ -421,107 +561,218 @@ export function VoiceRecorderModal({ isOpen, onClose, onComplete, language = 'Hi
             </select>
           </div>
 
-          {/* Waveform Canvas & Live Meter */}
-          <div className="relative rounded-2xl overflow-hidden bg-[#173f39] border border-[#235850]">
-            <canvas ref={canvasRef} width={450} height={140} className="w-full h-36 block" />
-            
-            <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] text-white">
-              <span className={`size-2 rounded-full ${isRecording ? 'bg-[#ff5a52] animate-ping' : 'bg-[#9ae1d3]'}`} />
-              <span>{isRecording ? `Recording: ${recordingSeconds}s` : recordingSeconds > 0 ? `Captured: ${recordingSeconds}s` : 'Ready to record'}</span>
-            </div>
+          {/* Mode 1: Live Microphone Recording */}
+          {inputMode === 'mic' && (
+            <div className="space-y-4">
+              {/* Waveform Canvas & Live Meter */}
+              <div className="relative rounded-2xl overflow-hidden bg-[#173f39] border border-[#235850]">
+                <canvas ref={canvasRef} width={450} height={120} className="w-full h-28 block" />
 
-            {isRecording && (
-              <div className="absolute top-3 right-3 flex items-center gap-2">
-                <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-[#9ae7d8] font-mono">
-                  <span>Pitch: {livePitchHz} Hz</span>
+                <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] text-white">
+                  <span className={`size-2 rounded-full ${isRecording ? 'bg-[#ff5a52] animate-ping' : 'bg-[#9ae1d3]'}`} />
+                  <span>{isRecording ? `Recording: ${recordingSeconds}s` : recordingSeconds > 0 ? `Captured: ${recordingSeconds}s` : 'Ready to record'}</span>
                 </div>
-                <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-[#fed7aa] font-mono">
-                  <span>Jitter: ±{liveJitter} Hz</span>
-                </div>
-              </div>
-            )}
 
-            {isRecording && (
-              <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] text-[#8ce0d0]">
-                <Activity size={13} />
-                <span>Distress Band Monitor Active ({liveVolume}%)</span>
+                {isRecording && (
+                  <div className="absolute top-3 right-3 flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-[#9ae7d8] font-mono">
+                      <span>Pitch: {livePitchHz} Hz</span>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          {/* Live speech recognition streaming indicator */}
-          {isRecording && (
-            <div className="p-3 bg-[#f0f8f5] rounded-xl border border-[#cfe3dc] space-y-1">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#1d8272] uppercase">
-                <Radio size={12} className="animate-pulse text-[#ef4444]" />
-                <span>Live Speech Recognition:</span>
+              {/* Recording Controls */}
+              <div className="flex items-center justify-center gap-4 py-1">
+                {!isRecording ? (
+                  <button
+                    type="button"
+                    onClick={startRecording}
+                    className="flex items-center gap-2.5 px-6 py-2.5 rounded-2xl bg-[#1e8574] hover:bg-[#186f60] text-white text-xs font-bold shadow-lg shadow-[#1e8574]/20 transition active:scale-95 cursor-pointer"
+                  >
+                    <Mic size={16} />
+                    <span>{recordingSeconds > 0 ? 'Record Again' : 'Start Speaking'}</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={stopRecording}
+                    className="flex items-center gap-2.5 px-6 py-2.5 rounded-2xl bg-[#cb4f46] hover:bg-[#b54038] text-white text-xs font-bold shadow-lg shadow-[#cb4f46]/20 transition animate-pulse cursor-pointer"
+                  >
+                    <Square size={16} />
+                    <span>Stop Recording</span>
+                  </button>
+                )}
               </div>
-              <p className="text-xs text-[#20433e] italic min-h-[20px]">
-                {transcript || interimText ? `${transcript} ${interimText}` : 'Listening for victim speech...'}
-              </p>
             </div>
           )}
 
-          {/* Controls */}
-          <div className="flex items-center justify-center gap-4 py-2">
-            {!isRecording ? (
-              <button
-                type="button"
-                onClick={startRecording}
-                className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-[#1e8574] hover:bg-[#186f60] text-white text-sm font-semibold shadow-lg shadow-[#1e8574]/20 transition active:scale-95"
-              >
-                <Mic size={18} />
-                <span>{recordingSeconds > 0 ? 'Record Again' : 'Start Speaking'}</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={stopRecording}
-                className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-[#cb4f46] hover:bg-[#b54038] text-white text-sm font-semibold shadow-lg shadow-[#cb4f46]/20 transition animate-pulse"
-              >
-                <Square size={18} />
-                <span>Stop &amp; Analyze</span>
-              </button>
-            )}
-          </div>
+          {/* Mode 2: Audio File Upload */}
+          {inputMode === 'upload' && (
+            <div className="space-y-3">
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="audio/*,.wav,.mp3,.m4a,.webm,.ogg,.flac"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    handleFileSelected(e.target.files[0])
+                  }
+                }}
+              />
 
-          {/* Optional Transcript edit */}
-          {recordingSeconds > 0 && !isRecording && (
-            <div className="space-y-2">
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleFileSelected(e.dataTransfer.files[0])
+                  }
+                }}
+                className="border-2 border-dashed border-[#cfe3dc] hover:border-[#1e8574] bg-[#f8fafc] hover:bg-[#f0f9f6] rounded-2xl p-6 text-center cursor-pointer transition space-y-2"
+              >
+                <div className="size-11 mx-auto rounded-xl bg-[#e6f4f1] text-[#1e8574] flex items-center justify-center">
+                  <FileAudio size={22} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#1f423d]">
+                    {uploadedFile ? uploadedFile.name : 'Click to select or drag audio file here'}
+                  </p>
+                  <p className="text-[11px] text-[#718b85]">
+                    Supports WAV, MP3, M4A, WebM, OGG, FLAC (Max 25 MB)
+                  </p>
+                </div>
+              </div>
+
+              {uploadError && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-[#fee2e2] border border-[#fecaca] text-xs text-[#991b1b]">
+                  <AlertTriangle size={14} className="shrink-0" />
+                  <span>{uploadError}</span>
+                </div>
+              )}
+
+              {uploadedFile && (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-[#edf7f3] border border-[#cfe2db] text-xs text-[#1e4842]">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 size={15} className="text-[#1e8574]" />
+                    <span className="font-semibold">{uploadedFile.name}</span>
+                    <span className="text-[11px] text-[#60827b]">
+                      ({(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUploadedFile(null)
+                      setAudioUrl(null)
+                      setTranscript('')
+                      setRecordingSeconds(0)
+                      audioBlobRef.current = null
+                    }}
+                    className="text-[11px] text-[#cb4f46] hover:underline cursor-pointer"
+                  >
+                    Change File
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Audio Playback Preview */}
+          {audioUrl && (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0]">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={togglePlayback}
+                  className="size-8 rounded-lg bg-[#1e8574] text-white flex items-center justify-center hover:bg-[#186f60] transition cursor-pointer"
+                >
+                  {isPlayingAudio ? <Pause size={14} /> : <Play size={14} className="ml-0.5" />}
+                </button>
+                <div>
+                  <p className="text-xs font-bold text-[#1f2937]">Audio Preview Ready</p>
+                  <p className="text-[10px] text-[#6b7280]">
+                    Duration: ~{recordingSeconds}s &bull; Click play to review
+                  </p>
+                </div>
+              </div>
+
+              <audio
+                ref={audioPlayerRef}
+                src={audioUrl}
+                onEnded={() => setIsPlayingAudio(false)}
+                className="hidden"
+              />
+
+              <button
+                type="button"
+                onClick={() => audioBlobRef.current && triggerFasterWhisper(audioBlobRef.current)}
+                disabled={transcribing}
+                className="flex items-center gap-1 text-[11px] font-semibold text-[#1e8574] hover:underline cursor-pointer disabled:opacity-50"
+              >
+                <RotateCcw size={12} />
+                <span>Re-transcribe</span>
+              </button>
+            </div>
+          )}
+
+          {/* Faster-Whisper Transcription Indicator */}
+          {transcribing && (
+            <div className="flex items-center gap-2 p-3 bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl text-xs text-[#166534] animate-pulse">
+              <Sparkles size={14} className="animate-spin text-[#16a34a]" />
+              <span>Transcribing speech using local Faster-Whisper model...</span>
+            </div>
+          )}
+
+          {/* Transcript Box */}
+          {(audioUrl || transcript || recordingSeconds > 0) && (
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-[#294c46]">Audio Transcript / Context:</span>
-                <span className="text-[10px] text-[#718f88]">Editable before analysis</span>
+                <span className="font-semibold text-[#294c46]">
+                  Faster-Whisper Transcript:
+                </span>
+                <span className="text-[10px] text-[#718f88]">
+                  {transcript ? `${transcript.split(/\s+/).filter(Boolean).length} words &bull; Editable` : 'Awaiting transcription'}
+                </span>
               </div>
               <textarea
                 value={transcript}
                 onChange={(e) => setTranscript(e.target.value)}
-                placeholder="What you spoke will be transcribed here. You may also type details..."
-                className="w-full p-3 text-xs rounded-xl border border-[#d6e3df] bg-[#fbfdfc] text-[#294c46] outline-none min-h-[60px]"
+                placeholder={transcribing ? 'Generating transcript with Faster-Whisper...' : 'Spoken or uploaded audio text will appear here. You can refine or add details...'}
+                className="w-full p-3 text-xs rounded-xl border border-[#d6e3df] bg-[#fbfdfc] text-[#294c46] outline-none min-h-[70px]"
               />
             </div>
           )}
 
+          {/* Non-Diagnostic Ethical Notice (Constraint 8 & 14) */}
+          <div className="flex items-start gap-2 p-2.5 rounded-xl bg-[#f0f9f6] border border-[#d0eae1] text-[11px] text-[#345c54]">
+            <Info size={14} className="shrink-0 mt-0.5 text-[#1e8574]" />
+            <p className="leading-tight">
+              <strong>Supporting Observational Signals:</strong> Voice features and transcripts assist emergency response coordination and triage. They are <u>not</u> clinical, psychiatric, or medical diagnoses.
+            </p>
+          </div>
+
           {/* Action buttons */}
-          {recordingSeconds > 0 && !isRecording && (
-            <div className="pt-2 flex items-center justify-end gap-3 border-t border-[#edf3f0]">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-xs font-semibold text-[#5e7771] hover:text-[#21433e]"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={processAndSubmit}
-                disabled={analyzing}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1d8272] hover:bg-[#186f60] text-white text-xs font-semibold shadow-md transition"
-              >
-                <Sparkles size={14} />
-                <span>{analyzing ? 'Computing Stress Index (SVI)...' : 'Evaluate Stress &amp; Trauma'}</span>
-              </button>
-            </div>
-          )}
+          <div className="pt-2 flex items-center justify-end gap-3 border-t border-[#edf3f0]">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-xs font-semibold text-[#5e7771] hover:text-[#21433e] cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={processAndSubmit}
+              disabled={analyzing || (!audioUrl && !transcript)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1d8272] hover:bg-[#186f60] text-white text-xs font-bold shadow-md transition disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+            >
+              <Sparkles size={14} />
+              <span>{analyzing ? 'Computing Stress Index (SVI)...' : 'Evaluate Stress &amp; Trauma'}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

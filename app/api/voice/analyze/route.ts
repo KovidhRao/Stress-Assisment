@@ -1,19 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { computeSVI } from '@/lib/svi-engine'
 import { detectLanguage } from '@/lib/nlp-engine'
+import {
+  transcribeWithFasterWhisper,
+  extractAcousticFeaturesWithPython,
+  mapAcousticFeaturesToVoiceMetrics,
+  AcousticFeaturesResult,
+} from '@/lib/voice-transcriber'
 import type { VoiceAnalysisMetrics } from '@/types'
 
 /**
  * POST /api/voice/analyze
  *
- * Full voice pipeline: Whisper transcription → NLP analysis → SVI integration.
+ * Full Voice Pipeline (Phase 1-3):
+ * Audio -> Faster-Whisper -> Transcript -> Acoustic Extractor -> VoiceAnalysisMetrics -> computeSVI()
  *
  * Body (multipart/form-data):
- *   - audio: File (webm/ogg/wav)
- *   - metrics: string (JSON — browser-computed VoiceAnalysisMetrics)
- *   - language?: string (e.g., "hi", "en", "te")
+ *   - audio: File (webm/ogg/wav/mp3/m4a/flac)
+ *   - metrics: string (JSON — optional browser-computed VoiceAnalysisMetrics fallback)
+ *   - language?: string (e.g., "hi", "en", "te", "ta", "mr")
  *
- * Returns: { transcript, assessment, nlpDetail, voiceMetrics, language }
+ * Returns: { success, transcript, language, rawAcousticFeatures, voiceMetrics, assessment, disclaimer, timestamp }
  */
 export async function POST(req: NextRequest) {
   try {
@@ -29,7 +36,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Parse browser-computed acoustic metrics (pitch, jitter, energy, etc.)
+    // Parse browser-provided acoustic metrics (used only as fallback)
     let browserMetrics: Partial<VoiceAnalysisMetrics> = {}
     if (metricsRaw) {
       try {
@@ -39,25 +46,41 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── Step 1: Whisper Transcription ─────────────────────────────────────
-    const OPENAI_KEY = process.env.OPENAI_API_KEY
+    const arrayBuffer = await audioFile.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    const originalFilename = audioFile.name || 'recording.webm'
+
+    // ── Step 1: Faster-Whisper Speech-to-Text (Phase 1) ───────────────────
     let transcript = browserMetrics.transcript || ''
     let whisperLanguage = clientLanguage
     let whisperDuration = browserMetrics.duration_seconds || 0
+    let whisperEngine = 'Browser DSP'
 
-    if (OPENAI_KEY) {
+    try {
+      const fwResult = await transcribeWithFasterWhisper(buffer, originalFilename, clientLanguage)
+      if (fwResult.success && fwResult.transcript) {
+        transcript = fwResult.transcript
+        whisperLanguage = fwResult.language || whisperLanguage
+        whisperDuration = fwResult.duration_seconds || whisperDuration
+        whisperEngine = 'Faster-Whisper (int8/cpu)'
+      }
+    } catch (fwErr) {
+      console.warn('[VoicePipeline] Faster-Whisper local call failed, attempting fallback:', fwErr)
+    }
+
+    // Secondary fallback to OpenAI API if no transcript and key exists
+    const OPENAI_KEY = process.env.OPENAI_API_KEY
+    if (!transcript && OPENAI_KEY) {
       try {
         const whisperFormData = new FormData()
-        whisperFormData.append('file', audioFile, audioFile.name || 'audio.webm')
+        whisperFormData.append('file', audioFile, originalFilename)
         whisperFormData.append('model', 'whisper-1')
-        // Map display language to Whisper language code
         const langMap: Record<string, string> = {
           Hindi: 'hi', English: 'en', Marathi: 'mr', Tamil: 'ta',
           Telugu: 'te', Bengali: 'bn', Kannada: 'kn',
         }
         whisperFormData.append('language', langMap[clientLanguage] || clientLanguage)
         whisperFormData.append('response_format', 'verbose_json')
-        whisperFormData.append('timestamp_granularities[]', 'word')
 
         const whisperResp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
           method: 'POST',
@@ -70,48 +93,62 @@ export async function POST(req: NextRequest) {
           transcript = whisperData.text || transcript
           whisperLanguage = whisperData.language || whisperLanguage
           whisperDuration = whisperData.duration || whisperDuration
-          console.log(`[VoicePipeline] Whisper transcription OK: ${transcript.slice(0, 80)}...`)
-        } else {
-          console.warn(`[VoicePipeline] Whisper API ${whisperResp.status}, using fallback transcript`)
+          whisperEngine = 'OpenAI Whisper API'
         }
       } catch (whisperErr) {
-        console.warn('[VoicePipeline] Whisper call failed, using browser transcript:', whisperErr)
+        console.warn('[VoicePipeline] Whisper API call failed:', whisperErr)
       }
-    } else {
-      console.log('[VoicePipeline] No OPENAI_API_KEY — using browser-provided transcript')
     }
 
-    // ── Step 2: Build VoiceAnalysisMetrics ────────────────────────────────
-    const voiceMetrics: VoiceAnalysisMetrics = {
-      duration_seconds: whisperDuration || browserMetrics.duration_seconds || 15,
-      transcript: transcript || browserMetrics.transcript || 'Voice statement recorded.',
-      language: whisperLanguage || browserMetrics.language || clientLanguage,
-      speech_rate_wpm: browserMetrics.speech_rate_wpm || 110,
-      average_pitch_hz: browserMetrics.average_pitch_hz || 220,
-      pitch_variation_hz: browserMetrics.pitch_variation_hz || 35,
-      energy_level: browserMetrics.energy_level || 50,
-      pause_duration_ratio: browserMetrics.pause_duration_ratio || 0.25,
-      acoustic_distress_score: browserMetrics.acoustic_distress_score || 45,
-      mfcc_indicators: browserMetrics.mfcc_indicators || [],
+    // ── Step 2: Acoustic Feature Extraction (Phase 2) ─────────────────────
+    let rawAcoustics: AcousticFeaturesResult | null = null
+    try {
+      rawAcoustics = await extractAcousticFeaturesWithPython(
+        buffer,
+        originalFilename,
+        transcript
+      )
+    } catch (acErr) {
+      console.warn('[VoicePipeline] Python acoustic extraction failed, using fallback:', acErr)
     }
 
-    // ── Step 3: NLP + SVI Integration ─────────────────────────────────────
-    // Use the real SVI engine with both text and voice features
+    // ── Step 3: Canonical VoiceAnalysisMetrics Mapping (Phase 3) ──────────
+    // Maps Phase 2 measurements (mean_pitch, pitch_std, rms_mean, pause_ratio, WPM)
+    // to the exact VoiceAnalysisMetrics interface expected by computeSVI()
+    const voiceMetrics: VoiceAnalysisMetrics = rawAcoustics && rawAcoustics.success
+      ? mapAcousticFeaturesToVoiceMetrics(rawAcoustics, transcript, whisperLanguage, browserMetrics)
+      : {
+          duration_seconds: whisperDuration || browserMetrics.duration_seconds || 15,
+          transcript: transcript || browserMetrics.transcript || 'Voice statement recorded.',
+          language: whisperLanguage || browserMetrics.language || clientLanguage,
+          speech_rate_wpm: browserMetrics.speech_rate_wpm || 110,
+          average_pitch_hz: browserMetrics.average_pitch_hz || 220,
+          pitch_variation_hz: browserMetrics.pitch_variation_hz || 35,
+          energy_level: browserMetrics.energy_level || 50,
+          pause_duration_ratio: browserMetrics.pause_duration_ratio || 0.25,
+          acoustic_distress_score: browserMetrics.acoustic_distress_score || 45,
+          mfcc_indicators: browserMetrics.mfcc_indicators || [],
+        }
+
+    // ── Step 4: NLP + SVI Integration (Existing Unmodified Engine) ─────────
+    // Existing computeSVI evaluates text indicators + acoustic distress (30/70 fusion)
     const assessment = computeSVI(transcript, voiceMetrics, 0)
 
-    // Language detection from transcript (may differ from Whisper's detected language)
+    // Language detection from transcript
     const langDetection = detectLanguage(transcript)
 
-    // ── Step 4: Return Combined Result ────────────────────────────────────
+    // ── Step 5: Return Unified Response ───────────────────────────────────
     return NextResponse.json({
       success: true,
       transcript,
-      voiceMetrics,
-      assessment,
-      language: langDetection.languageName,
+      language: whisperLanguage || langDetection.languageName,
       languageCode: langDetection.language,
       isRomanized: langDetection.isRomanized,
-      whisperUsed: !!OPENAI_KEY,
+      rawAcousticFeatures: rawAcoustics,
+      voiceMetrics,
+      assessment,
+      whisperEngine,
+      disclaimer: 'Acoustic features are observational supporting signals to assist response coordination and are NOT clinical or medical diagnoses.',
       timestamp: new Date().toISOString(),
     })
   } catch (error: unknown) {

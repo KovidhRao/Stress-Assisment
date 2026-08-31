@@ -543,14 +543,28 @@ export function StoryInputCard({
         {/* Action Controls */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
           {!isRecording && (
-            <button
-              type="button"
-              onClick={handleStartRecording}
-              className="flex items-center gap-2 rounded-xl border border-[#cfe3dc] bg-white px-4 py-2 text-xs font-semibold text-[#1d8272] transition hover:bg-[#edf7f3] cursor-pointer"
-            >
-              <Mic size={15} />
-              <span>{t('start_recording', currentLanguage)}</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleStartRecording}
+                className="flex items-center gap-2 rounded-xl border border-[#cfe3dc] bg-white px-4 py-2 text-xs font-semibold text-[#1d8272] transition hover:bg-[#edf7f3] cursor-pointer"
+              >
+                <Mic size={15} />
+                <span>{t('start_recording', currentLanguage)}</span>
+              </button>
+
+              {onOpenVoiceModal && (
+                <button
+                  type="button"
+                  onClick={onOpenVoiceModal}
+                  className="flex items-center gap-2 rounded-xl border border-[#b2dfd6] bg-[#eef8f5] px-3.5 py-2 text-xs font-bold text-[#166558] transition hover:bg-[#def0ea] shadow-2xs cursor-pointer"
+                  title="Upload audio file or open advanced speech assessment"
+                >
+                  <Sparkles size={14} className="text-[#1d8272]" />
+                  <span>Voice Assessment &amp; Upload</span>
+                </button>
+              )}
+            </div>
           )}
 
           <div className="flex-1 flex justify-end">
