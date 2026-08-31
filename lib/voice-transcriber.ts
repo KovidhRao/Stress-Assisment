@@ -61,7 +61,7 @@ export async function transcribeWithFasterWhisper(
     const result = await new Promise<TranscriptionResult>((resolve) => {
       const proc = spawn(pythonCmd, args, {
         cwd: process.cwd(),
-        shell: true,
+        shell: false,
         env: {
           ...process.env,
           PYTHONIOENCODING: 'utf-8',
@@ -211,7 +211,7 @@ export async function extractAcousticFeaturesWithPython(
     const result = await new Promise<AcousticFeaturesResult>((resolve) => {
       const proc = spawn(pythonCmd, args, {
         cwd: process.cwd(),
-        shell: true,
+        shell: false,
         env: {
           ...process.env,
           PYTHONIOENCODING: 'utf-8',
@@ -320,17 +320,20 @@ export function mapAcousticFeaturesToVoiceMetrics(
   language: string,
   browserFallback?: Partial<VoiceAnalysisMetrics>
 ): VoiceAnalysisMetrics {
-  const duration = acoustic.duration_seconds || browserFallback?.duration_seconds || 15
-  const speechRate = acoustic.speech_rate?.speech_rate_wpm || browserFallback?.speech_rate_wpm || 110
-  const avgPitch = acoustic.pitch?.mean_pitch_hz || browserFallback?.average_pitch_hz || 220
-  const pitchVar = acoustic.pitch?.pitch_std_hz || browserFallback?.pitch_variation_hz || 35
-  const pauseRatio = acoustic.voice_activity?.pause_duration_ratio ?? (browserFallback?.pause_duration_ratio ?? 0.25)
+  // When acoustic extraction succeeds, ALL metrics come directly from acoustic measurements.
+  // Use nullish coalescing (??) so that genuine 0 or 0.0 values (e.g. 0 WPM, 0 Hz pitch variation)
+  // are strictly preserved and never substituted by fallback values.
+  const duration = acoustic.duration_seconds ?? browserFallback?.duration_seconds ?? 0
+  const speechRate = acoustic.speech_rate?.speech_rate_wpm ?? browserFallback?.speech_rate_wpm ?? 0
+  const avgPitch = acoustic.pitch?.mean_pitch_hz ?? browserFallback?.average_pitch_hz ?? 0
+  const pitchVar = acoustic.pitch?.pitch_std_hz ?? browserFallback?.pitch_variation_hz ?? 0
+  const pauseRatio = acoustic.voice_activity?.pause_duration_ratio ?? browserFallback?.pause_duration_ratio ?? 0
 
-  // Energy level: scaled from RMS mean (0.0 - 0.40 typical speech range mapped to 0 - 100)
+  // Energy level: derived from RMS mean (typical speech range 0.0 - 0.40 mapped to 0 - 100)
   // Maintains computeSVI threshold where < 35 triggers energyDrop distress
-  const energyLevel = acoustic.energy?.rms_mean !== undefined
+  const energyLevel = typeof acoustic.energy?.rms_mean === 'number'
     ? Math.min(100, Math.max(0, Math.round(acoustic.energy.rms_mean * 250)))
-    : (browserFallback?.energy_level || 50)
+    : (browserFallback?.energy_level ?? 0)
 
   // Existing SVI Acoustic Distress formula from lib/svi-engine.ts
   const rateDistress = (speechRate < 95 || speechRate > 175) ? 25 : 5
@@ -339,7 +342,7 @@ export function mapAcousticFeaturesToVoiceMetrics(
   const energyDrop = energyLevel < 35 ? 20 : 0
   const acousticScore = Math.min(100, Math.round(rateDistress + pitchJitterDistress + pauseDistress + energyDrop))
 
-  // MFCC & Harmonic tags
+  // Observational MFCC & Harmonic indicators
   const mfccIndicators: string[] = [
     avgPitch > 210 ? 'elevated_fundamental_pitch' : 'normal_pitch',
     pitchVar > 30 ? 'vocal_tremor_high' : 'stable_modulation',
@@ -348,8 +351,8 @@ export function mapAcousticFeaturesToVoiceMetrics(
 
   return {
     duration_seconds: duration,
-    transcript: transcript || browserFallback?.transcript || 'Voice statement recorded.',
-    language: language || browserFallback?.language || 'en',
+    transcript: transcript ?? '',
+    language: language || (browserFallback?.language ?? 'en'),
     speech_rate_wpm: speechRate,
     average_pitch_hz: avgPitch,
     pitch_variation_hz: pitchVar,

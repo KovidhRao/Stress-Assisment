@@ -51,15 +51,15 @@ export async function POST(req: NextRequest) {
     const originalFilename = audioFile.name || 'recording.webm'
 
     // ── Step 1: Faster-Whisper Speech-to-Text (Phase 1) ───────────────────
-    let transcript = browserMetrics.transcript || ''
+    let transcript = ''
     let whisperLanguage = clientLanguage
-    let whisperDuration = browserMetrics.duration_seconds || 0
-    let whisperEngine = 'Browser DSP'
+    let whisperDuration = 0
+    let whisperEngine = 'None'
 
     try {
       const fwResult = await transcribeWithFasterWhisper(buffer, originalFilename, clientLanguage)
-      if (fwResult.success && fwResult.transcript) {
-        transcript = fwResult.transcript
+      if (fwResult.success) {
+        transcript = fwResult.transcript || ''
         whisperLanguage = fwResult.language || whisperLanguage
         whisperDuration = fwResult.duration_seconds || whisperDuration
         whisperEngine = 'Faster-Whisper (int8/cpu)'
@@ -100,6 +100,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // If still no transcript, check client/browser fallback
+    if (!transcript && browserMetrics.transcript) {
+      transcript = browserMetrics.transcript
+      whisperEngine = 'Client/Browser Fallback'
+    }
+
     // ── Step 2: Acoustic Feature Extraction (Phase 2) ─────────────────────
     let rawAcoustics: AcousticFeaturesResult | null = null
     try {
@@ -114,19 +120,20 @@ export async function POST(req: NextRequest) {
 
     // ── Step 3: Canonical VoiceAnalysisMetrics Mapping (Phase 3) ──────────
     // Maps Phase 2 measurements (mean_pitch, pitch_std, rms_mean, pause_ratio, WPM)
-    // to the exact VoiceAnalysisMetrics interface expected by computeSVI()
+    // to the exact VoiceAnalysisMetrics interface expected by computeSVI().
+    // Every field is derived from rawAcoustics when available; no arbitrary defaults are substituted.
     const voiceMetrics: VoiceAnalysisMetrics = rawAcoustics && rawAcoustics.success
       ? mapAcousticFeaturesToVoiceMetrics(rawAcoustics, transcript, whisperLanguage, browserMetrics)
       : {
-          duration_seconds: whisperDuration || browserMetrics.duration_seconds || 15,
-          transcript: transcript || browserMetrics.transcript || 'Voice statement recorded.',
-          language: whisperLanguage || browserMetrics.language || clientLanguage,
-          speech_rate_wpm: browserMetrics.speech_rate_wpm || 110,
-          average_pitch_hz: browserMetrics.average_pitch_hz || 220,
-          pitch_variation_hz: browserMetrics.pitch_variation_hz || 35,
-          energy_level: browserMetrics.energy_level || 50,
-          pause_duration_ratio: browserMetrics.pause_duration_ratio || 0.25,
-          acoustic_distress_score: browserMetrics.acoustic_distress_score || 45,
+          duration_seconds: whisperDuration || (browserMetrics.duration_seconds ?? 0),
+          transcript: transcript || (browserMetrics.transcript ?? ''),
+          language: whisperLanguage || (browserMetrics.language ?? clientLanguage),
+          speech_rate_wpm: browserMetrics.speech_rate_wpm ?? 0,
+          average_pitch_hz: browserMetrics.average_pitch_hz ?? 0,
+          pitch_variation_hz: browserMetrics.pitch_variation_hz ?? 0,
+          energy_level: browserMetrics.energy_level ?? 0,
+          pause_duration_ratio: browserMetrics.pause_duration_ratio ?? 0,
+          acoustic_distress_score: browserMetrics.acoustic_distress_score ?? 0,
           mfcc_indicators: browserMetrics.mfcc_indicators || [],
         }
 
